@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { profileUpdatedEventName } from "@/lib/profileEvents";
 import { useDashboardAccent } from "@/lib/useDashboardAccent";
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
@@ -28,8 +29,20 @@ type CoupleProfile = {
 
 function getFallbackName(user: User) {
   const login = user.user_metadata?.login;
+  const fullName = user.user_metadata?.full_name;
+  const name = user.user_metadata?.name;
   if (typeof login === "string" && login.trim()) return login.trim();
+  if (typeof fullName === "string" && fullName.trim()) return fullName.trim();
+  if (typeof name === "string" && name.trim()) return name.trim();
   return user.email?.split("@")[0] || "Профиль";
+}
+
+function getFallbackAvatar(user: User) {
+  const avatarUrl = user.user_metadata?.avatar_url;
+  const picture = user.user_metadata?.picture;
+  if (typeof avatarUrl === "string" && avatarUrl.trim()) return avatarUrl;
+  if (typeof picture === "string" && picture.trim()) return picture;
+  return null;
 }
 
 function getInitial(name: string) {
@@ -60,7 +73,7 @@ export default function Navbar() {
 
       let nextProfile: UserProfile = {
         name: getFallbackName(user),
-        avatar: null,
+        avatar: getFallbackAvatar(user),
       };
 
       const { data: coupleData } = await supabase
@@ -114,8 +127,28 @@ export default function Navbar() {
       }, 0);
     });
 
+    function handleProfileUpdated(event: Event) {
+      const detail = (event as CustomEvent<Partial<UserProfile>>).detail;
+      if (detail?.name || detail?.avatar !== undefined) {
+        setProfile((current) => ({
+          name: detail.name || current?.name || "Профиль",
+          avatar: detail.avatar === undefined ? current?.avatar || null : detail.avatar,
+        }));
+      }
+
+      window.setTimeout(async () => {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        await loadProfile(user);
+      }, 0);
+    }
+
+    window.addEventListener(profileUpdatedEventName, handleProfileUpdated);
+
     return () => {
       ignore = true;
+      window.removeEventListener(profileUpdatedEventName, handleProfileUpdated);
       subscription.unsubscribe();
     };
   }, []);
@@ -253,6 +286,13 @@ export default function Navbar() {
                   </p>
                   <p className="mt-1 truncate font-black">{profile.name}</p>
                 </div>
+                <Link
+                  href="/profile"
+                  onClick={() => setIsProfileOpen(false)}
+                  className="mb-2 block rounded-2xl bg-white/70 px-4 py-3 font-black shadow-inner transition hover:bg-white dark:bg-white/10 dark:hover:bg-white/15"
+                >
+                  Открыть профиль
+                </Link>
                 <button
                   onClick={logout}
                   className="w-full rounded-2xl bg-[#dc2626] px-4 py-3 text-left font-black text-white shadow-lg transition hover:bg-[#ef4444]"

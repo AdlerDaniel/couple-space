@@ -496,7 +496,7 @@ export default function DashboardPage() {
         .single();
 
       if (coupleError || !coupleData) {
-        router.push("/couple");
+        router.push("/profile");
         return;
       }
 
@@ -838,7 +838,7 @@ export default function DashboardPage() {
 
     try {
       const croppedFile = await getCroppedImg(croppingImage, croppedAreaPixels);
-      const filePath = `${crypto.randomUUID()}.webp`;
+      const filePath = `${currentUserId}/${crypto.randomUUID()}.webp`;
       const avatarField =
         currentUserId === couple.partner_one_id ? "avatar_one" : "avatar_two";
 

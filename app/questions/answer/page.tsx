@@ -9,6 +9,14 @@ const EDIT_WINDOW_MINUTES = 15;
 const EDIT_WINDOW_MS = EDIT_WINDOW_MINUTES * 60 * 1000;
 const ANSWER_MAX_LENGTH = 600;
 
+function getSafeMediaPath(coupleId: string, answerId: string, file: File) {
+  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const fallbackExtension = file.type.split("/").pop()?.replace(/[^a-z0-9]/g, "") || "bin";
+  const safeExtension = extension || fallbackExtension;
+
+  return `${coupleId}/${answerId}/${crypto.randomUUID()}.${safeExtension}`;
+}
+
 type Couple = {
   id: string;
   partner_one_id: string;
@@ -189,7 +197,7 @@ export default function QuestionAnswerPage() {
       return;
     }
 
-    const filePath = `${couple.id}/${activeRecord.id}/${crypto.randomUUID()}-${file.name}`;
+    const filePath = getSafeMediaPath(couple.id, activeRecord.id, file);
     const { error: uploadError } = await supabase.storage
       .from("question-media")
       .upload(filePath, file, { upsert: true });

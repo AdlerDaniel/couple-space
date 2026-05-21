@@ -319,7 +319,9 @@ export default function ProfilePage() {
     setIsSaving(true);
     const updates =
       couple.partner_one_id === currentUserId
-        ? { partner_one_id: null }
+        ? couple.partner_two_id
+          ? { partner_one_id: couple.partner_two_id, partner_two_id: null }
+          : { partner_one_id: null, partner_two_id: null }
         : { partner_two_id: null };
 
     const { error } = await supabase.from("couples").update(updates).eq("id", couple.id);

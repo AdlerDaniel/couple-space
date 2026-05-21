@@ -98,14 +98,14 @@ export default function Home() {
           <div className="mt-12 flex items-center gap-5">
             <div className="flex -space-x-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-300 to-rose-600 text-2xl shadow-xl ring-4 ring-white/70 dark:ring-[#130711]">
-                А
+                Д
               </div>
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-300 to-fuchsia-600 text-2xl shadow-xl ring-4 ring-white/70 dark:ring-[#130711]">
-                М
+                П
               </div>
             </div>
             <div>
-              <p className="font-bold text-rose-700 dark:text-rose-100">Анна + Максим</p>
+              <p className="font-bold text-rose-700 dark:text-rose-100">Даниил + Полина</p>
               <p className="text-sm font-semibold text-rose-700/60 dark:text-white/50">
                 42 дня создают свою историю
               </p>
@@ -149,10 +149,10 @@ export default function Home() {
                     </div>
                     <div className="flex -space-x-3">
                       <span className="grid h-12 w-12 place-items-center rounded-full bg-white/25 ring-2 ring-white/60">
-                        А
+                        Д
                       </span>
                       <span className="grid h-12 w-12 place-items-center rounded-full bg-white/25 ring-2 ring-white/60">
-                        М
+                        П
                       </span>
                     </div>
                   </div>
@@ -285,13 +285,13 @@ export default function Home() {
             </h2>
             <div className="mt-8 grid gap-4 md:grid-cols-2">
               <div className="rounded-3xl bg-white/16 p-5 backdrop-blur">
-                <p className="text-sm font-bold text-white/60">Анна</p>
+                <p className="text-sm font-bold text-white/60">Даниил</p>
                 <p className="mt-3 text-lg font-bold">
                   Когда мы идём рядом и молчим, но всё равно понятно, что мы вместе.
                 </p>
               </div>
               <div className="rounded-3xl bg-white/16 p-5 backdrop-blur">
-                <p className="text-sm font-bold text-white/60">Максим</p>
+                <p className="text-sm font-bold text-white/60">Полина</p>
                 <p className="mt-3 text-lg font-bold">
                   Твоё “я дома” и то, как обычный день сразу становится теплее.
                 </p>

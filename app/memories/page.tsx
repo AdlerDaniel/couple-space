@@ -53,6 +53,17 @@ function formatTime(date: string) {
   });
 }
 
+function getMemoryImagePath(imageUrl?: string | null) {
+  if (!imageUrl) return null;
+
+  const marker = "/memory-images/";
+  const markerIndex = imageUrl.indexOf(marker);
+
+  if (markerIndex === -1) return null;
+
+  return decodeURIComponent(imageUrl.slice(markerIndex + marker.length));
+}
+
 export default function MemoriesPage() {
   const router = useRouter();
   const loaderRef = useRef<HTMLDivElement | null>(null);
@@ -72,6 +83,7 @@ export default function MemoriesPage() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -158,6 +170,7 @@ export default function MemoriesPage() {
     }
 
     setIsSubmitting(true);
+    setMessage("");
     let imageUrl: string | null = null;
 
     if (memoryImageFile) {
@@ -166,12 +179,16 @@ export default function MemoriesPage() {
         .from("memory-images")
         .upload(filePath, memoryImageFile, { upsert: true });
 
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage
-          .from("memory-images")
-          .getPublicUrl(filePath);
-        imageUrl = publicUrlData.publicUrl;
+      if (uploadError) {
+        setMessage(`Не удалось загрузить фото: ${uploadError.message}`);
+        setIsSubmitting(false);
+        return;
       }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("memory-images")
+        .getPublicUrl(filePath);
+      imageUrl = publicUrlData.publicUrl;
     }
 
     const { data, error } = await supabase
@@ -197,6 +214,9 @@ export default function MemoriesPage() {
       setEventDate("");
       setMemoryImage(null);
       setMemoryImageFile(null);
+      setMessage("Воспоминание добавлено");
+    } else if (error) {
+      setMessage(`Не удалось добавить воспоминание: ${error.message}`);
     }
 
     setIsSubmitting(false);
@@ -215,6 +235,38 @@ export default function MemoriesPage() {
         current.map((item) => (item.id === memory.id ? (data as Memory) : item))
       );
     }
+  }
+
+  async function deleteMemory(memory: Memory) {
+    const isConfirmed = window.confirm("Удалить это воспоминание?");
+    if (!isConfirmed) return;
+
+    setMessage("");
+
+    const { error } = await supabase
+      .from("memories")
+      .delete()
+      .eq("id", memory.id)
+      .eq("couple_id", memory.couple_id);
+
+    if (error) {
+      setMessage(`Не удалось удалить воспоминание: ${error.message}`);
+      return;
+    }
+
+    const imagePath = getMemoryImagePath(memory.image);
+    if (imagePath) {
+      await supabase.storage.from("memory-images").remove([imagePath]);
+    }
+
+    setMemories((current) => current.filter((item) => item.id !== memory.id));
+    setComments((current) => {
+      const nextComments = { ...current };
+      delete nextComments[memory.id];
+      return nextComments;
+    });
+    setSelectedIndex(null);
+    setMessage("Воспоминание удалено");
   }
 
   async function toggleReaction(memory: Memory, reaction: string) {
@@ -365,6 +417,11 @@ export default function MemoriesPage() {
               className="mt-5 h-64 w-full rounded-[1.5rem] object-cover shadow-2xl"
             />
           )}
+          {message && (
+            <p className="mt-4 rounded-2xl bg-white/70 px-5 py-3 font-black text-[#1a73e8] shadow-inner dark:bg-white/10 dark:text-blue-100">
+              {message}
+            </p>
+          )}
         </div>
 
         <div className="mb-8 flex gap-3">
@@ -436,15 +493,27 @@ export default function MemoriesPage() {
 
                   <div className="p-3">
                     <div className="mb-3 flex items-center justify-between gap-3">
-                      <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-[#1a73e8] dark:bg-white/10 dark:text-blue-100">
-                        {memory.is_pinned ? "Закреплено" : "Polaroid"}
-                      </span>
-                      <button
-                        onClick={() => togglePinned(memory)}
-                        className="rounded-full bg-white/70 px-3 py-1 text-xs font-black text-[#1a73e8] shadow dark:bg-white/10 dark:text-blue-100"
-                      >
-                        {memory.is_pinned ? "Открепить" : "Закрепить"}
-                      </button>
+                      {memory.is_pinned ? (
+                        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-[#1a73e8] dark:bg-white/10 dark:text-blue-100">
+                          Закреплено
+                        </span>
+                      ) : (
+                        <span />
+                      )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => togglePinned(memory)}
+                          className="rounded-full bg-white/70 px-3 py-1 text-xs font-black text-[#1a73e8] shadow transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-blue-100"
+                        >
+                          {memory.is_pinned ? "Открепить" : "Закрепить"}
+                        </button>
+                        <button
+                          onClick={() => deleteMemory(memory)}
+                          className="rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-600 shadow transition hover:-translate-y-0.5 hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-100"
+                        >
+                          Удалить
+                        </button>
+                      </div>
                     </div>
                     <h2 className="text-2xl font-black text-[#0f3b66] dark:text-white">
                       {memory.title || "Без названия"}
@@ -533,6 +602,12 @@ export default function MemoriesPage() {
             className="absolute right-5 top-5 rounded-full bg-white/15 px-5 py-3 font-black text-white backdrop-blur"
           >
             Закрыть
+          </button>
+          <button
+            onClick={() => deleteMemory(selectedMemory)}
+            className="absolute left-5 top-5 rounded-full bg-rose-500/80 px-5 py-3 font-black text-white shadow-[0_18px_50px_rgba(244,63,94,0.35)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-rose-500"
+          >
+            Удалить
           </button>
           <button
             onClick={() => showNextMemory(-1)}

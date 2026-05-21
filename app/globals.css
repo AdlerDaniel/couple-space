@@ -124,6 +124,195 @@ body {
   }
 }
 
+@keyframes answerReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+    filter: blur(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes answeredGlow {
+  0%,
+  100% {
+    box-shadow: 0 28px 90px rgba(21, 128, 61, 0.18);
+  }
+
+  50% {
+    box-shadow: 0 34px 120px rgba(20, 184, 166, 0.28);
+  }
+}
+
+@keyframes achievementAppear {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+    filter: blur(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes achievementRecentPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 18px 45px rgba(127, 29, 29, 0.18),
+      0 0 0 1px rgba(255, 255, 255, 0.7),
+      0 0 34px rgba(220, 38, 38, 0.22);
+  }
+
+  50% {
+    box-shadow:
+      0 24px 60px rgba(127, 29, 29, 0.26),
+      0 0 0 2px rgba(251, 113, 133, 0.45),
+      0 0 48px rgba(244, 63, 94, 0.42);
+  }
+}
+
+@keyframes achievementShine {
+  from {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+
+  to {
+    transform: translateX(360%) skewX(-18deg);
+  }
+}
+
+@keyframes achievementParticle {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.6);
+  }
+
+  35% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-22px) scale(1.1);
+  }
+}
+
+@keyframes achievementToast {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.94);
+  }
+
+  14%,
+  86% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+}
+
+@keyframes achievementModal {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes authBlob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(28px, -22px, 0) scale(1.08);
+  }
+}
+
+@keyframes authHeart {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: translate3d(0, 0, 0) rotate(-8deg) scale(1);
+  }
+
+  50% {
+    opacity: 0.72;
+    transform: translate3d(0, -18px, 0) rotate(8deg) scale(1.08);
+  }
+}
+
+@keyframes authReveal {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+    filter: blur(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes authFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes authFormSwitch {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes authGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 .landing-noise {
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
@@ -191,6 +380,117 @@ body {
   animation-delay: -6s;
 }
 
+.answer-reveal {
+  animation: answerReveal 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.answered-glow {
+  animation: answeredGlow 3.8s ease-in-out infinite;
+}
+
+.achievement-card {
+  animation: achievementAppear 0.58s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.achievement-recent {
+  animation:
+    achievementAppear 0.58s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    achievementRecentPulse 2.4s ease-in-out infinite;
+}
+
+.achievement-shine {
+  animation: achievementShine 1.35s ease-in-out infinite;
+}
+
+.achievement-particle {
+  animation: achievementParticle 1.8s ease-in-out infinite;
+}
+
+.achievement-particle-delay {
+  animation-delay: 0.45s;
+}
+
+.achievement-toast {
+  animation: achievementToast 3.6s ease-in-out both;
+}
+
+.achievement-modal {
+  animation: achievementModal 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.auth-grain {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px),
+    radial-gradient(circle at 70% 30%, rgba(127, 29, 29, 0.12) 0 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size:
+    18px 18px,
+    26px 26px,
+    42px 42px;
+  mix-blend-mode: overlay;
+}
+
+.auth-blob {
+  animation: authBlob 14s ease-in-out infinite;
+}
+
+.auth-blob-delay {
+  animation-delay: -7s;
+}
+
+.auth-heart {
+  animation: authHeart 7s ease-in-out infinite;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+  font-size: 2rem;
+  color: rgba(190, 18, 60, 0.7);
+  filter: drop-shadow(0 12px 28px rgba(190, 18, 60, 0.22));
+}
+
+.auth-heart-delay {
+  animation-delay: -2.5s;
+}
+
+.auth-heart-slow {
+  animation-duration: 9s;
+  animation-delay: -4s;
+}
+
+.auth-reveal {
+  animation: authReveal 0.78s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.auth-reveal-delay {
+  animation-delay: 0.14s;
+}
+
+.auth-float {
+  animation: authFloat 6s ease-in-out infinite;
+}
+
+.auth-form-switch {
+  animation: authFormSwitch 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.auth-gradient-button {
+  background: linear-gradient(120deg, #dc2626, #fb7185, #f97316, #dc2626);
+  background-size: 260% 260%;
+  animation: authGradient 7s ease infinite;
+}
+
+.memories-grain {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px),
+    radial-gradient(circle at 80% 40%, rgba(30, 8, 28, 0.12) 0 1px, transparent 1px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 42%, rgba(80, 18, 73, 0.1));
+  background-size:
+    18px 18px,
+    26px 26px,
+    100% 100%;
+  mix-blend-mode: overlay;
+}
+
 @supports (animation-timeline: view()) {
   .landing-reveal {
     animation-timeline: view();
@@ -204,7 +504,21 @@ body {
   .landing-heart,
   .landing-reveal,
   .questions-blob,
-  .questions-reveal {
+  .questions-reveal,
+  .answer-reveal,
+  .answered-glow,
+  .achievement-card,
+  .achievement-recent,
+  .achievement-shine,
+  .achievement-particle,
+  .achievement-toast,
+  .achievement-modal,
+  .auth-blob,
+  .auth-heart,
+  .auth-reveal,
+  .auth-float,
+  .auth-form-switch,
+  .auth-gradient-button {
     animation: none;
   }
 }

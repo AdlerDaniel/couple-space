@@ -86,9 +86,17 @@ export default function QuestionsPage() {
       </div>
 
       <section className="relative mx-auto flex min-h-[calc(100vh-7rem)] max-w-5xl flex-col items-center justify-center text-center">
-        <div className="questions-reveal mb-8 inline-flex items-center gap-3 rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-bold text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
-          <span>💌</span>
-          Вопрос дня
+        <div className="questions-reveal mb-8 flex flex-wrap items-center justify-center gap-3">
+          <div className="inline-flex items-center gap-3 rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-bold text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
+            <span>💌</span>
+            Вопрос дня
+          </div>
+          <button
+            onClick={() => router.push("/questions/archive")}
+            className="rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-bold text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-white/70 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200"
+          >
+            Архив
+          </button>
         </div>
 
         <div className="questions-reveal questions-reveal-delay relative w-full max-w-4xl overflow-hidden rounded-[2.5rem] border border-white/70 bg-white/52 p-6 shadow-[0_32px_110px_rgba(21,128,61,0.22)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8">

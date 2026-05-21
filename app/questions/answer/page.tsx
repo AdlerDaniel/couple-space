@@ -69,9 +69,9 @@ export default function QuestionAnswerPage() {
     nowMs > 0 &&
     Boolean(firstSavedAt) &&
     new Date(firstSavedAt as string).getTime() + EDIT_WINDOW_MS < nowMs;
-  const hasSavedAnswer = Boolean(lastSavedAnswer.trim());
   const voiceUrl = (answerRecord?.[voiceField] as string | null | undefined) || null;
   const photoUrl = (answerRecord?.[photoField] as string | null | undefined) || null;
+  const hasSavedAnswer = Boolean(lastSavedAnswer.trim() || voiceUrl || photoUrl);
 
   function resizeTextarea() {
     const textarea = textareaRef.current;

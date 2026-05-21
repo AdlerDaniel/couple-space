@@ -1,0 +1,210 @@
+
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-zoomIn {
+  animation: zoomIn 0.25s ease-out;
+}
+
+@keyframes landingFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+
+  50% {
+    transform: translateY(-16px) rotate(1.5deg);
+  }
+}
+
+@keyframes landingBlob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(28px, -22px, 0) scale(1.08);
+  }
+}
+
+@keyframes landingHeart {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0) scale(1) rotate(-8deg);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: translateY(-24px) scale(1.12) rotate(8deg);
+  }
+}
+
+@keyframes landingRise {
+  from {
+    opacity: 0;
+    transform: translateY(34px) scale(0.98);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes questionsRise {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+    filter: blur(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes questionsBlob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(24px, -18px, 0) scale(1.08);
+  }
+}
+
+.landing-noise {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at center, black, transparent 72%);
+}
+
+.landing-blob {
+  animation: landingBlob 14s ease-in-out infinite;
+}
+
+.landing-blob-delayed {
+  animation-delay: -7s;
+}
+
+.landing-float {
+  animation: landingFloat 6s ease-in-out infinite;
+}
+
+.landing-float-slow {
+  animation-duration: 8s;
+  animation-delay: -2s;
+}
+
+.landing-float-fast {
+  animation-duration: 5s;
+  animation-delay: -1s;
+}
+
+.landing-heart {
+  animation: landingHeart 7s ease-in-out infinite;
+}
+
+.landing-heart-delay {
+  animation-delay: -2.5s;
+}
+
+.landing-heart-slow {
+  animation-duration: 9s;
+  animation-delay: -4s;
+}
+
+.landing-reveal {
+  animation: landingRise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.landing-reveal-delay {
+  animation-delay: 0.16s;
+}
+
+.questions-reveal {
+  animation: questionsRise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.questions-reveal-delay {
+  animation-delay: 0.12s;
+}
+
+.questions-blob {
+  animation: questionsBlob 13s ease-in-out infinite;
+}
+
+.questions-blob-delay {
+  animation-delay: -6s;
+}
+
+@supports (animation-timeline: view()) {
+  .landing-reveal {
+    animation-timeline: view();
+    animation-range: entry 0% cover 32%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-blob,
+  .landing-float,
+  .landing-heart,
+  .landing-reveal,
+  .questions-blob,
+  .questions-reveal {
+    animation: none;
+  }
+}

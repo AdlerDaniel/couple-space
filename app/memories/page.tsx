@@ -64,6 +64,13 @@ function getMemoryImagePath(imageUrl?: string | null) {
   return decodeURIComponent(imageUrl.slice(markerIndex + marker.length));
 }
 
+function getSafeImagePath(coupleId: string, file: File) {
+  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const safeExtension = extension || file.type.split("/").pop() || "jpg";
+
+  return `${coupleId}/${crypto.randomUUID()}.${safeExtension}`;
+}
+
 export default function MemoriesPage() {
   const router = useRouter();
   const loaderRef = useRef<HTMLDivElement | null>(null);
@@ -174,7 +181,7 @@ export default function MemoriesPage() {
     let imageUrl: string | null = null;
 
     if (memoryImageFile) {
-      const filePath = `${couple.id}/${crypto.randomUUID()}-${memoryImageFile.name}`;
+      const filePath = getSafeImagePath(couple.id, memoryImageFile);
       const { error: uploadError } = await supabase.storage
         .from("memory-images")
         .upload(filePath, memoryImageFile, { upsert: true });

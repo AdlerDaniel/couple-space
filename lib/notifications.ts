@@ -1,0 +1,87 @@
+import { supabase } from "@/lib/supabaseClient";
+
+export const notificationsUpdatedEventName = "couple-space:notifications-updated";
+
+type CoupleLike = {
+  id: string;
+  partner_one_id: string;
+  partner_two_id: string | null;
+};
+
+type NotificationPayload = {
+  type: string;
+  title: string;
+  body?: string;
+  href?: string;
+};
+
+function emitNotificationsUpdated() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(notificationsUpdatedEventName));
+  }
+}
+
+export function getPartnerId(couple: CoupleLike, currentUserId: string) {
+  return currentUserId === couple.partner_one_id
+    ? couple.partner_two_id
+    : couple.partner_one_id;
+}
+
+export async function createNotification({
+  coupleId,
+  recipientId,
+  actorId,
+  type,
+  title,
+  body,
+  href,
+}: NotificationPayload & {
+  coupleId: string;
+  recipientId: string;
+  actorId: string;
+}) {
+  const { error } = await supabase.from("couple_notifications").insert([
+    {
+      couple_id: coupleId,
+      recipient_id: recipientId,
+      actor_id: actorId,
+      type,
+      title,
+      body: body || null,
+      href: href || null,
+    },
+  ]);
+
+  if (!error) {
+    emitNotificationsUpdated();
+  }
+}
+
+export async function createPartnerNotification(
+  couple: CoupleLike,
+  currentUserId: string,
+  payload: NotificationPayload
+) {
+  const partnerId = getPartnerId(couple, currentUserId);
+  if (!partnerId || partnerId === currentUserId) return;
+
+  await createNotification({
+    coupleId: couple.id,
+    recipientId: partnerId,
+    actorId: currentUserId,
+    ...payload,
+  });
+}
+
+export async function createOwnNotification(
+  coupleId: string,
+  currentUserId: string,
+  payload: NotificationPayload
+) {
+  await createNotification({
+    coupleId,
+    recipientId: currentUserId,
+    actorId: currentUserId,
+    ...payload,
+  });
+}

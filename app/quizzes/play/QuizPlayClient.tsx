@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { createPartnerNotification } from "@/lib/notifications";
 import { getQuizById } from "@/lib/quizzes";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -123,6 +124,13 @@ export default function QuizPlayClient() {
       setMessage(result.error || "Не удалось сохранить прогресс для партнёра");
       return;
     }
+
+    await createPartnerNotification(couple, currentUserId, {
+      type: "quiz_completed",
+      title: "Викторина пройдена",
+      body: quiz.title,
+      href: `/quizzes/result?quiz=${quiz.id}`,
+    });
 
     setIsSaving(false);
     router.push(`/quizzes/result?quiz=${quiz.id}`);

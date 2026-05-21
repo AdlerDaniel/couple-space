@@ -1,6 +1,7 @@
 "use client";
 
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
+import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -89,6 +90,11 @@ export default function QuestionAnswerPage() {
       const firstSaveDate = firstSavedAt || new Date().toISOString();
 
       if (answerRecord) {
+        const hadAnswerBefore = Boolean(
+          answerRecord[answerField] ||
+            answerRecord[voiceField] ||
+            answerRecord[photoField]
+        );
         const { data, error } = await supabase
           .from("question_answers")
           .update({
@@ -110,6 +116,14 @@ export default function QuestionAnswerPage() {
         setAnswerRecord(data);
         setLastSavedAnswer(answerToSave);
         setSaveStatus("Ответ сохранён автоматически");
+        if (!hadAnswerBefore) {
+          await createPartnerNotification(couple, currentUserId, {
+            type: "question_answered",
+            title: "Ответ на вопрос дня",
+            body: "Партнёр ответил на ежедневный вопрос.",
+            href: "/questions/today",
+          });
+        }
         setIsSaving(false);
         return;
       }
@@ -139,6 +153,12 @@ export default function QuestionAnswerPage() {
       setAnswerRecord(data);
       setLastSavedAnswer(answerToSave);
       setSaveStatus("Ответ сохранён автоматически");
+      await createPartnerNotification(couple, currentUserId, {
+        type: "question_answered",
+        title: "Ответ на вопрос дня",
+        body: "Партнёр ответил на ежедневный вопрос.",
+        href: "/questions/today",
+      });
       setIsSaving(false);
     },
     [
@@ -150,8 +170,10 @@ export default function QuestionAnswerPage() {
       firstSavedAt,
       isEditLocked,
       myAnswer,
+      photoField,
       questionOfTheDay,
       todayDate,
+      voiceField,
     ]
   );
 
@@ -190,6 +212,7 @@ export default function QuestionAnswerPage() {
     if (!couple || isEditLocked) return;
 
     setIsUploadingMedia(true);
+    const createdRecordForMedia = !answerRecord;
     const activeRecord = await ensureAnswerRecord(fallbackText);
 
     if (!activeRecord) {
@@ -197,6 +220,12 @@ export default function QuestionAnswerPage() {
       return;
     }
 
+    const hadMediaBefore = Boolean(activeRecord[urlField as keyof Answer]);
+    const hadAnswerBefore = Boolean(
+      activeRecord[answerField] ||
+        activeRecord[voiceField] ||
+        activeRecord[photoField]
+    );
     const filePath = getSafeMediaPath(couple.id, activeRecord.id, file);
     const { error: uploadError } = await supabase.storage
       .from("question-media")
@@ -226,6 +255,17 @@ export default function QuestionAnswerPage() {
     } else if (data) {
       setAnswerRecord(data);
       setSaveStatus("Медиа сохранено");
+    }
+
+    if (!error && data && !hadMediaBefore && currentUserId) {
+      await createPartnerNotification(couple, currentUserId, {
+        type: urlField.includes("voice") ? "question_voice" : "question_photo",
+        title: urlField.includes("voice") ? "Голосовой ответ" : "Фото-ответ",
+        body: hadAnswerBefore && !createdRecordForMedia
+          ? "Партнёр добавил медиа к ответу."
+          : "Партнёр ответил на ежедневный вопрос.",
+        href: "/questions/today",
+      });
     }
 
     setIsUploadingMedia(false);

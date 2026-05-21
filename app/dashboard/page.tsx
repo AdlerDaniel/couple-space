@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { createOwnNotification, createPartnerNotification } from "@/lib/notifications";
 import {
   dashboardAccentEventName,
   dashboardAccentStorageKey,
@@ -675,13 +676,21 @@ export default function DashboardPage() {
         );
         if (newestAchievement) {
           setAchievementToast(newestAchievement);
+          if (currentUserId) {
+            createOwnNotification(couple.id, currentUserId, {
+              type: "achievement_unlocked",
+              title: "Достижение открыто",
+              body: `${newestAchievement.title} · уровень ${newestAchievement.level}`,
+              href: "/dashboard",
+            });
+          }
           window.setTimeout(() => setAchievementToast(null), 3600);
         }
       }
     }, 0);
 
     return () => window.clearTimeout(stateTimer);
-  }, [achievements, couple]);
+  }, [achievements, couple, currentUserId]);
 
   const timeline = useMemo(
     () =>
@@ -769,6 +778,12 @@ export default function DashboardPage() {
           (nextProfile.status_updates_two || 0),
       }));
       setStatusMessage("Статус обновлён");
+      await createPartnerNotification(couple, currentUserId, {
+        type: "status_updated",
+        title: "Новый статус",
+        body: text ? `${statusEmoji} ${text}` : "Партнёр обновил статус.",
+        href: "/dashboard",
+      });
     }
 
     setTimeout(() => setStatusMessage(""), 2500);

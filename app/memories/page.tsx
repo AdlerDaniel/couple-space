@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { createPartnerNotification } from "@/lib/notifications";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -222,6 +223,12 @@ export default function MemoriesPage() {
       setMemoryImage(null);
       setMemoryImageFile(null);
       setMessage("Воспоминание добавлено");
+      await createPartnerNotification(couple, currentUserId, {
+        type: "memory_added",
+        title: "Новое воспоминание",
+        body: title.trim() || caption.trim() || "Партнёр добавил воспоминание.",
+        href: "/memories",
+      });
     } else if (error) {
       setMessage(`Не удалось добавить воспоминание: ${error.message}`);
     }
@@ -274,6 +281,14 @@ export default function MemoriesPage() {
     });
     setSelectedIndex(null);
     setMessage("Воспоминание удалено");
+    if (currentUserId && couple) {
+      await createPartnerNotification(couple, currentUserId, {
+        type: "memory_deleted",
+        title: "Воспоминание удалено",
+        body: memory.title || memory.caption || "Партнёр удалил воспоминание.",
+        href: "/memories",
+      });
+    }
   }
 
   async function toggleReaction(memory: Memory, reaction: string) {
@@ -299,6 +314,14 @@ export default function MemoriesPage() {
       setMemories((current) =>
         current.map((item) => (item.id === memory.id ? (data as Memory) : item))
       );
+      if (reaction && couple) {
+        await createPartnerNotification(couple, currentUserId, {
+          type: "memory_reaction",
+          title: "Реакция на воспоминание",
+          body: `Партнёр оставил реакцию ${reaction}.`,
+          href: "/memories",
+        });
+      }
     }
   }
 
@@ -326,6 +349,12 @@ export default function MemoriesPage() {
         [memory.id]: [...(current[memory.id] || []), data as MemoryComment],
       }));
       setCommentDrafts((current) => ({ ...current, [memory.id]: "" }));
+      await createPartnerNotification(couple, currentUserId, {
+        type: "memory_comment",
+        title: "Комментарий к воспоминанию",
+        body: text,
+        href: "/memories",
+      });
     }
   }
 

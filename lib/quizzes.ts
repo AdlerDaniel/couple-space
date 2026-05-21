@@ -1,9 +1,20 @@
-export type QuizCategory = "Быт" | "Путешествия" | "Красота" | "Отношения";
+export type QuizCategory =
+  | "Быт"
+  | "Путешествия"
+  | "Красота"
+  | "Отношения"
+  | "Интим"
+  | "Согласен/не согласен"
+  | "Было/не было"
+  | "Фото-ответы";
+
+export type QuizAnswerType = "choice" | "photo";
 
 export type QuizQuestion = {
   id: string;
   text: string;
-  options: string[];
+  options?: string[];
+  answerType?: QuizAnswerType;
 };
 
 export type Quiz = {
@@ -14,6 +25,9 @@ export type Quiz = {
   duration: string;
   questions: QuizQuestion[];
 };
+
+const agreeOptions = ["Согласен", "Скорее согласен", "Скорее не согласен", "Не согласен"];
+const wasOptions = ["Было", "Не было"];
 
 export const quizzes: Quiz[] = [
   {
@@ -50,7 +64,7 @@ export const quizzes: Quiz[] = [
     questions: [
       { id: "place", text: "Куда бы вы уехали на три дня?", options: ["К морю", "В горы", "В большой город", "В тихий загородный дом"] },
       { id: "plan", text: "Какой план поездки ближе?", options: ["Всё расписать", "Оставить половину свободной", "Решать на месте", "Выбрать только главное"] },
-      { id: "memory", text: "Что хочется привезти из поездки?", options: ["Много фото", "Локальную вещь", "Новый вкус", "Историю, которую будем вспоминать"] },
+      { id: "memory", text: "Что хочется привезти из поездки?", options: ["Много фото", "Локальную вещь", "Новый вкус", "Историю для воспоминаний"] },
       { id: "pace", text: "Идеальный темп путешествия?", options: ["Медленный", "Активный", "Смешанный", "Зависит от настроения"] },
     ],
   },
@@ -116,9 +130,122 @@ export const quizzes: Quiz[] = [
       { id: "ritual", text: "Какой ритуал стоит завести?", options: ["Еженедельное свидание", "Вечер вопросов", "Совместный завтрак", "Планирование месяца"] },
     ],
   },
+  {
+    id: "intimacy-comfort",
+    category: "Интим",
+    title: "Комфорт и близость",
+    description: "Деликатный тест про границы, нежность и то, как вам спокойнее сближаться.",
+    duration: "3 вопроса",
+    questions: [
+      { id: "pace", text: "Какой темп близости тебе комфортнее?", options: ["Медленный", "Спонтанный", "Через разговор", "По настроению"] },
+      { id: "touch", text: "Что сильнее создаёт ощущение близости?", options: ["Объятия", "Поцелуи", "Слова", "Время наедине"] },
+      { id: "signal", text: "Как лучше говорить о желаниях?", options: ["Прямо словами", "Через намёки", "После момента", "Заранее обсуждать"] },
+    ],
+  },
+  {
+    id: "intimacy-boundaries",
+    category: "Интим",
+    title: "Границы и доверие",
+    description: "Спокойные вопросы о том, что помогает чувствовать безопасность и уважение.",
+    duration: "3 вопроса",
+    questions: [
+      { id: "safe", text: "Что помогает чувствовать себя безопасно?", options: ["Можно остановиться", "Можно обсудить", "Нет давления", "Есть нежность"] },
+      { id: "talk", text: "Когда легче обсуждать интимные темы?", options: ["До", "После", "В спокойный вечер", "Когда само всплывёт"] },
+      { id: "care", text: "Какая забота важнее после близости?", options: ["Объятия", "Разговор", "Тишина", "Чай и отдых"] },
+    ],
+  },
+  {
+    id: "agree-disagree-values",
+    category: "Согласен/не согласен",
+    title: "Насколько мы совпадаем",
+    description: "Отвечайте, согласны ли вы с утверждениями, а потом сравните позиции.",
+    duration: "5 утверждений",
+    questions: [
+      { id: "alone", text: "В отношениях каждому нужно личное пространство.", options: agreeOptions },
+      { id: "money", text: "Крупные покупки лучше обсуждать заранее.", options: agreeOptions },
+      { id: "conflict", text: "Спор лучше закрывать в тот же день.", options: agreeOptions },
+      { id: "friends", text: "Партнёру важно знать моих близких друзей.", options: agreeOptions },
+      { id: "future", text: "Планы на будущее нужно регулярно пересматривать.", options: agreeOptions },
+    ],
+  },
+  {
+    id: "agree-disagree-habits",
+    category: "Согласен/не согласен",
+    title: "Правила пары",
+    description: "Быстрый тест про бытовые и эмоциональные договорённости.",
+    duration: "4 утверждения",
+    questions: [
+      { id: "phones", text: "На свидании телефон лучше убирать.", options: agreeOptions },
+      { id: "morning", text: "Утро задаёт настроение всему дню.", options: agreeOptions },
+      { id: "gifts", text: "Маленькие подарки важнее больших редких сюрпризов.", options: agreeOptions },
+      { id: "routine", text: "Общие ритуалы нужны каждой паре.", options: agreeOptions },
+    ],
+  },
+  {
+    id: "was-never-experience",
+    category: "Было/не было",
+    title: "Наши маленькие истории",
+    description: "Отметьте, что уже было в вашей паре, а что ещё можно добавить в список.",
+    duration: "6 пунктов",
+    questions: [
+      { id: "rain", text: "Гуляли под дождём без плана.", options: wasOptions },
+      { id: "trip", text: "Спонтанно уезжали в другой город.", options: wasOptions },
+      { id: "cook", text: "Готовили новое блюдо вместе.", options: wasOptions },
+      { id: "letter", text: "Писали друг другу длинное признание.", options: wasOptions },
+      { id: "sunrise", text: "Встречали рассвет вместе.", options: wasOptions },
+      { id: "surprise", text: "Устраивали сюрприз без повода.", options: wasOptions },
+    ],
+  },
+  {
+    id: "was-never-dates",
+    category: "Было/не было",
+    title: "Свидания, которые хочется вспомнить",
+    description: "Проверьте, какие форматы свиданий уже были, а какие ждут своей очереди.",
+    duration: "5 пунктов",
+    questions: [
+      { id: "cinema", text: "Ночной киносеанс.", options: wasOptions },
+      { id: "picnic", text: "Пикник на улице.", options: wasOptions },
+      { id: "museum", text: "Музей или выставка.", options: wasOptions },
+      { id: "home", text: "Домашнее свидание с дресс-кодом.", options: wasOptions },
+      { id: "quest", text: "Квест или игра на двоих.", options: wasOptions },
+    ],
+  },
+  {
+    id: "photo-mood",
+    category: "Фото-ответы",
+    title: "Покажи, а не рассказывай",
+    description: "В этой викторине ответы нужно давать фотографиями. Партнёр увидит их на странице результатов.",
+    duration: "3 фото",
+    questions: [
+      { id: "today", text: "Фото, которое лучше всего описывает твоё настроение сегодня.", answerType: "photo" },
+      { id: "us", text: "Фото, которое напоминает тебе о нас.", answerType: "photo" },
+      { id: "wish", text: "Фото того, что хочется сделать вместе.", answerType: "photo" },
+    ],
+  },
+  {
+    id: "photo-date",
+    category: "Фото-ответы",
+    title: "Визуальное свидание",
+    description: "Соберите маленький moodboard свидания через фото-ответы.",
+    duration: "3 фото",
+    questions: [
+      { id: "place", text: "Фото места, куда хочется сходить.", answerType: "photo" },
+      { id: "food", text: "Фото еды или напитка для идеального вечера.", answerType: "photo" },
+      { id: "detail", text: "Фото детали, которая создаёт атмосферу.", answerType: "photo" },
+    ],
+  },
 ];
 
-export const quizCategories: QuizCategory[] = ["Быт", "Путешествия", "Красота", "Отношения"];
+export const quizCategories: QuizCategory[] = [
+  "Быт",
+  "Путешествия",
+  "Красота",
+  "Отношения",
+  "Интим",
+  "Согласен/не согласен",
+  "Было/не было",
+  "Фото-ответы",
+];
 
 export function getQuizById(quizId: string | null) {
   return quizzes.find((quiz) => quiz.id === quizId) || null;

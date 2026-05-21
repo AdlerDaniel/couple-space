@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { createOwnNotification, createPartnerNotification } from "@/lib/notifications";
+import { compressImageFile } from "@/lib/imageCompression";
 import {
   dashboardAccentEventName,
   dashboardAccentStorageKey,
@@ -187,10 +188,16 @@ function AvatarBubble({
       )}
 
       {status?.text && (
-        <div className="absolute -bottom-3 left-1/2 flex max-w-[150px] -translate-x-1/2 items-center gap-1 rounded-full bg-white/85 px-3 py-1 text-xs font-black text-[#dc2626] shadow-xl ring-1 ring-white/70 backdrop-blur dark:bg-black/45 dark:text-white dark:ring-white/10">
-          <span>{status.emoji}</span>
-          <span className="truncate">{status.text}</span>
-        </div>
+        <>
+          <div className="absolute -top-3 left-1/2 grid h-8 w-8 -translate-x-1/2 place-items-center rounded-full bg-white/90 text-base shadow-xl ring-2 ring-white/75 backdrop-blur dark:bg-black/55 dark:ring-white/10">
+            {status.emoji}
+          </div>
+          <div className="absolute -bottom-5 left-1/2 w-max max-w-[142px] -translate-x-1/2 rounded-2xl bg-white/88 px-2.5 py-1.5 text-center text-xs font-black leading-tight text-[#dc2626] shadow-xl ring-1 ring-white/70 backdrop-blur dark:bg-black/50 dark:text-white dark:ring-white/10">
+            <span className="line-clamp-2 whitespace-normal break-words">
+              {status.text}
+            </span>
+          </div>
+        </>
       )}
     </div>
   );
@@ -432,6 +439,7 @@ export default function DashboardPage() {
   const [couple, setCouple] = useState<Couple | null>(null);
   const [startDate, setStartDate] = useState("");
   const [daysTogether, setDaysTogether] = useState(0);
+  const [isDashboardLoaded, setIsDashboardLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [avatarMessage, setAvatarMessage] = useState("");
@@ -487,6 +495,7 @@ export default function DashboardPage() {
         return;
       }
 
+      setIsDashboardLoaded(false);
       setCurrentUserId(user.id);
 
       const { data: coupleData, error: coupleError } = await supabase
@@ -615,6 +624,7 @@ export default function DashboardPage() {
       });
 
       setActivity(recentActivity.slice(0, 5));
+      setIsDashboardLoaded(true);
     }
 
     loadData();
@@ -644,16 +654,24 @@ export default function DashboardPage() {
   const lockedAchievementList = achievements.filter((item) => !item.unlocked);
 
   useEffect(() => {
-    if (!couple || achievements.length === 0) return;
+    if (!isDashboardLoaded || !couple || !currentUserId || achievements.length === 0) {
+      return;
+    }
 
     const unlockedIds = achievements
       .filter((achievement) => achievement.unlocked)
       .map((achievement) => achievement.id);
     const unlockedKey = localKey(couple.id, "achievements-unlocked");
     const datesKey = localKey(couple.id, "achievements-dates");
+    const notifiedKey = localKey(couple.id, `achievements-notified-${currentUserId}`);
     const previousRaw = localStorage.getItem(unlockedKey);
     const previousIds = previousRaw ? (JSON.parse(previousRaw) as string[]) : [];
+    const notifiedRaw = localStorage.getItem(notifiedKey);
+    const notifiedIds = notifiedRaw ? (JSON.parse(notifiedRaw) as string[]) : [];
     const newIds = unlockedIds.filter((id) => !previousIds.includes(id));
+    const notificationIds = previousRaw
+      ? unlockedIds.filter((id) => !notifiedIds.includes(id))
+      : [];
     const savedDates = JSON.parse(localStorage.getItem(datesKey) || "{}") as Record<
       string,
       string
@@ -665,32 +683,43 @@ export default function DashboardPage() {
     });
 
     localStorage.setItem(unlockedKey, JSON.stringify(unlockedIds));
+    localStorage.setItem(
+      notifiedKey,
+      JSON.stringify([...new Set([...notifiedIds, ...notificationIds])])
+    );
     localStorage.setItem(datesKey, JSON.stringify(savedDates));
     const stateTimer = window.setTimeout(() => {
       setAchievementDates(savedDates);
       setRecentAchievementIds(newIds);
 
-      if (previousRaw && newIds.length > 0) {
+      if (notificationIds.length > 0) {
+        const unlockedNotifications = notificationIds
+          .map((id) => achievements.find((achievement) => achievement.id === id))
+          .filter(Boolean) as Achievement[];
         const newestAchievement = achievements.find(
-          (achievement) => achievement.id === newIds[0]
+          (achievement) => achievement.id === notificationIds[0]
         );
-        if (newestAchievement) {
-          setAchievementToast(newestAchievement);
-          if (currentUserId) {
+
+        void Promise.all(
+          unlockedNotifications.map((achievement) =>
             createOwnNotification(couple.id, currentUserId, {
               type: "achievement_unlocked",
               title: "Достижение открыто",
-              body: `${newestAchievement.title} · уровень ${newestAchievement.level}`,
+              body: `${achievement.title} · уровень ${achievement.level}`,
               href: "/dashboard",
-            });
-          }
+            })
+          )
+        );
+
+        if (newestAchievement) {
+          setAchievementToast(newestAchievement);
           window.setTimeout(() => setAchievementToast(null), 3600);
         }
       }
     }, 0);
 
     return () => window.clearTimeout(stateTimer);
-  }, [achievements, couple, currentUserId]);
+  }, [achievements, couple, currentUserId, isDashboardLoaded]);
 
   const timeline = useMemo(
     () =>
@@ -853,13 +882,18 @@ export default function DashboardPage() {
 
     try {
       const croppedFile = await getCroppedImg(croppingImage, croppedAreaPixels);
+      const compressedAvatar = await compressImageFile(croppedFile, {
+        maxWidth: 900,
+        maxHeight: 900,
+        quality: 0.82,
+      });
       const filePath = `${currentUserId}/${crypto.randomUUID()}.webp`;
       const avatarField =
         currentUserId === couple.partner_one_id ? "avatar_one" : "avatar_two";
 
       const { error: uploadError } = await supabase.storage
         .from("profile-avatars")
-        .upload(filePath, croppedFile);
+        .upload(filePath, compressedAvatar);
 
       if (uploadError) throw uploadError;
 
@@ -1095,121 +1129,55 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-3">
-          <div
-            className={`relative overflow-hidden rounded-3xl bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-6 shadow-2xl`}
-          >
-            <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-white/25 blur-3xl" />
+        <section
+          className={`relative overflow-hidden rounded-[1.75rem] border border-white/45 bg-gradient-to-r ${theme.panel} ${theme.darkPanel} p-3 shadow-[0_22px_70px_rgba(127,29,29,0.14)] backdrop-blur-xl dark:border-white/10`}
+        >
+          <div className="pointer-events-none absolute -right-10 -top-16 h-28 w-28 rounded-full bg-white/25 blur-3xl" />
+          <div className="relative grid gap-3 sm:grid-cols-3">
             <button
               onClick={() => setIsActivityOpen(true)}
-              className="achievement-card group relative flex min-h-[220px] w-full flex-col justify-between rounded-[1.75rem] border border-white/45 bg-white/35 p-6 text-left shadow-[0_22px_70px_rgba(127,29,29,0.18),inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:scale-[1.015] hover:bg-white/45 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+              className="group flex items-center gap-3 rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-white/50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
             >
-              <span className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-                <span className="achievement-shine absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-white/35" />
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/55 text-2xl shadow-inner transition group-hover:scale-105 dark:bg-white/10">
+                🕊️
               </span>
-              <span className="relative flex items-start justify-between gap-4">
-                <span>
-                  <span className="block text-5xl drop-shadow-lg">🕊️</span>
-                  <span className="mt-5 block text-2xl font-black">Последняя активность</span>
-                  <span className={`mt-2 block text-sm font-semibold ${theme.muted} dark:text-white/65`}>
-                    {activity.length > 0
-                      ? `${activity.length} свежих событий`
-                      : "Пока нет событий"}
-                  </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-black">Последняя активность</span>
+                <span className={`block truncate text-xs font-bold ${theme.muted} dark:text-white/55`}>
+                  {activity.length > 0 ? `${activity.length} событий` : "Пока пусто"}
                 </span>
-                <span className="rounded-full bg-white/55 px-4 py-2 text-sm font-black shadow-inner dark:bg-white/10">
-                  Открыть
-                </span>
-              </span>
-              <span className="relative mt-6 rounded-2xl bg-white/35 p-4 text-sm font-bold shadow-inner dark:bg-white/5">
-                {activity[0]?.text || "Когда появятся действия, они будут здесь."}
               </span>
             </button>
-          </div>
 
-          <div
-            className={`relative overflow-hidden rounded-3xl bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-6 shadow-2xl`}
-          >
-            <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-white/25 blur-3xl" />
             <button
               onClick={() => setIsTimelineOpen(true)}
-              className="achievement-card group relative flex min-h-[220px] w-full flex-col justify-between rounded-[1.75rem] border border-white/45 bg-white/35 p-6 text-left shadow-[0_22px_70px_rgba(127,29,29,0.18),inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:scale-[1.015] hover:bg-white/45 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+              className="group flex items-center gap-3 rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-white/50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
             >
-              <span className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-                <span className="achievement-shine absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-white/35" />
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/55 text-2xl shadow-inner transition group-hover:scale-105 dark:bg-white/10">
+                🕰️
               </span>
-              <span className="relative flex items-start justify-between gap-4">
-                <span>
-                  <span className="block text-5xl drop-shadow-lg">🕰️</span>
-                  <span className="mt-5 block text-2xl font-black">Таймлайн</span>
-                  <span className={`mt-2 block text-sm font-semibold ${theme.muted} dark:text-white/65`}>
-                    {completedTimeline.length} из {timeline.length} этапов
-                  </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-black">Таймлайн</span>
+                <span className={`block truncate text-xs font-bold ${theme.muted} dark:text-white/55`}>
+                  {completedTimeline.length} из {timeline.length}
                 </span>
-                <span className="rounded-full bg-white/55 px-4 py-2 text-sm font-black shadow-inner dark:bg-white/10">
-                  Открыть
-                </span>
-              </span>
-              <span className="relative mt-6 rounded-2xl bg-white/35 p-4 text-sm font-bold shadow-inner dark:bg-white/5">
-                Следующая цель: {upcomingTimeline[0]?.title || "все цели открыты"}
-              </span>
-              <span className="relative mt-4 block rounded-full bg-white/35 p-1 shadow-inner dark:bg-white/10">
-                <span
-                  className="block h-2.5 rounded-full bg-gradient-to-r from-[#dc2626] via-[#ff6b81] to-[#f97316]"
-                  style={{ width: `${timelineProgress}%` }}
-                />
               </span>
             </button>
-          </div>
 
-          <div
-            className={`relative overflow-hidden rounded-3xl bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-6 shadow-2xl`}
-          >
-            <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-white/25 blur-3xl" />
             <button
               onClick={() => {
                 setAchievementView(unlockedAchievements > 0 ? "unlocked" : "locked");
                 setIsAchievementsOpen(true);
               }}
-              className="achievement-card group relative flex min-h-[300px] w-full flex-col justify-between rounded-[1.75rem] border border-white/45 bg-white/35 p-6 text-left shadow-[0_22px_70px_rgba(127,29,29,0.2),inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur transition duration-300 hover:-translate-y-1 hover:scale-[1.015] hover:bg-white/45 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+              className="group flex items-center gap-3 rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-white/50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
             >
-              <span className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-                <span className="achievement-shine absolute inset-y-0 -left-1/2 w-1/2 skew-x-[-18deg] bg-white/35" />
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/55 text-2xl shadow-inner transition group-hover:scale-105 dark:bg-white/10">
+                🏆
               </span>
-
-              <span className="relative flex items-start justify-between gap-4">
-                <span>
-                  <span className="block text-5xl drop-shadow-lg">🏆</span>
-                  <span className="mt-5 block text-3xl font-black">Достижения</span>
-                  <span className={`mt-2 block text-sm font-semibold ${theme.muted} dark:text-white/65`}>
-                    Открыто {unlockedAchievements} из {achievements.length}
-                  </span>
-                </span>
-                <span className="rounded-full bg-white/55 px-4 py-2 text-sm font-black shadow-inner dark:bg-white/10">
-                  Открыть
-                </span>
-              </span>
-
-              <span className="relative">
-                <span className="mb-3 flex items-center justify-between text-xs font-black uppercase tracking-wide text-[#dc2626]/70 dark:text-white/60">
-                  <span>Прогресс коллекции</span>
-                  <span>{achievementProgress}%</span>
-                </span>
-                <span className="block rounded-full bg-white/35 p-1 shadow-inner dark:bg-white/10">
-                  <span
-                    className="block h-3 rounded-full bg-gradient-to-r from-[#dc2626] via-[#ff6b81] to-[#f97316] shadow-[0_0_24px_rgba(220,38,38,0.35)] transition-all duration-700"
-                    style={{ width: `${achievementProgress}%` }}
-                  />
-                </span>
-                <span className="mt-5 grid grid-cols-2 gap-3">
-                  <span className="rounded-2xl bg-white/45 p-4 shadow-inner dark:bg-white/10">
-                    <span className="block text-2xl font-black">{unlockedAchievementList.length}</span>
-                    <span className="text-xs font-bold opacity-70">Полученные</span>
-                  </span>
-                  <span className="rounded-2xl bg-white/25 p-4 shadow-inner dark:bg-white/5">
-                    <span className="block text-2xl font-black">{lockedAchievementList.length}</span>
-                    <span className="text-xs font-bold opacity-70">Закрытые</span>
-                  </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-black">Достижения</span>
+                <span className={`block truncate text-xs font-bold ${theme.muted} dark:text-white/55`}>
+                  {unlockedAchievements} из {achievements.length}
                 </span>
               </span>
             </button>

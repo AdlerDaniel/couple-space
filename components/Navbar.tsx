@@ -239,7 +239,9 @@ export default function Navbar() {
   const isQuestions = pathname.startsWith("/questions");
   const isQuizzes = pathname.startsWith("/quizzes");
   const isDashboard = pathname.startsWith("/dashboard");
+  const isProfilePage = pathname.startsWith("/profile");
   const homeAccent = "#9f1239";
+  const profileAccent = "#92400e";
 
   const accent = isLogin
     ? "#f3f4f6"
@@ -253,7 +255,9 @@ export default function Navbar() {
             ? "#7c3aed"
             : isDashboard
               ? dashboardAccent
-              : "#1c8b59";
+              : isProfilePage
+                ? profileAccent
+                : "#1c8b59";
 
   const navStyle = isHome
     ? {
@@ -262,7 +266,14 @@ export default function Navbar() {
         borderColor: "rgba(159, 18, 57, 0.24)",
         boxShadow: "0 18px 58px rgba(159, 18, 57, 0.2)",
       }
-    : isDashboard && !isLogin
+    : isProfilePage && !isLogin
+      ? {
+          background:
+            "linear-gradient(135deg, rgba(146, 64, 14, 0.22), rgba(180, 83, 9, 0.16))",
+          borderColor: "rgba(146, 64, 14, 0.3)",
+          boxShadow: "0 16px 48px rgba(146, 64, 14, 0.18)",
+        }
+      : isDashboard && !isLogin
       ? {
           backgroundColor: `${dashboardAccent}24`,
           borderColor: `${dashboardAccent}55`,
@@ -365,7 +376,9 @@ export default function Navbar() {
                         ? "#7c3aed"
                         : isDashboard
                           ? dashboardAccent
-                          : "#1c8b59",
+                          : isProfilePage
+                            ? profileAccent
+                            : "#1c8b59",
             }}
           />
         ) : profile ? (

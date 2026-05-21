@@ -1,6 +1,7 @@
 "use client";
 
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
+import { compressImageFile } from "@/lib/imageCompression";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
@@ -220,16 +221,23 @@ export default function QuestionAnswerPage() {
       return;
     }
 
+    const uploadFile = file.type.startsWith("image/")
+      ? await compressImageFile(file, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          quality: 0.78,
+        })
+      : file;
     const hadMediaBefore = Boolean(activeRecord[urlField as keyof Answer]);
     const hadAnswerBefore = Boolean(
       activeRecord[answerField] ||
         activeRecord[voiceField] ||
         activeRecord[photoField]
     );
-    const filePath = getSafeMediaPath(couple.id, activeRecord.id, file);
+    const filePath = getSafeMediaPath(couple.id, activeRecord.id, uploadFile);
     const { error: uploadError } = await supabase.storage
       .from("question-media")
-      .upload(filePath, file, { upsert: true });
+      .upload(filePath, uploadFile, { upsert: true });
 
     if (uploadError) {
       console.error(uploadError);

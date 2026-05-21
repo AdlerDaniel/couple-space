@@ -33,6 +33,32 @@ function localCommentsKey(coupleId: string, quizId: string) {
   return `couple-space:quiz-comments:${coupleId}:${quizId}`;
 }
 
+function AnswerValue({ value, isPhoto }: { value?: string; isPhoto: boolean }) {
+  if (!value) {
+    return (
+      <p className="text-lg font-bold text-[#6d28d9] dark:text-[#c084fc]">
+        Ответ ещё не сохранён
+      </p>
+    );
+  }
+
+  if (isPhoto) {
+    return (
+      <img
+        src={value}
+        alt="Фото-ответ"
+        className="max-h-64 w-full rounded-2xl object-cover shadow-lg"
+      />
+    );
+  }
+
+  return (
+    <p className="text-lg font-bold text-[#6d28d9] dark:text-[#c084fc]">
+      {value}
+    </p>
+  );
+}
+
 export default function QuizResultClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -248,6 +274,7 @@ export default function QuizResultClient() {
             {quiz.questions.map((question, index) => {
               const myAnswer = myAnswers[question.id];
               const partnerAnswer = partnerAnswers[question.id];
+              const isPhotoQuestion = question.answerType === "photo";
 
               return (
                 <section
@@ -268,18 +295,14 @@ export default function QuizResultClient() {
                       <p className="mb-2 text-sm font-semibold text-[#8b5cf6] dark:text-[#d8b4fe]">
                         {myName}
                       </p>
-                      <p className="text-lg font-bold text-[#6d28d9] dark:text-[#c084fc]">
-                        {myAnswer || "Ответ ещё не сохранён"}
-                      </p>
+                      <AnswerValue value={myAnswer} isPhoto={isPhotoQuestion} />
                     </div>
 
                     <div className="rounded-2xl bg-white/35 p-5 shadow-inner dark:bg-white/5">
                       <p className="mb-2 text-sm font-semibold text-[#8b5cf6] dark:text-[#d8b4fe]">
                         {partnerName}
                       </p>
-                      <p className="text-lg font-bold text-[#6d28d9] dark:text-[#c084fc]">
-                        {partnerAnswer || "Партнёр ещё не ответил"}
-                      </p>
+                      <AnswerValue value={partnerAnswer} isPhoto={isPhotoQuestion} />
                     </div>
                   </div>
                 </section>

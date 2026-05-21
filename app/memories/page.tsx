@@ -2,10 +2,43 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { createPartnerNotification } from "@/lib/notifications";
+import { compressImageFile } from "@/lib/imageCompression";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const PAGE_SIZE = 12;
+const memoryEmojis = [
+  "❤️",
+  "💕",
+  "💌",
+  "✨",
+  "🥰",
+  "😍",
+  "😘",
+  "😊",
+  "😂",
+  "🥹",
+  "🌸",
+  "🌙",
+  "☀️",
+  "⭐",
+  "🎀",
+  "🎁",
+  "📸",
+  "🍓",
+  "🍷",
+  "☕",
+  "🌊",
+  "🏡",
+  "🎬",
+  "🎵",
+  "💫",
+  "🫶",
+  "💍",
+  "🌹",
+  "🍰",
+  "🧸",
+];
 const reactions = ["❤️", "😂", "🥺", "👍", "😮"];
 
 type Couple = {
@@ -91,6 +124,7 @@ export default function MemoriesPage() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
@@ -182,10 +216,15 @@ export default function MemoriesPage() {
     let imageUrl: string | null = null;
 
     if (memoryImageFile) {
-      const filePath = getSafeImagePath(couple.id, memoryImageFile);
+      const compressedImage = await compressImageFile(memoryImageFile, {
+        maxWidth: 1800,
+        maxHeight: 1800,
+        quality: 0.78,
+      });
+      const filePath = getSafeImagePath(couple.id, compressedImage);
       const { error: uploadError } = await supabase.storage
         .from("memory-images")
-        .upload(filePath, memoryImageFile, { upsert: true });
+        .upload(filePath, compressedImage, { upsert: true });
 
       if (uploadError) {
         setMessage(`Не удалось загрузить фото: ${uploadError.message}`);
@@ -379,6 +418,11 @@ export default function MemoriesPage() {
     touchStartX.current = null;
   }
 
+  function addEmojiToCaption(emoji: string) {
+    setCaption((current) => `${current}${emoji}`);
+    setIsEmojiPickerOpen(false);
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#eef6ff] px-6 pb-24 pt-28 text-[#0f3b66] transition-colors dark:bg-[#02101d] dark:text-white">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(26,115,232,0.2),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(20,184,166,0.14),transparent_30%),linear-gradient(135deg,#eef6ff_0%,#f8fbff_48%,#e9f5ff_100%)] dark:bg-[radial-gradient(circle_at_18%_12%,rgba(26,115,232,0.16),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(20,184,166,0.12),transparent_30%),linear-gradient(135deg,#02101d_0%,#071f35_48%,#02101d_100%)]" />
@@ -417,12 +461,38 @@ export default function MemoriesPage() {
               className="rounded-2xl border border-blue-200/70 bg-white/75 px-5 py-4 font-bold text-blue-950 outline-none focus:border-blue-400 dark:border-white/10 dark:bg-white/8 dark:text-white"
             />
           </div>
-          <textarea
-            value={caption}
-            onChange={(event) => setCaption(event.target.value)}
-            placeholder="Описание или подпись к воспоминанию..."
-            className="mt-4 min-h-28 w-full resize-none rounded-2xl border border-blue-200/70 bg-white/75 px-5 py-4 font-semibold leading-7 text-blue-950 outline-none focus:border-blue-400 dark:border-white/10 dark:bg-white/8 dark:text-white"
-          />
+          <div className="relative mt-4">
+            <textarea
+              value={caption}
+              onChange={(event) => setCaption(event.target.value)}
+              placeholder="Описание или подпись к воспоминанию..."
+              className="min-h-28 w-full resize-none rounded-2xl border border-blue-200/70 bg-white/75 px-5 py-4 pr-14 font-semibold leading-7 text-blue-950 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_4px_rgba(26,115,232,0.12)] dark:border-white/10 dark:bg-white/8 dark:text-white"
+            />
+            <button
+              type="button"
+              onClick={() => setIsEmojiPickerOpen((current) => !current)}
+              className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-white/85 text-xl shadow-[0_10px_30px_rgba(26,115,232,0.16)] transition hover:-translate-y-0.5 hover:bg-white dark:bg-white/10 dark:hover:bg-white/15"
+              aria-label="Добавить эмодзи"
+            >
+              😊
+            </button>
+            {isEmojiPickerOpen && (
+              <div className="absolute right-0 top-14 z-20 w-72 rounded-3xl border border-white/70 bg-white/95 p-3 shadow-[0_24px_80px_rgba(26,115,232,0.22)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#061624]/95">
+                <div className="grid grid-cols-6 gap-2">
+                  {memoryEmojis.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => addEmojiToCaption(emoji)}
+                      className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-50 text-xl transition hover:-translate-y-0.5 hover:scale-105 hover:bg-blue-100 dark:bg-white/10 dark:hover:bg-white/15"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <label className="cursor-pointer rounded-2xl border border-blue-200/70 bg-white/70 px-5 py-4 font-black text-[#1a73e8] shadow-lg transition hover:bg-white/90 dark:border-white/10 dark:bg-white/8 dark:text-blue-100">
               <input
@@ -436,7 +506,7 @@ export default function MemoriesPage() {
                   setMemoryImage(URL.createObjectURL(file));
                 }}
               />
-              Выбрать hero photo
+              Добавить фото
             </label>
             <button
               onClick={addMemory}

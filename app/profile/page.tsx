@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { compressImageFile } from "@/lib/imageCompression";
 import { profileUpdatedEventName } from "@/lib/profileEvents";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -268,13 +269,17 @@ export default function ProfilePage() {
     if (!profile || !couple || !currentUserId) return;
 
     setIsSaving(true);
-    const fileExt = file.name.split(".").pop() || "jpg";
-    const filePath = `${currentUserId}/${crypto.randomUUID()}.${fileExt}`;
+    const compressedAvatar = await compressImageFile(file, {
+      maxWidth: 900,
+      maxHeight: 900,
+      quality: 0.82,
+    });
+    const filePath = `${currentUserId}/${crypto.randomUUID()}.webp`;
     const avatarField = isPartnerOne ? "avatar_one" : "avatar_two";
 
     const { error: uploadError } = await supabase.storage
       .from("profile-avatars")
-      .upload(filePath, file, { upsert: true });
+      .upload(filePath, compressedAvatar, { upsert: true });
 
     if (uploadError) {
       setMessage(uploadError.message);
@@ -342,8 +347,8 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#fff1f4] to-[#ffe4e6] px-6 pt-28 text-[#dc2626] dark:from-[#21070b] dark:to-[#090205] dark:text-white">
-        <div className="rounded-3xl bg-white/50 p-8 font-black shadow-2xl backdrop-blur dark:bg-white/10">
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#fff7ed] to-[#fde7c8] px-6 pt-28 text-[#92400e] dark:from-[#1c0f08] dark:to-[#090502] dark:text-white">
+        <div className="rounded-3xl bg-white/55 p-8 font-black shadow-2xl backdrop-blur dark:bg-white/10">
           Загружаем профиль...
         </div>
       </main>
@@ -351,11 +356,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#fff1f4] via-white to-[#ffe4e6] px-6 pb-24 pt-28 text-[#7f1d1d] dark:from-[#21070b] dark:via-[#090205] dark:to-black dark:text-white">
+    <main className="min-h-screen bg-gradient-to-br from-[#fff7ed] via-[#fffbf5] to-[#fde7c8] px-6 pb-24 pt-28 text-[#5f2d12] dark:from-[#1c0f08] dark:via-[#0d0704] dark:to-black dark:text-white">
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-        <section className="overflow-hidden rounded-[2rem] border border-white/45 bg-white/45 p-6 shadow-[0_32px_110px_rgba(127,29,29,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
+        <section className="overflow-hidden rounded-[2rem] border border-white/45 bg-white/48 p-6 shadow-[0_32px_110px_rgba(146,64,14,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
           <div className="rounded-[1.6rem] bg-white/45 p-6 shadow-inner dark:bg-black/20">
-            <p className="text-sm font-black uppercase tracking-[0.22em] text-[#dc2626]/65 dark:text-white/55">
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-[#92400e]/70 dark:text-white/55">
               Профиль
             </p>
             <h1 className="mt-3 text-4xl font-black">Ваш аккаунт</h1>
@@ -375,7 +380,7 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              <label className="mt-5 cursor-pointer rounded-full bg-[#dc2626] px-5 py-3 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#ef4444]">
+              <label className="mt-5 cursor-pointer rounded-full bg-[#92400e] px-5 py-3 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#b45309]">
                 <input
                   type="file"
                   accept="image/*"
@@ -391,7 +396,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="mt-8">
-              <label className="text-sm font-black text-[#dc2626]/70 dark:text-white/60">
+              <label className="text-sm font-black text-[#92400e]/70 dark:text-white/60">
                 Ваше имя
               </label>
               <input
@@ -399,12 +404,12 @@ export default function ProfilePage() {
                 onChange={(event) => setDisplayName(event.target.value)}
                 placeholder="Введите имя"
                 disabled={!profile}
-                className="mt-2 h-14 w-full rounded-2xl border border-white/45 bg-white/70 px-4 font-bold outline-none transition focus:border-[#fb7185] focus:shadow-[0_0_0_5px_rgba(251,113,133,0.16)] disabled:cursor-not-allowed disabled:opacity-55 dark:border-white/10 dark:bg-white/10"
+                className="mt-2 h-14 w-full rounded-2xl border border-white/45 bg-white/72 px-4 font-bold outline-none transition focus:border-[#d97706] focus:shadow-[0_0_0_5px_rgba(217,119,6,0.16)] disabled:cursor-not-allowed disabled:opacity-55 dark:border-white/10 dark:bg-white/10"
               />
               <button
                 onClick={saveProfile}
                 disabled={!profile || isSaving}
-                className="mt-4 w-full rounded-2xl bg-[#dc2626] px-5 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#ef4444] disabled:cursor-not-allowed disabled:opacity-55"
+                className="mt-4 w-full rounded-2xl bg-[#92400e] px-5 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#b45309] disabled:cursor-not-allowed disabled:opacity-55"
               >
                 {isSaving ? "Сохраняем..." : "Сохранить профиль"}
               </button>
@@ -413,10 +418,10 @@ export default function ProfilePage() {
         </section>
 
         <section className="space-y-6">
-          <div className="rounded-[2rem] border border-white/45 bg-white/45 p-6 shadow-[0_32px_110px_rgba(127,29,29,0.14)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
+          <div className="rounded-[2rem] border border-white/45 bg-white/48 p-6 shadow-[0_32px_110px_rgba(146,64,14,0.14)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.22em] text-[#dc2626]/65 dark:text-white/55">
+                <p className="text-sm font-black uppercase tracking-[0.22em] text-[#92400e]/70 dark:text-white/55">
                   Пара
                 </p>
                 <h2 className="mt-2 text-3xl font-black">
@@ -433,18 +438,18 @@ export default function ProfilePage() {
             {couple ? (
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <div className="rounded-3xl bg-white/45 p-5 shadow-inner dark:bg-white/5">
-                  <p className="text-sm font-black text-[#dc2626]/65 dark:text-white/60">
+                  <p className="text-sm font-black text-[#92400e]/70 dark:text-white/60">
                     Код приглашения
                   </p>
                   <p className="mt-2 text-5xl font-black tracking-widest">
                     {couple.invite_code}
                   </p>
-                  <p className="mt-3 text-sm font-semibold text-[#dc2626]/65 dark:text-white/60">
+                  <p className="mt-3 text-sm font-semibold text-[#92400e]/65 dark:text-white/60">
                     Отправьте этот код партнёру, чтобы он присоединился.
                   </p>
                 </div>
                 <div className="rounded-3xl bg-white/45 p-5 shadow-inner dark:bg-white/5">
-                  <p className="text-sm font-black text-[#dc2626]/65 dark:text-white/60">
+                  <p className="text-sm font-black text-[#92400e]/70 dark:text-white/60">
                     Участники
                   </p>
                   <p className="mt-3 font-black">
@@ -456,7 +461,7 @@ export default function ProfilePage() {
                   <button
                     onClick={leaveCouple}
                     disabled={isSaving}
-                    className="mt-5 rounded-full bg-white/70 px-5 py-3 font-black text-[#dc2626] shadow-lg transition hover:bg-white disabled:opacity-55 dark:bg-white/10 dark:text-white"
+                    className="mt-5 rounded-full bg-white/75 px-5 py-3 font-black text-[#92400e] shadow-lg transition hover:bg-white disabled:opacity-55 dark:bg-white/10 dark:text-white"
                   >
                     Покинуть пару
                   </button>
@@ -466,13 +471,13 @@ export default function ProfilePage() {
               <div className="mt-6 grid gap-5 md:grid-cols-2">
                 <div className="rounded-3xl bg-white/45 p-5 shadow-inner dark:bg-white/5">
                   <h3 className="text-xl font-black">Создать пару</h3>
-                  <p className="mt-2 text-sm font-semibold text-[#dc2626]/65 dark:text-white/60">
+                  <p className="mt-2 text-sm font-semibold text-[#92400e]/65 dark:text-white/60">
                     Создайте invite-код и отправьте его партнёру.
                   </p>
                   <button
                     onClick={createCouple}
                     disabled={isSaving}
-                    className="mt-5 w-full rounded-2xl bg-[#dc2626] px-5 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#ef4444] disabled:opacity-55"
+                    className="mt-5 w-full rounded-2xl bg-[#92400e] px-5 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#b45309] disabled:opacity-55"
                   >
                     Создать пару
                   </button>
@@ -484,12 +489,12 @@ export default function ProfilePage() {
                     value={inviteCode}
                     onChange={(event) => setInviteCode(event.target.value.toUpperCase())}
                     placeholder="INVITE-КОД"
-                    className="mt-4 h-14 w-full rounded-2xl border border-white/45 bg-white/70 px-4 font-black uppercase tracking-widest outline-none transition focus:border-[#fb7185] focus:shadow-[0_0_0_5px_rgba(251,113,133,0.16)] dark:border-white/10 dark:bg-white/10"
+                    className="mt-4 h-14 w-full rounded-2xl border border-white/45 bg-white/72 px-4 font-black uppercase tracking-widest outline-none transition focus:border-[#d97706] focus:shadow-[0_0_0_5px_rgba(217,119,6,0.16)] dark:border-white/10 dark:bg-white/10"
                   />
                   <button
                     onClick={joinCouple}
                     disabled={isSaving}
-                    className="mt-4 w-full rounded-2xl bg-[#dc2626] px-5 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#ef4444] disabled:opacity-55"
+                    className="mt-4 w-full rounded-2xl bg-[#92400e] px-5 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#b45309] disabled:opacity-55"
                   >
                     Присоединиться
                   </button>
@@ -499,7 +504,7 @@ export default function ProfilePage() {
           </div>
 
           {message && (
-            <div className="rounded-3xl bg-white/55 p-5 text-center font-black text-[#dc2626] shadow-lg backdrop-blur dark:bg-white/10 dark:text-white">
+            <div className="rounded-3xl bg-white/55 p-5 text-center font-black text-[#92400e] shadow-lg backdrop-blur dark:bg-white/10 dark:text-white">
               {message}
             </div>
           )}
@@ -508,3 +513,4 @@ export default function ProfilePage() {
     </main>
   );
 }
+

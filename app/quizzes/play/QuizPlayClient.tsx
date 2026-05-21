@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { createPartnerNotification } from "@/lib/notifications";
+import { compressImageFile } from "@/lib/imageCompression";
 import { getQuizById } from "@/lib/quizzes";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -18,6 +19,12 @@ function localAnswersKey(coupleId: string, quizId: string) {
   return `couple-space:quiz-answers:${coupleId}:${quizId}`;
 }
 
+function getSafeQuizMediaPath(coupleId: string, quizId: string, userId: string, file: File) {
+  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const fallbackExtension = file.type.split("/").pop()?.replace(/[^a-z0-9]/g, "") || "jpg";
+  return `${coupleId}/${quizId}/${userId}/${crypto.randomUUID()}.${extension || fallbackExtension}`;
+}
+
 export default function QuizPlayClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,6 +37,7 @@ export default function QuizPlayClient() {
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadingQuestionId, setUploadingQuestionId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadCouple() {
@@ -79,6 +87,36 @@ export default function QuizPlayClient() {
 
   function updateAnswer(questionId: string, value: string) {
     setAnswers((current) => ({ ...current, [questionId]: value }));
+  }
+
+  async function uploadPhotoAnswer(questionId: string, file: File) {
+    if (!quiz || !couple || !currentUserId) return;
+
+    setUploadingQuestionId(questionId);
+    setMessage("");
+
+    const compressedImage = await compressImageFile(file, {
+      maxWidth: 1600,
+      maxHeight: 1600,
+      quality: 0.78,
+    });
+    const filePath = getSafeQuizMediaPath(couple.id, quiz.id, currentUserId, compressedImage);
+    const { error: uploadError } = await supabase.storage
+      .from("quiz-media")
+      .upload(filePath, compressedImage, { upsert: true });
+
+    if (uploadError) {
+      setMessage("Не удалось загрузить фото. Проверьте bucket quiz-media.");
+      setUploadingQuestionId(null);
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("quiz-media")
+      .getPublicUrl(filePath);
+
+    updateAnswer(questionId, publicUrlData.publicUrl);
+    setUploadingQuestionId(null);
   }
 
   async function saveAnswers() {
@@ -199,25 +237,57 @@ export default function QuizPlayClient() {
                 {question.text}
               </h2>
 
-              <div className="grid gap-3 md:grid-cols-2">
-                {question.options.map((option) => {
-                  const isSelected = answers[question.id] === option;
+              {question.answerType === "photo" ? (
+                <div className="grid gap-4 md:grid-cols-[1fr_220px] md:items-center">
+                  <label className="cursor-pointer rounded-2xl border border-[#7c3aed]/20 bg-white/35 p-5 text-center font-bold text-[#6d28d9] shadow-inner transition hover:bg-white/55 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-white/10">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingQuestionId === question.id}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        uploadPhotoAnswer(question.id, file);
+                        event.target.value = "";
+                      }}
+                    />
+                    {uploadingQuestionId === question.id ? "Загружаем фото..." : "Выбрать фото"}
+                  </label>
 
-                  return (
-                    <button
-                      key={option}
-                      onClick={() => updateAnswer(question.id, option)}
-                      className={`rounded-2xl border p-4 text-left font-semibold shadow-inner transition ${
-                        isSelected
-                          ? "border-[#7c3aed] bg-[#7c3aed] text-white"
-                          : "border-[#7c3aed]/20 bg-white/35 text-[#6d28d9] hover:bg-white/55 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-white/10"
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  );
-                })}
-              </div>
+                  {answers[question.id] ? (
+                    <img
+                      src={answers[question.id]}
+                      alt="Фото-ответ"
+                      className="h-44 w-full rounded-2xl object-cover shadow-lg"
+                    />
+                  ) : (
+                    <div className="grid h-44 place-items-center rounded-2xl border border-dashed border-[#7c3aed]/25 bg-white/25 text-sm font-semibold text-[#6d28d9]/60 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe]/60">
+                      Фото ещё не выбрано
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {(question.options || []).map((option) => {
+                    const isSelected = answers[question.id] === option;
+
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => updateAnswer(question.id, option)}
+                        className={`rounded-2xl border p-4 text-left font-semibold shadow-inner transition ${
+                          isSelected
+                            ? "border-[#7c3aed] bg-[#7c3aed] text-white"
+                            : "border-[#7c3aed]/20 bg-white/35 text-[#6d28d9] hover:bg-white/55 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-white/10"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           ))}
         </div>

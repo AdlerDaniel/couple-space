@@ -4,6 +4,7 @@ import AnswerSocialControls from "@/components/AnswerSocialControls";
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { parseQuestionDate } from "@/lib/questionArchive";
 import { supabase } from "@/lib/supabaseClient";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -272,9 +273,12 @@ export default function TodayQuestionPage() {
                     <audio controls src={myVoiceUrl} className="w-full" />
                   )}
                   {myPhotoUrl && (
-                    <img
+                    <Image
                       src={myPhotoUrl}
                       alt="Ваш фото-ответ"
+                      width={720}
+                      height={420}
+                      sizes="(min-width: 768px) 50vw, 100vw"
                       className="max-h-72 w-full rounded-[1rem] object-cover shadow-lg"
                     />
                   )}
@@ -322,9 +326,12 @@ export default function TodayQuestionPage() {
                         <audio controls src={partnerVoiceUrl} className="w-full" />
                       )}
                       {partnerPhotoUrl && (
-                        <img
+                        <Image
                           src={partnerPhotoUrl}
                           alt="Фото-ответ партнёра"
+                          width={720}
+                          height={420}
+                          sizes="(min-width: 768px) 50vw, 100vw"
                           className="max-h-72 w-full rounded-[1rem] object-cover shadow-lg"
                         />
                       )}

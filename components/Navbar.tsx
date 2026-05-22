@@ -5,6 +5,7 @@ import { notificationsUpdatedEventName } from "@/lib/notifications";
 import { profileUpdatedEventName } from "@/lib/profileEvents";
 import { useDashboardAccent } from "@/lib/useDashboardAccent";
 import type { User } from "@supabase/supabase-js";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -324,7 +325,7 @@ export default function Navbar() {
   ).length;
 
   return (
-    <header className="fixed left-0 top-0 z-30 w-full px-6 py-4">
+    <header className="fixed left-0 top-0 z-30 hidden w-full px-6 py-4 md:block">
       <nav
         style={navStyle}
         className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/30 bg-white/35 px-6 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-black/25 dark:shadow-black/40"
@@ -484,9 +485,12 @@ export default function Navbar() {
               }`}
             >
               {profile.avatar ? (
-                <img
+                <Image
                   src={profile.avatar}
                   alt={profile.name}
+                  width={36}
+                  height={36}
+                  sizes="36px"
                   className="h-9 w-9 rounded-full object-cover ring-2 ring-white/70"
                 />
               ) : (

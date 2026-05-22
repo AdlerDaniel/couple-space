@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { getQuizById } from "@/lib/quizzes";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -44,9 +45,12 @@ function AnswerValue({ value, isPhoto }: { value?: string; isPhoto: boolean }) {
 
   if (isPhoto) {
     return (
-      <img
+      <Image
         src={value}
         alt="Фото-ответ"
+        width={720}
+        height={420}
+        sizes="(min-width: 768px) 50vw, 100vw"
         className="max-h-64 w-full rounded-2xl object-cover shadow-lg"
       />
     );

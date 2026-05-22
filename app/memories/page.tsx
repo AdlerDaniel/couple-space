@@ -3,6 +3,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import { createPartnerNotification } from "@/lib/notifications";
 import { compressImageFile } from "@/lib/imageCompression";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -158,7 +159,7 @@ export default function MemoriesPage() {
       const [{ data: memoryRows }, { data: commentRows }] = await Promise.all([
         supabase
           .from("memories")
-          .select("*")
+          .select("id, title, caption, text, image, event_date, is_pinned, reactions, user_id, couple_id, created_at")
           .eq("couple_id", coupleData.id)
           .order("is_pinned", { ascending: false })
           .order("created_at", { ascending: false }),
@@ -477,7 +478,7 @@ export default function MemoriesPage() {
               😊
             </button>
             {isEmojiPickerOpen && (
-              <div className="absolute right-0 top-14 z-20 w-72 rounded-3xl border border-white/70 bg-white/95 p-3 shadow-[0_24px_80px_rgba(26,115,232,0.22)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#061624]/95">
+              <div className="absolute right-0 top-14 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-3xl border border-white/70 bg-white/95 p-3 shadow-[0_24px_80px_rgba(26,115,232,0.22)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#061624]/95">
                 <div className="grid grid-cols-6 gap-2">
                   {memoryEmojis.map((emoji) => (
                     <button
@@ -517,9 +518,13 @@ export default function MemoriesPage() {
             </button>
           </div>
           {memoryImage && (
-            <img
+            <Image
               src={memoryImage}
               alt="Preview"
+              width={1200}
+              height={256}
+              sizes="(min-width: 1280px) 1200px, 100vw"
+              unoptimized
               className="mt-5 h-64 w-full rounded-[1.5rem] object-cover shadow-2xl"
             />
           )}
@@ -579,9 +584,12 @@ export default function MemoriesPage() {
                         {!isLoaded && (
                           <div className="absolute inset-0 animate-pulse bg-blue-100 blur-xl dark:bg-white/10" />
                         )}
-                        <img
+                        <Image
                           src={memory.image}
                           alt={memory.title || "Воспоминание"}
+                          width={720}
+                          height={900}
+                          sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
                           onLoad={() =>
                             setLoadedImages((current) => ({ ...current, [memory.id]: true }))
                           }
@@ -695,7 +703,7 @@ export default function MemoriesPage() {
 
       {selectedMemory && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/82 p-5 backdrop-blur-xl"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/82 p-3 backdrop-blur-xl sm:p-5"
           onTouchStart={(event) => {
             touchStartX.current = event.touches[0]?.clientX || null;
           }}
@@ -705,13 +713,13 @@ export default function MemoriesPage() {
         >
           <button
             onClick={() => setSelectedIndex(null)}
-            className="absolute right-5 top-5 rounded-full bg-white/15 px-5 py-3 font-black text-white backdrop-blur"
+            className="absolute right-3 top-3 rounded-full bg-white/15 px-4 py-2 text-sm font-black text-white backdrop-blur sm:right-5 sm:top-5 sm:px-5 sm:py-3 sm:text-base"
           >
             Закрыть
           </button>
           <button
             onClick={() => deleteMemory(selectedMemory)}
-            className="absolute left-5 top-5 rounded-full bg-rose-500/80 px-5 py-3 font-black text-white shadow-[0_18px_50px_rgba(244,63,94,0.35)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-rose-500"
+            className="absolute left-3 top-3 rounded-full bg-rose-500/80 px-4 py-2 text-sm font-black text-white shadow-[0_18px_50px_rgba(244,63,94,0.35)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-rose-500 sm:left-5 sm:top-5 sm:px-5 sm:py-3 sm:text-base"
           >
             Удалить
           </button>
@@ -727,11 +735,14 @@ export default function MemoriesPage() {
           >
             ›
           </button>
-          <div className="max-h-[90vh] max-w-5xl overflow-hidden rounded-[2rem] bg-white/10 p-4 text-white shadow-2xl backdrop-blur-xl">
+          <div className="max-h-[86vh] w-full max-w-5xl overflow-hidden rounded-[1.35rem] bg-white/10 p-2 pt-14 text-white shadow-2xl backdrop-blur-xl sm:rounded-[2rem] sm:p-4 sm:pt-4">
             {selectedMemory.image && (
-              <img
+              <Image
                 src={selectedMemory.image}
                 alt={selectedMemory.title || "Воспоминание"}
+                width={1400}
+                height={1000}
+                sizes="(min-width: 1024px) 1024px, 100vw"
                 className="max-h-[70vh] w-full rounded-[1.5rem] object-contain"
               />
             )}

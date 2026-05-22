@@ -4,6 +4,7 @@ import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { compressImageFile } from "@/lib/imageCompression";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -425,8 +426,8 @@ export default function QuestionAnswerPage() {
           Назад к вопросу
         </button>
 
-        <div className="overflow-hidden rounded-[2.5rem] border border-white/70 bg-white/55 p-6 shadow-[0_32px_110px_rgba(21,128,61,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8">
-          <div className="rounded-[2rem] bg-gradient-to-br from-[#d9ffe9] via-[#effff6] to-[#d8fff4] p-7 dark:from-[#082a18] dark:via-[#0b2418] dark:to-[#063025] md:p-10">
+        <div className="overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/55 p-3 shadow-[0_32px_110px_rgba(21,128,61,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 sm:rounded-[2.5rem] sm:p-6">
+          <div className="rounded-[1.5rem] bg-gradient-to-br from-[#d9ffe9] via-[#effff6] to-[#d8fff4] p-4 dark:from-[#082a18] dark:via-[#0b2418] dark:to-[#063025] sm:rounded-[2rem] sm:p-7 md:p-10">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm font-black uppercase tracking-wide text-emerald-600/75 dark:text-emerald-200/70">
                 Вопрос дня
@@ -511,9 +512,12 @@ export default function QuestionAnswerPage() {
                   )}
                   {photoUrl && (
                     <div className="rounded-[1.2rem] border border-emerald-200/70 bg-white/68 p-3 shadow-inner dark:border-white/10 dark:bg-white/8">
-                      <img
+                      <Image
                         src={photoUrl}
                         alt="Фото-ответ"
+                        width={720}
+                        height={420}
+                        sizes="(min-width: 768px) 50vw, 100vw"
                         className="max-h-64 w-full rounded-[0.9rem] object-cover"
                       />
                     </div>

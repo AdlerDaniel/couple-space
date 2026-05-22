@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const memories = [
   {
     title: "Первая поездка",
@@ -198,9 +200,12 @@ export default function Home() {
                       key={memory.title}
                       className="h-24 overflow-hidden rounded-2xl shadow-lg"
                     >
-                      <img
+                      <Image
                         src={memory.image}
                         alt={memory.title}
+                        width={180}
+                        height={96}
+                        sizes="(min-width: 1024px) 180px, 25vw"
                         className="h-full w-full object-cover"
                       />
                     </div>
@@ -258,9 +263,12 @@ export default function Home() {
               key={memory.title}
               className={`landing-reveal ${memory.rotate} rounded-[1.6rem] bg-white p-3 shadow-[0_24px_70px_rgba(88,28,135,0.16)] transition hover:rotate-0 hover:scale-[1.03] dark:bg-white/10`}
             >
-              <img
+              <Image
                 src={memory.image}
                 alt={memory.title}
+                width={520}
+                height={420}
+                sizes="(min-width: 1024px) 520px, 50vw"
                 className={`w-full rounded-[1.1rem] object-cover ${
                   index % 2 === 0 ? "h-56" : "h-72"
                 }`}

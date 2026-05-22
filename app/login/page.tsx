@@ -245,7 +245,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="auth-float relative overflow-hidden rounded-[2rem] border border-white/45 bg-white/35 p-5 shadow-[0_36px_110px_rgba(127,29,29,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
+          <div className="auth-float relative hidden overflow-hidden rounded-[2rem] border border-white/45 bg-white/35 p-5 shadow-[0_36px_110px_rgba(127,29,29,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5 lg:block">
             <div className="absolute inset-0 bg-gradient-to-br from-white/45 via-transparent to-[#fb7185]/18 dark:from-white/10" />
             <div className="relative grid gap-4">
               <div className="rounded-[1.5rem] bg-white/60 p-5 shadow-inner dark:bg-white/10">

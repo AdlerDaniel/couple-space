@@ -3,6 +3,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import { compressImageFile } from "@/lib/imageCompression";
 import { profileUpdatedEventName } from "@/lib/profileEvents";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -358,8 +359,8 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#fff7ed] via-[#fffbf5] to-[#fde7c8] px-6 pb-24 pt-28 text-[#5f2d12] dark:from-[#1c0f08] dark:via-[#0d0704] dark:to-black dark:text-white">
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-        <section className="overflow-hidden rounded-[2rem] border border-white/45 bg-white/48 p-6 shadow-[0_32px_110px_rgba(146,64,14,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
-          <div className="rounded-[1.6rem] bg-white/45 p-6 shadow-inner dark:bg-black/20">
+        <section className="overflow-hidden rounded-[1.5rem] border border-white/45 bg-white/48 p-3 shadow-[0_32px_110px_rgba(146,64,14,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5 sm:rounded-[2rem] sm:p-6">
+          <div className="rounded-[1.25rem] bg-white/45 p-4 shadow-inner dark:bg-black/20 sm:rounded-[1.6rem] sm:p-6">
             <p className="text-sm font-black uppercase tracking-[0.22em] text-[#92400e]/70 dark:text-white/55">
               Профиль
             </p>
@@ -368,9 +369,12 @@ export default function ProfilePage() {
             <div className="mt-8 flex flex-col items-center text-center">
               <div className="relative">
                 {avatarUrl ? (
-                  <img
+                  <Image
                     src={avatarUrl}
                     alt={displayName}
+                    width={128}
+                    height={128}
+                    sizes="128px"
                     className="h-32 w-32 rounded-full object-cover shadow-2xl ring-4 ring-white/70"
                   />
                 ) : (
@@ -418,7 +422,7 @@ export default function ProfilePage() {
         </section>
 
         <section className="space-y-6">
-          <div className="rounded-[2rem] border border-white/45 bg-white/48 p-6 shadow-[0_32px_110px_rgba(146,64,14,0.14)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
+          <div className="rounded-[1.5rem] border border-white/45 bg-white/48 p-3 shadow-[0_32px_110px_rgba(146,64,14,0.14)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5 sm:rounded-[2rem] sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.22em] text-[#92400e]/70 dark:text-white/55">

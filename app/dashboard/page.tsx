@@ -8,6 +8,7 @@ import {
   dashboardAccentStorageKey,
   dashboardThemeAccents,
 } from "@/lib/dashboardTheme";
+import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Cropper from "react-easy-crop";
@@ -53,14 +54,19 @@ type ActivityItem = {
   id: string;
   text: string;
   time: string;
+  createdAt: string;
+  icon: string;
 };
 
 type Achievement = {
   id: string;
   title: string;
+  name: string;
   description: string;
   category: string;
   level: number;
+  target: number;
+  special?: boolean;
   icon: string;
   value: number;
   gradient: string;
@@ -114,6 +120,21 @@ function formatDate(date: string) {
     month: "long",
     year: "numeric",
   });
+}
+
+function getActivityTime(date?: string | null) {
+  return date || new Date(0).toISOString();
+}
+
+function shouldUseNotificationForActivity(type: string) {
+  return [
+    "status_updated",
+    "memory_deleted",
+    "memory_reaction",
+    "question_voice",
+    "question_photo",
+    "achievement_unlocked",
+  ].includes(type);
 }
 
 function addDays(date: string, days: number) {
@@ -174,9 +195,12 @@ function AvatarBubble({
   return (
     <div className="relative">
       {image ? (
-        <img
+        <NextImage
           src={image}
           alt={name || "Аватар"}
+          width={size === "large" ? 96 : 56}
+          height={size === "large" ? 96 : 56}
+          sizes={size === "large" ? "96px" : "56px"}
           className={`${sizeClass} rounded-full object-cover shadow-xl ring-4 ring-white/60`}
         />
       ) : (
@@ -248,15 +272,24 @@ function CroppedPreview({
   }
 
   return (
-    <img
+    <NextImage
       src={preview}
       alt="Preview"
+      width={96}
+      height={96}
+      unoptimized
       className="h-24 w-24 rounded-full object-cover shadow-lg"
     />
   );
 }
 
 function buildAchievements(stats: DashboardStats, daysTogether: number) {
+  const totalActivity =
+    stats.memories + stats.questionAnswers + stats.quizzes + stats.statusUpdates;
+  const storyPower = stats.memories + stats.questionAnswers;
+  const explorerPower = stats.quizzes + stats.questionAnswers;
+  const cozyPower = stats.memories + stats.statusUpdates;
+
   const groups = [
     {
       prefix: "Дней вместе",
@@ -265,6 +298,15 @@ function buildAchievements(stats: DashboardStats, daysTogether: number) {
       gradient: "from-rose-100/90 via-white/70 to-red-100/80 dark:from-rose-950/70 dark:via-red-950/30 dark:to-black/20",
       border: "border-rose-300/80 dark:border-rose-300/25",
       thresholds: [1, 10, 50, 100, 200, 300, 365],
+      names: [
+        "Первый совместный блин",
+        "Уже не случайность",
+        "Полтинник обнимашек",
+        "Серьезная заявка",
+        "Двести дней без возврата",
+        "Почти семейный режим",
+        "Годовой абонемент на любовь",
+      ],
       value: daysTogether,
     },
     {
@@ -274,6 +316,14 @@ function buildAchievements(stats: DashboardStats, daysTogether: number) {
       gradient: "from-fuchsia-100/90 via-white/70 to-pink-100/80 dark:from-fuchsia-950/70 dark:via-pink-950/30 dark:to-black/20",
       border: "border-fuchsia-300/80 dark:border-fuchsia-300/25",
       thresholds: [1, 3, 5, 10, 50, 100],
+      names: [
+        "Статус поставлен, паника снята",
+        "Мини-блогер любви",
+        "Пять оттенков настроения",
+        "Статусный магнат",
+        "Редактор сердечных новостей",
+        "Главный по табличке настроения",
+      ],
       value: stats.statusUpdates,
     },
     {
@@ -283,6 +333,16 @@ function buildAchievements(stats: DashboardStats, daysTogether: number) {
       gradient: "from-amber-100/90 via-white/70 to-orange-100/80 dark:from-amber-950/70 dark:via-orange-950/30 dark:to-black/20",
       border: "border-amber-300/80 dark:border-amber-300/25",
       thresholds: [1, 3, 5, 10, 50, 100, 200, 500],
+      names: [
+        "Первый кадр не комом",
+        "Фотоальбом проснулся",
+        "Папка милоты создана",
+        "Память телефона в опасности",
+        "Архивариус романтики",
+        "Хранитель пиксельных легенд",
+        "Музей нас двоих",
+        "Сервер просит отпуск",
+      ],
       value: stats.memories,
     },
     {
@@ -292,6 +352,16 @@ function buildAchievements(stats: DashboardStats, daysTogether: number) {
       gradient: "from-sky-100/90 via-white/70 to-cyan-100/80 dark:from-sky-950/70 dark:via-cyan-950/30 dark:to-black/20",
       border: "border-sky-300/80 dark:border-sky-300/25",
       thresholds: [1, 3, 5, 10, 20, 50, 67, 100],
+      names: [
+        "Первый честный вброс",
+        "Три вопроса без адвоката",
+        "Диалоговый двигатель завелся",
+        "Десять маленьких признаний",
+        "Глубокий режим включен",
+        "Почти подкаст про любовь",
+        "Секретный уровень болтливости",
+        "Сто ответов и ни одного скучного",
+      ],
       value: stats.questionAnswers,
     },
     {
@@ -301,24 +371,276 @@ function buildAchievements(stats: DashboardStats, daysTogether: number) {
       gradient: "from-violet-100/90 via-white/70 to-purple-100/80 dark:from-violet-950/70 dark:via-purple-950/30 dark:to-black/20",
       border: "border-violet-300/80 dark:border-violet-300/25",
       thresholds: [1, 3, 5, 10, 20, 50, 100],
+      names: [
+        "Первый тестовый поцелуй",
+        "Три раунда любопытства",
+        "Пара против вопросов",
+        "Квизовый ниндзя отношений",
+        "Экзамен по вам двоим",
+        "Профессор совпадений",
+        "Легенда тестовой комнаты",
+      ],
       value: stats.quizzes,
+    },
+    {
+      prefix: "Серия ответов",
+      category: "streak",
+      icon: "🔥",
+      gradient: "from-red-100/90 via-white/70 to-rose-100/80 dark:from-red-950/70 dark:via-rose-950/30 dark:to-black/20",
+      border: "border-red-300/80 dark:border-red-300/25",
+      thresholds: [1, 3, 7, 14, 30, 60],
+      names: [
+        "Спичка романтики",
+        "Три дня без пропуска",
+        "Неделя сердечного режима",
+        "Две недели без побега",
+        "Месяц дисциплины купидона",
+        "Легендарный ответственный дуэт",
+      ],
+      value: stats.streak,
+    },
+    {
+      prefix: "Общая активность",
+      category: "activity",
+      icon: "⚡",
+      gradient: "from-yellow-100/90 via-white/70 to-lime-100/80 dark:from-yellow-950/70 dark:via-lime-950/30 dark:to-black/20",
+      border: "border-yellow-300/80 dark:border-yellow-300/25",
+      thresholds: [5, 10, 25, 50, 100, 250],
+      names: [
+        "Первые признаки жизни",
+        "Пара нажала газ",
+        "Моторчик отношений",
+        "Гиперактивные сердечки",
+        "Фабрика маленьких моментов",
+        "Производственный цех любви",
+      ],
+      value: totalActivity,
+    },
+    {
+      prefix: "История пары",
+      category: "story",
+      icon: "📖",
+      gradient: "from-teal-100/90 via-white/70 to-emerald-100/80 dark:from-teal-950/70 dark:via-emerald-950/30 dark:to-black/20",
+      border: "border-teal-300/80 dark:border-teal-300/25",
+      thresholds: [5, 15, 30, 60, 120, 240],
+      names: [
+        "Черновик вашей легенды",
+        "Сюжет начинает шевелиться",
+        "Глава с милыми уликами",
+        "Роман на мягкой обложке",
+        "Сага домашнего масштаба",
+        "Полное собрание сердечных дел",
+      ],
+      value: storyPower,
+    },
+    {
+      prefix: "Любопытство пары",
+      category: "curiosity",
+      icon: "🔎",
+      gradient: "from-indigo-100/90 via-white/70 to-blue-100/80 dark:from-indigo-950/70 dark:via-blue-950/30 dark:to-black/20",
+      border: "border-indigo-300/80 dark:border-indigo-300/25",
+      thresholds: [5, 12, 25, 50, 90, 150],
+      names: [
+        "Нос сунут аккуратно",
+        "Детективы на свидании",
+        "Следствие ведут сердечки",
+        "Эксперты по странным вопросам",
+        "Археологи внутренних приколов",
+        "Доктора наук по друг другу",
+      ],
+      value: explorerPower,
+    },
+    {
+      prefix: "Домашняя магия",
+      category: "cozy",
+      icon: "🏡",
+      gradient: "from-pink-100/90 via-white/70 to-orange-100/80 dark:from-pink-950/70 dark:via-orange-950/30 dark:to-black/20",
+      border: "border-pink-300/80 dark:border-pink-300/25",
+      thresholds: [5, 12, 30, 60, 120, 220],
+      names: [
+        "Плед официально принят",
+        "Чайник знает ваши имена",
+        "Уют вышел из чата",
+        "Квартира подозревает романтику",
+        "Домашний культ милоты",
+        "Мини-вселенная для двоих",
+      ],
+      value: cozyPower,
     },
   ];
 
-  return groups.flatMap((group) =>
-    group.thresholds.map<Achievement>((level) => ({
-      id: `${group.prefix}-${level}`,
-      title: `${group.prefix}: ${level}`,
-      description: `Открывается, когда показатель "${group.prefix.toLowerCase()}" достигает ${level}.`,
+  const specialAchievements: Achievement[] = [
+    {
+      id: "special-first-week-photo",
+      title: "Особое: 7 дней вместе и первое воспоминание",
+      name: "Неделя с фото-доказательством",
+      description: "Открывается, когда вы вместе минимум 7 дней и уже добавили первое воспоминание.",
+      category: "special",
+      level: 1,
+      target: 1,
+      special: true,
+      icon: "🧾",
+      value: daysTogether >= 7 && stats.memories >= 1 ? 1 : 0,
+      gradient: "from-rose-100/90 via-white/70 to-amber-100/80 dark:from-rose-950/70 dark:via-amber-950/30 dark:to-black/20",
+      border: "border-rose-300/80 dark:border-rose-300/25",
+      unlocked: daysTogether >= 7 && stats.memories >= 1,
+    },
+    {
+      id: "special-memory-boss",
+      title: "Особое: воспоминаний больше, чем ответов",
+      name: "Фотоаппарат победил клавиатуру",
+      description: "Открывается, когда воспоминаний стало не меньше 10 и их больше, чем ответов на вопросы.",
+      category: "special",
+      level: 1,
+      target: 1,
+      special: true,
+      icon: "📷",
+      value: stats.memories >= 10 && stats.memories > stats.questionAnswers ? 1 : 0,
+      gradient: "from-orange-100/90 via-white/70 to-yellow-100/80 dark:from-orange-950/70 dark:via-yellow-950/30 dark:to-black/20",
+      border: "border-orange-300/80 dark:border-orange-300/25",
+      unlocked: stats.memories >= 10 && stats.memories > stats.questionAnswers,
+    },
+    {
+      id: "special-deep-and-playful",
+      title: "Особое: 20 ответов и 5 викторин",
+      name: "Глубоко, но с шутками",
+      description: "Открывается, когда у пары есть минимум 20 ответов на вопросы и 5 пройденных викторин.",
+      category: "special",
+      level: 1,
+      target: 1,
+      special: true,
+      icon: "🎭",
+      value: stats.questionAnswers >= 20 && stats.quizzes >= 5 ? 1 : 0,
+      gradient: "from-violet-100/90 via-white/70 to-sky-100/80 dark:from-violet-950/70 dark:via-sky-950/30 dark:to-black/20",
+      border: "border-violet-300/80 dark:border-violet-300/25",
+      unlocked: stats.questionAnswers >= 20 && stats.quizzes >= 5,
+    },
+    {
+      id: "special-streak-status",
+      title: "Особое: серия 7 дней и 3 статуса",
+      name: "Настроение под контролем",
+      description: "Открывается за неделю ответов подряд и минимум 3 обновления статуса.",
+      category: "special",
+      level: 1,
+      target: 1,
+      special: true,
+      icon: "🧠",
+      value: stats.streak >= 7 && stats.statusUpdates >= 3 ? 1 : 0,
+      gradient: "from-fuchsia-100/90 via-white/70 to-red-100/80 dark:from-fuchsia-950/70 dark:via-red-950/30 dark:to-black/20",
+      border: "border-fuchsia-300/80 dark:border-fuchsia-300/25",
+      unlocked: stats.streak >= 7 && stats.statusUpdates >= 3,
+    },
+    {
+      id: "special-century-active",
+      title: "Особое: 100 дней и 50 действий",
+      name: "Сотый день не зря прожит",
+      description: "Открывается, когда вы вместе минимум 100 дней и набрали 50 общих действий.",
+      category: "special",
+      level: 1,
+      target: 1,
+      special: true,
+      icon: "🎉",
+      value: daysTogether >= 100 && totalActivity >= 50 ? 1 : 0,
+      gradient: "from-pink-100/90 via-white/70 to-red-100/80 dark:from-pink-950/70 dark:via-red-950/30 dark:to-black/20",
+      border: "border-pink-300/80 dark:border-pink-300/25",
+      unlocked: daysTogether >= 100 && totalActivity >= 50,
+    },
+    {
+      id: "special-all-rounders",
+      title: "Особое: по 5 воспоминаний, ответов и викторин",
+      name: "Тройной удар милоты",
+      description: "Открывается, когда есть минимум 5 воспоминаний, 5 ответов и 5 викторин.",
+      category: "special",
+      level: 1,
+      target: 1,
+      special: true,
+      icon: "🎯",
+      value: stats.memories >= 5 && stats.questionAnswers >= 5 && stats.quizzes >= 5 ? 1 : 0,
+      gradient: "from-emerald-100/90 via-white/70 to-cyan-100/80 dark:from-emerald-950/70 dark:via-cyan-950/30 dark:to-black/20",
+      border: "border-emerald-300/80 dark:border-emerald-300/25",
+      unlocked: stats.memories >= 5 && stats.questionAnswers >= 5 && stats.quizzes >= 5,
+    },
+    {
+      id: "special-status-memory",
+      title: "Особое: 10 статусов и 10 воспоминаний",
+      name: "Хроника настроений",
+      description: "Открывается за 10 обновлений статуса и 10 добавленных воспоминаний.",
+      category: "special",
+      level: 1,
+      target: 1,
+      special: true,
+      icon: "📝",
+      value: stats.statusUpdates >= 10 && stats.memories >= 10 ? 1 : 0,
+      gradient: "from-amber-100/90 via-white/70 to-fuchsia-100/80 dark:from-amber-950/70 dark:via-fuchsia-950/30 dark:to-black/20",
+      border: "border-amber-300/80 dark:border-amber-300/25",
+      unlocked: stats.statusUpdates >= 10 && stats.memories >= 10,
+    },
+    {
+      id: "special-month-streak",
+      title: "Особое: 30 дней вместе и серия 3 дня",
+      name: "Маленькая привычка большого чувства",
+      description: "Открывается, когда вы вместе минимум 30 дней и держите серию ответов 3 дня.",
+      category: "special",
+      level: 1,
+      target: 1,
+      special: true,
+      icon: "🌙",
+      value: daysTogether >= 30 && stats.streak >= 3 ? 1 : 0,
+      gradient: "from-indigo-100/90 via-white/70 to-purple-100/80 dark:from-indigo-950/70 dark:via-purple-950/30 dark:to-black/20",
+      border: "border-indigo-300/80 dark:border-indigo-300/25",
+      unlocked: daysTogether >= 30 && stats.streak >= 3,
+    },
+    {
+      id: "special-quiz-machine",
+      title: "Особое: 100 действий и 10 викторин",
+      name: "Тестовый аппарат любви",
+      description: "Открывается, когда пара набрала 100 общих действий и прошла 10 викторин.",
+      category: "special",
+      level: 1,
+      target: 1,
+      special: true,
+      icon: "🕹",
+      value: totalActivity >= 100 && stats.quizzes >= 10 ? 1 : 0,
+      gradient: "from-blue-100/90 via-white/70 to-violet-100/80 dark:from-blue-950/70 dark:via-violet-950/30 dark:to-black/20",
+      border: "border-blue-300/80 dark:border-blue-300/25",
+      unlocked: totalActivity >= 100 && stats.quizzes >= 10,
+    },
+    {
+      id: "special-anniversary-library",
+      title: "Особое: год вместе и 100 пунктов истории",
+      name: "Архив первой годовщины",
+      description: "Открывается, когда вы вместе минимум год, а воспоминаний и ответов суммарно не меньше 100.",
+      category: "special",
+      level: 1,
+      target: 1,
+      special: true,
+      icon: "💎",
+      value: daysTogether >= 365 && storyPower >= 100 ? 1 : 0,
+      gradient: "from-cyan-100/90 via-white/70 to-rose-100/80 dark:from-cyan-950/70 dark:via-rose-950/30 dark:to-black/20",
+      border: "border-cyan-300/80 dark:border-cyan-300/25",
+      unlocked: daysTogether >= 365 && storyPower >= 100,
+    },
+  ];
+
+  return [
+    ...groups.flatMap((group) =>
+      group.thresholds.map<Achievement>((target, index) => ({
+      id: `${group.prefix}-${target}`,
+      title: `${group.prefix}: ${target}`,
+      name: group.names[index] || `${group.prefix}: ${target}`,
+      description: `Открывается, когда показатель "${group.prefix.toLowerCase()}" достигает ${target}.`,
       category: group.category,
-      level,
+      level: index + 1,
+      target,
       icon: group.icon,
       value: group.value,
       gradient: group.gradient,
       border: group.border,
-      unlocked: group.value >= level,
-    }))
-  );
+      unlocked: group.value >= target,
+      }))
+    ),
+    ...specialAchievements,
+  ];
 }
 
 function buildTimeline({
@@ -500,7 +822,7 @@ export default function DashboardPage() {
 
       const { data: coupleData, error: coupleError } = await supabase
         .from("couples")
-        .select("*")
+        .select("id, partner_one_id, partner_two_id")
         .or(`partner_one_id.eq.${user.id},partner_two_id.eq.${user.id}`)
         .limit(1)
         .single();
@@ -514,7 +836,7 @@ export default function DashboardPage() {
 
       const { data: profileData, error: profileError } = await supabase
         .from("couple_profiles")
-        .select("*")
+        .select("id, partner_one, partner_two, start_date, avatar, avatar_one, avatar_two, status_one_text, status_one_emoji, status_two_text, status_two_emoji, status_updates_one, status_updates_two")
         .eq("couple_id", coupleData.id)
         .limit(1)
         .single();
@@ -569,21 +891,40 @@ export default function DashboardPage() {
 
       setDaysTogether(diff);
 
-      const [{ data: memoriesData }, { data: answerRows }, { data: quizRows }] =
-        await Promise.all([
+      const [
+        { data: memoriesData },
+        { data: commentRows },
+        { data: answerRows },
+        { data: quizRows },
+        { data: notificationRows },
+      ] = await Promise.all([
           supabase
             .from("memories")
             .select("id, title, text, caption, created_at, user_id")
             .eq("couple_id", coupleData.id)
             .order("created_at", { ascending: false }),
           supabase
+            .from("memory_comments")
+            .select("id, memory_id, user_id, text, created_at")
+            .eq("couple_id", coupleData.id)
+            .order("created_at", { ascending: false })
+            .limit(12),
+          supabase
             .from("question_answers")
-            .select("date, answer_one, answer_two")
-            .eq("couple_id", coupleData.id),
+            .select("id, date, answer_one, answer_two, answer_one_edited_at, answer_two_edited_at")
+            .eq("couple_id", coupleData.id)
+            .order("date", { ascending: false }),
           supabase
             .from("quiz_answers")
-            .select("quiz_id, user_id")
-            .eq("couple_id", coupleData.id),
+            .select("quiz_id, user_id, updated_at")
+            .eq("couple_id", coupleData.id)
+            .order("updated_at", { ascending: false }),
+          supabase
+            .from("couple_notifications")
+            .select("id, type, title, body, actor_id, created_at")
+            .eq("recipient_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(20),
         ]);
 
       const totalQuestionAnswers =
@@ -602,28 +943,92 @@ export default function DashboardPage() {
       });
 
       const recentActivity: ActivityItem[] = [];
+      const getAuthorName = (authorId?: string | null) => {
+        if (!authorId) return "Партнёр";
+        if (authorId === user.id) return "Вы";
+        return authorId === coupleData.partner_one_id
+          ? activeProfile?.partner_one || "Партнёр"
+          : activeProfile?.partner_two || "Партнёр";
+      };
 
-      memoriesData?.slice(0, 3).forEach((memory) => {
-        const author =
-          memory.user_id === coupleData.partner_one_id
-            ? activeProfile?.partner_one
-            : activeProfile?.partner_two;
+      memoriesData?.slice(0, 8).forEach((memory) => {
         recentActivity.push({
-          id: memory.id,
-          text: `${author || "Партнёр"} добавил воспоминание`,
+          id: `memory-${memory.id}`,
+          text: `${getAuthorName(memory.user_id)} добавил(а) воспоминание`,
           time: formatDate(memory.created_at),
+          createdAt: getActivityTime(memory.created_at),
+          icon: "📸",
         });
       });
 
-      answerRows?.slice(-2).forEach((answer, index) => {
+      commentRows?.slice(0, 8).forEach((comment) => {
         recentActivity.push({
-          id: `answer-${answer.date}-${index}`,
-          text: "Появился ответ на вопрос дня",
-          time: formatDate(answer.date),
+          id: `memory-comment-${comment.id}`,
+          text: `${getAuthorName(comment.user_id)} оставил(а) комментарий к воспоминанию`,
+          time: formatDate(comment.created_at),
+          createdAt: getActivityTime(comment.created_at),
+          icon: "💬",
         });
       });
 
-      setActivity(recentActivity.slice(0, 5));
+      answerRows?.slice(0, 10).forEach((answer) => {
+        [
+          {
+            userId: coupleData.partner_one_id,
+            value: answer.answer_one,
+            editedAt: answer.answer_one_edited_at,
+            slot: "one",
+          },
+          {
+            userId: coupleData.partner_two_id,
+            value: answer.answer_two,
+            editedAt: answer.answer_two_edited_at,
+            slot: "two",
+          },
+        ].forEach((event) => {
+          if (!event.value) return;
+          const createdAt = getActivityTime(event.editedAt || answer.date);
+          recentActivity.push({
+            id: `question-${answer.id}-${event.slot}`,
+            text: `${getAuthorName(event.userId)} ответил(а) на вопрос дня`,
+            time: formatDate(createdAt),
+            createdAt,
+            icon: "💌",
+          });
+        });
+      });
+
+      quizRows?.slice(0, 10).forEach((quiz) => {
+        const createdAt = getActivityTime(quiz.updated_at);
+        recentActivity.push({
+          id: `quiz-${quiz.quiz_id}-${quiz.user_id}`,
+          text: `${getAuthorName(quiz.user_id)} прошёл(а) викторину`,
+          time: formatDate(createdAt),
+          createdAt,
+          icon: "✨",
+        });
+      });
+
+      notificationRows
+        ?.filter((notification) => shouldUseNotificationForActivity(notification.type))
+        .forEach((notification) => {
+          recentActivity.push({
+            id: `notification-${notification.id}`,
+            text: `${getAuthorName(notification.actor_id)}: ${notification.body || notification.title}`,
+            time: formatDate(notification.created_at),
+            createdAt: getActivityTime(notification.created_at),
+            icon: notification.type === "achievement_unlocked" ? "🏆" : "✦",
+          });
+        });
+
+      setActivity(
+        recentActivity
+          .sort(
+            (first, second) =>
+              new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
+          )
+          .slice(0, 12)
+      );
       setIsDashboardLoaded(true);
     }
 
@@ -705,7 +1110,7 @@ export default function DashboardPage() {
             createOwnNotification(couple.id, currentUserId, {
               type: "achievement_unlocked",
               title: "Достижение открыто",
-              body: `${achievement.title} · уровень ${achievement.level}`,
+              body: `${achievement.name} · ${achievement.title}`,
               href: "/dashboard",
             })
           )
@@ -955,16 +1360,22 @@ export default function DashboardPage() {
             <div className="absolute inset-0 opacity-40">
               <div className="grid h-full w-full grid-cols-2">
                 {leftHeroUrl && (
-                  <img
+                  <NextImage
                     src={leftHeroUrl}
                     alt="Фото первого участника"
+                    width={720}
+                    height={360}
+                    sizes="(min-width: 1024px) 560px, 50vw"
                     className="h-full w-full object-cover"
                   />
                 )}
                 {rightHeroUrl && (
-                  <img
+                  <NextImage
                     src={rightHeroUrl}
                     alt="Фото второго участника"
+                    width={720}
+                    height={360}
+                    sizes="(min-width: 1024px) 560px, 50vw"
                     className="h-full w-full object-cover"
                   />
                 )}
@@ -977,7 +1388,7 @@ export default function DashboardPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-white/10 dark:from-black/60" />
 
           <div className="relative flex min-h-[300px] flex-col justify-between gap-8">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <label className="cursor-pointer rounded-full bg-white/55 px-5 py-2 text-sm font-semibold shadow-lg backdrop-blur transition hover:bg-white/75 dark:bg-black/25 dark:hover:bg-black/35">
                 <input
                   type="file"
@@ -1188,7 +1599,7 @@ export default function DashboardPage() {
 
       {isActivityOpen && (
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-3 backdrop-blur-md sm:p-4"
           onClick={() => setIsActivityOpen(false)}
         >
           <div
@@ -1196,7 +1607,7 @@ export default function DashboardPage() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-white/25 blur-3xl" />
-            <div className="relative flex items-start justify-between gap-4">
+            <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <div>
                 <h2 className="text-3xl font-black">Последняя активность</h2>
                 <p className={`mt-1 text-sm font-semibold ${theme.muted} dark:text-white/65`}>
@@ -1225,7 +1636,7 @@ export default function DashboardPage() {
                   >
                     <div className="flex gap-4">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/60 text-xl shadow-inner dark:bg-white/10">
-                        ✦
+                        {item.icon}
                       </div>
                       <div>
                         <p className="font-black">{item.text}</p>
@@ -1244,7 +1655,7 @@ export default function DashboardPage() {
 
       {isTimelineOpen && (
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-3 backdrop-blur-md sm:p-4"
           onClick={() => setIsTimelineOpen(false)}
         >
           <div
@@ -1252,7 +1663,7 @@ export default function DashboardPage() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-white/25 blur-3xl" />
-            <div className="relative flex items-start justify-between gap-4">
+            <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <div>
                 <h2 className="text-3xl font-black">Таймлайн</h2>
                 <p className={`mt-1 text-sm font-semibold ${theme.muted} dark:text-white/65`}>
@@ -1359,7 +1770,7 @@ export default function DashboardPage() {
 
       {isAchievementsOpen && (
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-3 backdrop-blur-md sm:p-4"
           onClick={() => setIsAchievementsOpen(false)}
         >
           <div
@@ -1367,7 +1778,7 @@ export default function DashboardPage() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-white/25 blur-3xl" />
-            <div className="relative flex flex-wrap items-start justify-between gap-4">
+            <div className="relative flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
               <div>
                 <h2 className="text-3xl font-black">Достижения</h2>
                 <p className={`mt-1 text-sm font-semibold ${theme.muted} dark:text-white/65`}>
@@ -1458,10 +1869,13 @@ export default function DashboardPage() {
                             {achievement.icon}
                           </span>
                           <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-black text-[#dc2626] shadow-inner dark:bg-white/10 dark:text-white">
-                            ур. {achievement.level}
+                            {achievement.special ? "особое" : achievement.target}
                           </span>
                         </div>
                         <p className="mt-4 text-sm font-black transition-colors duration-300 group-hover:text-[#b91c1c]">
+                          {achievement.name}
+                        </p>
+                        <p className={`mt-1 text-xs font-black uppercase ${theme.muted} dark:text-white/60`}>
                           {achievement.title}
                         </p>
                         <p className={`mt-2 text-xs ${theme.muted} dark:text-white/60`}>
@@ -1477,7 +1891,7 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between gap-3">
                           <span className="flex items-center gap-2">
                             <span className="text-2xl">🔒</span>
-                            <span>Тайное достижение</span>
+                            <span>{achievement.name}</span>
                           </span>
                           <span className="rounded-full bg-white/35 px-3 py-1 text-xs font-black dark:bg-white/10">
                             скрыто
@@ -1512,9 +1926,9 @@ export default function DashboardPage() {
           <div className="mt-2 flex items-center gap-3">
             <span className="text-4xl">{achievementToast.icon}</span>
             <div>
-              <p className="font-black">{achievementToast.title}</p>
+              <p className="font-black">{achievementToast.name}</p>
               <p className="text-sm font-semibold opacity-70">
-                Уровень {achievementToast.level}
+                {achievementToast.title}
               </p>
             </div>
           </div>
@@ -1523,7 +1937,7 @@ export default function DashboardPage() {
 
       {selectedAchievement && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 backdrop-blur-md sm:p-4"
           onClick={() => setSelectedAchievement(null)}
         >
           <div
@@ -1536,7 +1950,7 @@ export default function DashboardPage() {
           >
             <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-white/40 blur-3xl" />
             <div className="relative">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/70 text-5xl shadow-2xl dark:bg-white/10">
                   {selectedAchievement.unlocked ? selectedAchievement.icon : "🔒"}
                 </div>
@@ -1559,9 +1973,14 @@ export default function DashboardPage() {
               </p>
               <h3 className="mt-2 text-4xl font-black">
                 {selectedAchievement.unlocked
-                  ? selectedAchievement.title
+                  ? selectedAchievement.name
                   : "Скрыто до открытия"}
               </h3>
+              {selectedAchievement.unlocked && (
+                <p className="mt-2 text-sm font-black uppercase tracking-wide opacity-65">
+                  {selectedAchievement.title}
+                </p>
+              )}
               <p className="mt-4 text-lg font-semibold opacity-80">
                 {selectedAchievement.unlocked
                   ? selectedAchievement.description
@@ -1572,7 +1991,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between text-sm font-black uppercase tracking-wide opacity-70">
                   <span>Текущий прогресс</span>
                   <span>
-                    {selectedAchievement.value}/{selectedAchievement.level}
+                    {selectedAchievement.value}/{selectedAchievement.target}
                   </span>
                 </div>
                 <div className="mt-3 rounded-full bg-white/45 p-1 shadow-inner dark:bg-black/20">
@@ -1582,7 +2001,7 @@ export default function DashboardPage() {
                       width: `${Math.min(
                         100,
                         Math.round(
-                          (selectedAchievement.value / selectedAchievement.level) * 100
+                          (selectedAchievement.value / selectedAchievement.target) * 100
                         )
                       )}%`,
                     }}

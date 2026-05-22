@@ -56,9 +56,9 @@ export default function MobileNav() {
   return (
     <nav
       style={navStyle}
-      className="fixed bottom-4 left-4 right-4 z-20 rounded-full border border-transparent bg-white/90 px-4 py-3 shadow-2xl backdrop-blur md:hidden"
+      className="fixed bottom-3 left-3 right-3 z-40 rounded-[1.4rem] border border-transparent bg-white/90 px-2 py-2 shadow-2xl backdrop-blur md:hidden"
     >
-      <div className="flex items-center justify-around text-xs font-semibold">
+      <div className="grid grid-cols-5 items-center text-[10px] font-semibold leading-tight">
         {links.map((link) => {
           const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
 
@@ -75,12 +75,12 @@ export default function MobileNav() {
               }
               className={
                 isActive
-                  ? "flex flex-col items-center gap-1 text-rose-500"
-                  : "flex flex-col items-center gap-1 text-gray-500"
+                  ? "flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1 text-rose-500"
+                  : "flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1 text-gray-500"
               }
             >
-              <span className="text-xl">{link.icon}</span>
-              {link.label}
+              <span className="text-lg">{link.icon}</span>
+              <span className="max-w-full truncate">{link.label}</span>
             </Link>
           );
         })}

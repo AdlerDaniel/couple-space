@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { createPartnerNotification } from "@/lib/notifications";
 import { compressImageFile } from "@/lib/imageCompression";
 import { getQuizById } from "@/lib/quizzes";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -256,9 +257,12 @@ export default function QuizPlayClient() {
                   </label>
 
                   {answers[question.id] ? (
-                    <img
+                    <Image
                       src={answers[question.id]}
                       alt="Фото-ответ"
+                      width={720}
+                      height={280}
+                      sizes="(min-width: 768px) 50vw, 100vw"
                       className="h-44 w-full rounded-2xl object-cover shadow-lg"
                     />
                   ) : (

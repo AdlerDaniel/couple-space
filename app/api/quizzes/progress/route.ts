@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 
   let query = adminSupabase
     .from("quiz_answers")
-    .select("quiz_id, user_id, answers")
+    .select(quizId ? "quiz_id, user_id, answers" : "quiz_id, user_id")
     .eq("couple_id", coupleId);
 
   if (quizId) {

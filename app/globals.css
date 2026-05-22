@@ -20,6 +20,16 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+* {
+  min-width: 0;
+}
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -520,5 +530,50 @@ body {
   .auth-form-switch,
   .auth-gradient-button {
     animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-top: 5rem !important;
+    padding-bottom: 6.5rem !important;
+  }
+
+  h1 {
+    font-size: clamp(2.35rem, 12vw, 3.75rem) !important;
+    line-height: 0.98 !important;
+    overflow-wrap: anywhere;
+  }
+
+  h2 {
+    font-size: clamp(1.75rem, 9vw, 2.5rem) !important;
+    line-height: 1.05 !important;
+    overflow-wrap: anywhere;
+  }
+
+  h3,
+  p,
+  button,
+  a,
+  label,
+  input,
+  textarea,
+  span {
+    overflow-wrap: anywhere;
+  }
+
+  .achievement-modal {
+    max-height: calc(100dvh - 2rem) !important;
+    border-radius: 1.35rem !important;
+    padding: 1rem !important;
+  }
+
+  .achievement-toast {
+    left: 1rem !important;
+    right: 1rem !important;
+    top: 1rem !important;
+    max-width: none !important;
   }
 }

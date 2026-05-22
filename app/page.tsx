@@ -79,11 +79,11 @@ export default function Home() {
             Couple Space
           </div>
 
-          <h1 className="max-w-4xl text-6xl font-black leading-[0.92] tracking-normal text-[#b91c1c] dark:text-white md:text-8xl">
+          <h1 className="max-w-4xl text-6xl font-black leading-[0.92] tracking-normal text-[#7f1d1d] drop-shadow-[0_8px_24px_rgba(255,255,255,0.9)] dark:text-white dark:drop-shadow-[0_10px_34px_rgba(0,0,0,0.65)] md:text-8xl">
             Место, которое будет только вашим
           </h1>
 
-          <p className="mt-8 max-w-2xl text-xl leading-9 text-[#9f1239]/75 dark:text-white/72 md:text-2xl">
+          <p className="mt-8 max-w-2xl rounded-[1.5rem] bg-white/32 p-4 text-xl font-semibold leading-9 text-[#7f1d1d]/88 shadow-[0_18px_60px_rgba(159,18,57,0.12)] backdrop-blur-sm dark:bg-black/14 dark:text-white/82 md:text-2xl">
             Ваше личное пространство для любви, воспоминаний и маленьких
             моментов, к которым хочется возвращаться снова.
           </p>

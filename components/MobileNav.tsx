@@ -13,11 +13,11 @@ const links = [
   {
     href: "/dashboard",
     label: "Кабинет",
-    icon: "❤️",
+    icon: "💗",
   },
   {
     href: "/memories",
-    label: "Фото",
+    label: "Воспоминания",
     icon: "📸",
   },
   {
@@ -30,57 +30,61 @@ const links = [
     label: "Викторины",
     icon: "✦",
   },
+  {
+    href: "/chat",
+    label: "Чат",
+    icon: "💬",
+  },
 ];
+
+function getRouteAccent(pathname: string, dashboardAccent: string) {
+  if (pathname === "/") return "#9f1239";
+  if (pathname.startsWith("/dashboard")) return dashboardAccent;
+  if (pathname.startsWith("/profile")) return "#92400e";
+  if (pathname.startsWith("/memories")) return "#1a73e8";
+  if (pathname.startsWith("/questions")) return "#27ae60";
+  if (pathname.startsWith("/quizzes")) return "#7c3aed";
+  if (pathname.startsWith("/chat")) return "#be123c";
+  if (pathname.startsWith("/login")) return "#be123c";
+  return "#1c8b59";
+}
+
+function isActivePath(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export default function MobileNav() {
   const pathname = usePathname();
   const dashboardAccent = useDashboardAccent();
-  const homeAccent = "#9f1239";
-  const isHome = pathname === "/";
-  const isDashboard = pathname.startsWith("/dashboard");
-  const navStyle = isHome
-    ? {
-        background:
-          "linear-gradient(135deg, rgba(159, 18, 57, 0.2), rgba(192, 38, 211, 0.16))",
-        borderColor: "rgba(159, 18, 57, 0.24)",
-        boxShadow: "0 18px 46px rgba(159, 18, 57, 0.2)",
-      }
-    : isDashboard
-    ? {
-        backgroundColor: `${dashboardAccent}24`,
-        borderColor: `${dashboardAccent}55`,
-        boxShadow: `0 18px 46px ${dashboardAccent}35`,
-      }
-    : undefined;
+  const accent = getRouteAccent(pathname, dashboardAccent);
 
   return (
     <nav
-      style={navStyle}
-      className="fixed bottom-3 left-3 right-3 z-40 rounded-[1.4rem] border border-transparent bg-white/90 px-2 py-2 shadow-2xl backdrop-blur md:hidden"
+      style={{
+        background: `linear-gradient(135deg, ${accent}30, ${accent}12 48%, rgba(255,255,255,0.82))`,
+        borderColor: `${accent}4d`,
+        boxShadow: `0 14px 38px ${accent}24`,
+      }}
+      className="fixed bottom-3 left-3 right-3 z-40 rounded-[1.25rem] border px-1.5 py-1.5 shadow-2xl backdrop-blur-xl md:hidden"
     >
-      <div className="grid grid-cols-5 items-center text-[10px] font-semibold leading-tight">
+      <div className="grid grid-cols-6 items-start text-center text-[7px] font-bold leading-tight">
         {links.map((link) => {
-          const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
+          const isActive = isActivePath(pathname, link.href);
 
           return (
             <Link
               key={link.href}
               href={link.href}
-              style={
-                isActive && isHome
-                  ? { color: homeAccent }
-                  : isActive && isDashboard
-                    ? { color: dashboardAccent }
-                    : undefined
-              }
+              style={isActive ? { color: accent, backgroundColor: `${accent}12` } : undefined}
               className={
                 isActive
-                  ? "flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1 text-rose-500"
-                  : "flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1 text-gray-500"
+                  ? "flex min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1 shadow-inner"
+                  : "flex min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1 text-gray-500"
               }
             >
-              <span className="text-lg">{link.icon}</span>
-              <span className="max-w-full truncate">{link.label}</span>
+              <span className="text-base leading-none">{link.icon}</span>
+              <span className="max-w-full whitespace-nowrap">{link.label}</span>
             </Link>
           );
         })}

@@ -239,6 +239,7 @@ export default function Navbar() {
   const isMemories = pathname.startsWith("/memories");
   const isQuestions = pathname.startsWith("/questions");
   const isQuizzes = pathname.startsWith("/quizzes");
+  const isChat = pathname.startsWith("/chat");
   const isDashboard = pathname.startsWith("/dashboard");
   const isProfilePage = pathname.startsWith("/profile");
   const homeAccent = "#9f1239";
@@ -254,11 +255,13 @@ export default function Navbar() {
           ? "#27ae60"
           : isQuizzes
             ? "#7c3aed"
-            : isDashboard
-              ? dashboardAccent
-              : isProfilePage
-                ? profileAccent
-                : "#1c8b59";
+            : isChat
+              ? "#be123c"
+              : isDashboard
+                ? dashboardAccent
+                : isProfilePage
+                  ? profileAccent
+                  : "#1c8b59";
 
   const navStyle = isHome
     ? {
@@ -347,6 +350,7 @@ export default function Navbar() {
             ["Воспоминания", "/memories"],
             ["Вопросы", "/questions"],
             ["Викторины", "/quizzes"],
+            ["Чат", "/chat"],
           ].map(([label, href]) => (
             <Link
               key={href}
@@ -373,8 +377,10 @@ export default function Navbar() {
                     ? "#1a73e8"
                     : isQuestions
                       ? "#27ae60"
-                      : isQuizzes
-                        ? "#7c3aed"
+                    : isQuizzes
+                      ? "#7c3aed"
+                      : isChat
+                        ? "#be123c"
                         : isDashboard
                           ? dashboardAccent
                           : isProfilePage
@@ -442,9 +448,11 @@ export default function Navbar() {
                                   ? "💌"
                                   : notification.type.includes("quiz")
                                     ? "✨"
-                                    : notification.type.includes("memory")
-                                      ? "📸"
-                                      : "❤️"}
+                                    : notification.type.includes("chat")
+                                      ? "💬"
+                                      : notification.type.includes("memory")
+                                        ? "📸"
+                                        : "❤️"}
                             </span>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">

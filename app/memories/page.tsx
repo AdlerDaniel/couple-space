@@ -48,6 +48,14 @@ type Couple = {
   partner_two_id: string | null;
 };
 
+type CoupleProfile = {
+  partner_one: string;
+  partner_two: string;
+  avatar?: string | null;
+  avatar_one?: string | null;
+  avatar_two?: string | null;
+};
+
 type Memory = {
   id: string;
   title: string | null;
@@ -56,7 +64,7 @@ type Memory = {
   image: string | null;
   event_date: string | null;
   is_pinned: boolean;
-  reactions?: Record<string, string>;
+  reactions?: Record<string, string | null | undefined>;
   user_id: string;
   couple_id: string;
   created_at: string;
@@ -111,6 +119,7 @@ export default function MemoriesPage() {
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const touchStartX = useRef<number | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
+  const [profile, setProfile] = useState<CoupleProfile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
@@ -156,7 +165,7 @@ export default function MemoriesPage() {
 
       setCouple(coupleData);
 
-      const [{ data: memoryRows }, { data: commentRows }] = await Promise.all([
+      const [{ data: memoryRows }, { data: commentRows }, { data: profileData }] = await Promise.all([
         supabase
           .from("memories")
           .select("id, title, caption, text, image, event_date, is_pinned, reactions, user_id, couple_id, created_at")
@@ -168,8 +177,15 @@ export default function MemoriesPage() {
           .select("id, memory_id, user_id, text, created_at")
           .eq("couple_id", coupleData.id)
           .order("created_at", { ascending: true }),
+        supabase
+          .from("couple_profiles")
+          .select("partner_one, partner_two, avatar, avatar_one, avatar_two")
+          .eq("couple_id", coupleData.id)
+          .limit(1)
+          .maybeSingle<CoupleProfile>(),
       ]);
 
+      if (profileData) setProfile(profileData);
       setMemories((memoryRows || []) as Memory[]);
       setComments(
         (commentRows || []).reduce<Record<string, MemoryComment[]>>((groups, comment) => {
@@ -206,6 +222,44 @@ export default function MemoriesPage() {
   const visibleMemories = filteredMemories.slice(0, visibleCount);
   const selectedMemory =
     selectedIndex === null ? null : visibleMemories[selectedIndex] || null;
+
+  function getMemoryUserMeta(userId: string) {
+    if (!couple) return { name: "?", avatar: null as string | null, initial: "?" };
+    if (userId === couple.partner_one_id) {
+      const name = profile?.partner_one || "A";
+      return {
+        name,
+        avatar: profile?.avatar_one || profile?.avatar || null,
+        initial: name.trim().slice(0, 1).toUpperCase() || "A",
+      };
+    }
+
+    const name = profile?.partner_two || "B";
+    return {
+      name,
+      avatar: profile?.avatar_two || profile?.avatar || null,
+      initial: name.trim().slice(0, 1).toUpperCase() || "B",
+    };
+  }
+
+  function getReactionUsers(memory: Memory, reaction: string) {
+    return Object.entries(memory.reactions || {})
+      .filter(([, value]) => value === reaction)
+      .map(([userId]) => userId);
+  }
+
+  function updateMemoryReaction(memoryId: string, reactions: Record<string, string | null | undefined>) {
+    setMemories((current) =>
+      current.map((item) =>
+        item.id === memoryId
+          ? {
+              ...item,
+              reactions,
+            }
+          : item
+      )
+    );
+  }
 
   async function addMemory() {
     if (!couple || !currentUserId || (!title.trim() && !caption.trim() && !memoryImageFile)) {
@@ -277,17 +331,25 @@ export default function MemoriesPage() {
   }
 
   async function togglePinned(memory: Memory) {
-    const { data, error } = await supabase
-      .from("memories")
-      .update({ is_pinned: !memory.is_pinned })
-      .eq("id", memory.id)
-      .select()
-      .single();
+    const nextPinned = !memory.is_pinned;
+    setMemories((current) =>
+      current.map((item) =>
+        item.id === memory.id ? { ...item, is_pinned: nextPinned } : item
+      )
+    );
 
-    if (!error && data) {
+    const { error } = await supabase
+      .from("memories")
+      .update({ is_pinned: nextPinned })
+      .eq("id", memory.id);
+
+    if (error) {
       setMemories((current) =>
-        current.map((item) => (item.id === memory.id ? (data as Memory) : item))
+        current.map((item) =>
+          item.id === memory.id ? { ...item, is_pinned: memory.is_pinned } : item
+        )
       );
+      setMessage(`Не удалось закрепить воспоминание: ${error.message}`);
     }
   }
 
@@ -334,33 +396,37 @@ export default function MemoriesPage() {
   async function toggleReaction(memory: Memory, reaction: string) {
     if (!currentUserId) return;
 
+    const previousReactions = memory.reactions || {};
+    const isRemovingReaction = previousReactions[currentUserId] === reaction;
     const nextReactions = {
-      ...(memory.reactions || {}),
-      [currentUserId]: memory.reactions?.[currentUserId] === reaction ? undefined : reaction,
+      ...previousReactions,
+      [currentUserId]: isRemovingReaction ? undefined : reaction,
     };
 
     if (!nextReactions[currentUserId]) {
       delete nextReactions[currentUserId];
     }
 
-    const { data, error } = await supabase
+    updateMemoryReaction(memory.id, nextReactions);
+
+    const { error } = await supabase
       .from("memories")
       .update({ reactions: nextReactions })
-      .eq("id", memory.id)
-      .select()
-      .single();
+      .eq("id", memory.id);
 
-    if (!error && data) {
-      setMemories((current) =>
-        current.map((item) => (item.id === memory.id ? (data as Memory) : item))
-      );
-      if (reaction && couple) {
+    if (!error) {
+      if (!isRemovingReaction && couple && memory.user_id !== currentUserId) {
         await createPartnerNotification(couple, currentUserId, {
           type: "memory_reaction",
           title: "Реакция на воспоминание",
           body: `Партнёр оставил реакцию ${reaction}.`,
           href: "/memories",
         });
+      }
+    } else {
+      updateMemoryReaction(memory.id, previousReactions);
+      if (error) {
+        setMessage(`Не удалось обновить реакцию: ${error.message}`);
       }
     }
   }
@@ -617,9 +683,13 @@ export default function MemoriesPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => togglePinned(memory)}
-                          className="rounded-full bg-white/70 px-3 py-1 text-xs font-black text-[#1a73e8] shadow transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-blue-100"
+                          className={`rounded-full px-3 py-1 text-xs font-black shadow transition hover:-translate-y-0.5 ${
+                            memory.is_pinned
+                              ? "bg-[#1a73e8] text-white shadow-[0_10px_28px_rgba(26,115,232,0.28)]"
+                              : "bg-white/70 text-[#1a73e8] dark:bg-white/10 dark:text-blue-100"
+                          }`}
                         >
-                          {memory.is_pinned ? "Открепить" : "Закрепить"}
+                          {memory.is_pinned ? "Закреплено" : "Закрепить"}
                         </button>
                         <button
                           onClick={() => deleteMemory(memory)}
@@ -642,19 +712,38 @@ export default function MemoriesPage() {
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {reactions.map((reaction) => (
-                        <button
-                          key={reaction}
-                          onClick={() => toggleReaction(memory, reaction)}
-                          className={`grid h-9 w-9 place-items-center rounded-full border text-lg transition hover:-translate-y-0.5 ${
-                            memory.reactions?.[currentUserId || ""] === reaction
-                              ? "border-blue-300 bg-blue-100"
-                              : "border-white/70 bg-white/65 dark:border-white/10 dark:bg-white/8"
-                          }`}
-                        >
-                          {reaction}
-                        </button>
-                      ))}
+                      {reactions.map((reaction) => {
+                        const userIds = getReactionUsers(memory, reaction);
+                        const singleUser = userIds.length === 1 ? getMemoryUserMeta(userIds[0]) : null;
+                        const isMyReaction = memory.reactions?.[currentUserId || ""] === reaction;
+                        return (
+                          <button
+                            key={reaction}
+                            onClick={() => toggleReaction(memory, reaction)}
+                            className={`inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full border px-2 text-lg shadow-sm transition hover:-translate-y-0.5 ${
+                              isMyReaction
+                                ? "border-blue-300 bg-blue-100"
+                                : "border-white/70 bg-white/65 dark:border-white/10 dark:bg-white/8"
+                            }`}
+                            title={
+                              userIds.length > 1
+                                ? "Оба поставили эту реакцию"
+                                : singleUser
+                                  ? `${singleUser.name} поставил(а) эту реакцию`
+                                  : "Поставить реакцию"
+                            }
+                          >
+                            <span>{reaction}</span>
+                            {userIds.length > 1 ? (
+                              <span className="text-xs font-black text-[#1a73e8] dark:text-blue-100">{userIds.length}</span>
+                            ) : singleUser?.avatar ? (
+                              <Image src={singleUser.avatar} alt={singleUser.name} width={18} height={18} sizes="18px" className="h-[18px] w-[18px] rounded-full object-cover ring-1 ring-white/80" />
+                            ) : singleUser ? (
+                              <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-white text-[9px] font-black text-[#1a73e8] ring-1 ring-white/80 dark:bg-black/25 dark:text-white">{singleUser.initial}</span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
                     </div>
 
                     <div className="mt-4 rounded-2xl bg-blue-50/70 p-3 dark:bg-white/8">

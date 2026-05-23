@@ -8,22 +8,22 @@ const links = [
   {
     href: "/",
     label: "Главная",
-    icon: "🏠",
+    icon: "⌂",
   },
   {
     href: "/dashboard",
     label: "Кабинет",
-    icon: "💗",
+    icon: "♡",
   },
   {
     href: "/memories",
     label: "Воспоминания",
-    icon: "📸",
+    icon: "▣",
   },
   {
     href: "/questions",
     label: "Вопросы",
-    icon: "💌",
+    icon: "✉",
   },
   {
     href: "/quizzes",
@@ -33,7 +33,7 @@ const links = [
   {
     href: "/chat",
     label: "Чат",
-    icon: "💬",
+    icon: "◌",
   },
 ];
 
@@ -59,14 +59,16 @@ export default function MobileNav() {
   const dashboardAccent = useDashboardAccent();
   const accent = getRouteAccent(pathname, dashboardAccent);
 
+  if (pathname.startsWith("/chat")) return null;
+
   return (
     <nav
       style={{
-        background: `linear-gradient(135deg, ${accent}30, ${accent}12 48%, rgba(255,255,255,0.82))`,
-        borderColor: `${accent}4d`,
-        boxShadow: `0 14px 38px ${accent}24`,
+        background: `linear-gradient(135deg, ${accent}30, ${accent}1f 52%, ${accent}14)`,
+        borderColor: `${accent}66`,
+        boxShadow: `0 18px 48px ${accent}2e`,
       }}
-      className="fixed bottom-3 left-3 right-3 z-40 rounded-[1.25rem] border px-1.5 py-1.5 shadow-2xl backdrop-blur-xl md:hidden"
+      className="fixed bottom-3 left-3 right-3 z-40 rounded-[1.35rem] border px-1.5 py-1.5 shadow-2xl backdrop-blur-2xl md:hidden"
     >
       <div className="grid grid-cols-6 items-start text-center text-[7px] font-bold leading-tight">
         {links.map((link) => {
@@ -76,11 +78,15 @@ export default function MobileNav() {
             <Link
               key={link.href}
               href={link.href}
-              style={isActive ? { color: accent, backgroundColor: `${accent}12` } : undefined}
+              style={
+                isActive
+                  ? { color: accent, backgroundColor: `${accent}18` }
+                  : { color: `${accent}cc` }
+              }
               className={
                 isActive
                   ? "flex min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1 shadow-inner"
-                  : "flex min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1 text-gray-500"
+                  : "flex min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1 opacity-80"
               }
             >
               <span className="text-base leading-none">{link.icon}</span>

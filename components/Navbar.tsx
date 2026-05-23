@@ -260,7 +260,7 @@ export default function Navbar() {
               : isDashboard
                 ? dashboardAccent
                 : isProfilePage
-                  ? profileAccent
+                ? profileAccent
                   : "#1c8b59";
 
   const navStyle = isHome

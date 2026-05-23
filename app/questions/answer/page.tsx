@@ -47,6 +47,8 @@ export default function QuestionAnswerPage() {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const discardRecordingRef = useRef(false);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
   const [answerRecord, setAnswerRecord] = useState<Answer | null>(null);
   const [myAnswer, setMyAnswer] = useState("");
@@ -57,6 +59,8 @@ export default function QuestionAnswerPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isRecordingPaused, setIsRecordingPaused] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [nowMs, setNowMs] = useState(0);
 
@@ -75,6 +79,14 @@ export default function QuestionAnswerPage() {
   const voiceUrl = (answerRecord?.[voiceField] as string | null | undefined) || null;
   const photoUrl = (answerRecord?.[photoField] as string | null | undefined) || null;
   const hasSavedAnswer = Boolean(lastSavedAnswer.trim() || voiceUrl || photoUrl);
+
+  function formatRecordingTime(seconds: number) {
+    const minutes = Math.floor(seconds / 60);
+    const rest = Math.floor(seconds % 60)
+      .toString()
+      .padStart(2, "0");
+    return `${minutes}:${rest}`;
+  }
 
   function resizeTextarea() {
     const textarea = textareaRef.current;
@@ -284,6 +296,7 @@ export default function QuestionAnswerPage() {
     if (isRecording) {
       mediaRecorderRef.current?.stop();
       setIsRecording(false);
+      setIsRecordingPaused(false);
       return;
     }
 
@@ -292,6 +305,7 @@ export default function QuestionAnswerPage() {
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
       mediaRecorderRef.current = recorder;
+      discardRecordingRef.current = false;
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -301,6 +315,14 @@ export default function QuestionAnswerPage() {
 
       recorder.onstop = () => {
         stream.getTracks().forEach((track) => track.stop());
+        setIsRecording(false);
+        setIsRecordingPaused(false);
+        setRecordingSeconds(0);
+        if (discardRecordingRef.current) {
+          discardRecordingRef.current = false;
+          audioChunksRef.current = [];
+          return;
+        }
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const audioFile = new File([audioBlob], "voice-answer.webm", {
           type: "audio/webm",
@@ -310,11 +332,58 @@ export default function QuestionAnswerPage() {
 
       recorder.start();
       setIsRecording(true);
+      setIsRecordingPaused(false);
+      setRecordingSeconds(0);
     } catch (error) {
       console.error(error);
       setMessage("Не удалось включить микрофон");
     }
   }
+
+  function toggleVoicePause() {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || !isRecording) return;
+
+    if (recorder.state === "recording") {
+      recorder.pause();
+      setIsRecordingPaused(true);
+      return;
+    }
+
+    if (recorder.state === "paused") {
+      recorder.resume();
+      setIsRecordingPaused(false);
+    }
+  }
+
+  function cancelVoiceRecording() {
+    discardRecordingRef.current = true;
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+    setIsRecordingPaused(false);
+    setRecordingSeconds(0);
+  }
+
+  useEffect(() => {
+    if (!isRecording || isRecordingPaused) {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      return;
+    }
+
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingSeconds((current) => current + 1);
+    }, 1000);
+
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    };
+  }, [isRecording, isRecordingPaused]);
 
   useEffect(() => {
     async function loadPageData() {
@@ -499,6 +568,45 @@ export default function QuestionAnswerPage() {
                   <span className="mt-1 block">Загрузить фото</span>
                 </label>
               </div>
+
+              {isRecording && (
+                <div className="mt-4 rounded-[1.2rem] border border-emerald-200/70 bg-gradient-to-r from-emerald-500 to-teal-500 p-4 text-white shadow-[0_18px_55px_rgba(21,128,61,0.24)]">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className={`h-3 w-3 rounded-full bg-white ${isRecordingPaused ? "" : "animate-pulse"}`} />
+                      <div>
+                        <p className="font-black">{isRecordingPaused ? "Запись на паузе" : "Идёт запись"}</p>
+                        <div className="mt-2 flex h-6 items-center gap-[2px]">
+                          {Array.from({ length: 28 }).map((_, index) => (
+                            <span
+                              key={index}
+                              className={`w-1 rounded-full bg-white/75 ${isRecordingPaused ? "" : "chat-voice-wave"}`}
+                              style={{
+                                height: Math.max(5, 10 + Math.sin(index * 0.8) * 8),
+                                animationDelay: `${index * 0.04}s`,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-white/18 px-3 py-1 text-sm font-black">
+                      {formatRecordingTime(recordingSeconds)}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button type="button" onClick={toggleVoicePause} className="rounded-full bg-white/18 px-4 py-2 text-sm font-black transition hover:bg-white/25">
+                      {isRecordingPaused ? "Продолжить" : "Пауза"}
+                    </button>
+                    <button type="button" onClick={cancelVoiceRecording} className="rounded-full bg-white/18 px-4 py-2 text-sm font-black transition hover:bg-white/25">
+                      Отмена
+                    </button>
+                    <button type="button" onClick={toggleVoiceRecording} className="rounded-full bg-white px-4 py-2 text-sm font-black text-emerald-700 transition hover:bg-white/90">
+                      Готово
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {(voiceUrl || photoUrl || isUploadingMedia) && (
                 <div className="mt-5 grid gap-3 md:grid-cols-2">

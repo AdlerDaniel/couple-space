@@ -19,13 +19,21 @@ function getRouteAccent(pathname: string, dashboardAccent: string) {
 export default function ThemeToggle() {
   const pathname = usePathname();
   const dashboardAccent = useDashboardAccent();
+  const [hasMounted, setHasMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const accent = getRouteAccent(pathname, dashboardAccent);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
-    queueMicrotask(() => setIsDark(savedTheme === "dark"));
+    queueMicrotask(() => {
+      setHasMounted(true);
+      setIsDark(savedTheme === "dark");
+    });
   }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--scroll-accent", accent);
+  }, [accent]);
 
   function toggleTheme() {
     const newTheme = !isDark;
@@ -40,6 +48,8 @@ export default function ThemeToggle() {
       localStorage.setItem("theme", "light");
     }
   }
+
+  if (!hasMounted) return null;
 
   return (
     <button

@@ -9,6 +9,7 @@ import {
   dashboardThemeAccents,
 } from "@/lib/dashboardTheme";
 import NextImage from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Cropper from "react-easy-crop";
@@ -1041,11 +1042,9 @@ export default function DashboardPage() {
 
   const isPartnerOne = currentUserId === couple?.partner_one_id;
   const myAvatarUrl = isPartnerOne ? avatarOneUrl : avatarTwoUrl;
-  const partnerAvatarUrl = isPartnerOne ? avatarTwoUrl : avatarOneUrl;
-  const heroAvatarUrl = myAvatarUrl || partnerAvatarUrl || profile?.avatar || null;
-  const leftHeroUrl = avatarOneUrl || heroAvatarUrl;
-  const rightHeroUrl = avatarTwoUrl || heroAvatarUrl;
-  const hasHeroCollage = Boolean(leftHeroUrl || rightHeroUrl);
+  const leftHeroUrl = avatarOneUrl || null;
+  const rightHeroUrl = avatarTwoUrl || null;
+  const hasHeroCollage = Boolean(leftHeroUrl && rightHeroUrl);
   const achievements = useMemo(
     () => buildAchievements(stats, daysTogether),
     [daysTogether, stats]
@@ -1350,11 +1349,11 @@ export default function DashboardPage() {
 
   return (
     <main
-      className={`min-h-screen bg-gradient-to-b ${theme.page} ${theme.darkPage} px-6 pb-28 pt-28 ${theme.text} transition-colors dark:text-white`}
+      className={`min-h-screen bg-gradient-to-b ${theme.page} ${theme.darkPage} px-4 pb-28 pt-20 ${theme.text} transition-colors dark:text-white md:px-6 md:pt-28`}
     >
-      <div className="mx-auto max-w-6xl space-y-8">
+      <div className="mx-auto max-w-6xl space-y-5 md:space-y-8">
         <section
-          className={`relative min-h-[360px] overflow-hidden rounded-3xl bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-8 shadow-2xl`}
+          className={`relative min-h-[300px] overflow-hidden rounded-[1.5rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-5 shadow-2xl md:min-h-[360px] md:rounded-3xl md:p-8`}
         >
           {hasHeroCollage && (
             <div className="absolute inset-0 opacity-40">
@@ -1407,6 +1406,13 @@ export default function DashboardPage() {
                 {myAvatarUrl ? "Изменить моё фото" : "Добавить моё фото"}
               </label>
 
+              <Link
+                href="/profile"
+                className="rounded-full bg-white/55 px-5 py-2 text-sm font-semibold shadow-lg backdrop-blur transition hover:bg-white/75 dark:bg-black/25 dark:hover:bg-black/35"
+              >
+                Профиль
+              </Link>
+
               {avatarMessage && (
                 <p className="rounded-full bg-white/55 px-4 py-2 text-sm font-semibold shadow-lg backdrop-blur dark:bg-black/25">
                   {avatarMessage}
@@ -1444,7 +1450,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-5">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
           {[
             ["📸", "Воспоминаний", stats.memories],
             ["💌", "Ответов", stats.questionAnswers],
@@ -1454,13 +1460,13 @@ export default function DashboardPage() {
           ].map(([icon, label, value]) => (
             <div
               key={label}
-              className={`rounded-3xl bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-6 shadow-xl`}
+              className={`rounded-[1.25rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-4 shadow-xl md:rounded-3xl md:p-6`}
             >
-              <p className="text-3xl">{icon}</p>
-              <p className={`mt-4 text-sm font-semibold ${theme.muted} dark:text-white/65`}>
+              <p className="text-2xl md:text-3xl">{icon}</p>
+              <p className={`mt-2 text-xs font-semibold ${theme.muted} dark:text-white/65 md:mt-4 md:text-sm`}>
                 {label}
               </p>
-              <p className="mt-1 text-4xl font-bold">{value}</p>
+              <p className="mt-1 text-3xl font-bold md:text-4xl">{value}</p>
             </div>
           ))}
         </section>

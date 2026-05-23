@@ -4,6 +4,7 @@ import { compressImageFile } from "@/lib/imageCompression";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   FormEvent,
@@ -281,6 +282,12 @@ function readStoredStringList(key: string) {
   }
 }
 
+function isSingleEmojiText(text?: string | null) {
+  const value = text?.trim();
+  if (!value) return false;
+  return /^\p{Extended_Pictographic}\uFE0F?$/u.test(value);
+}
+
 function isMessageVisible(message: ChatMessage, currentUserId: string | null) {
   if (!currentUserId) return false;
   if (message.deleted_for_everyone) return true;
@@ -384,6 +391,8 @@ export default function ChatPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
   const audioChunksRef = useRef<Blob[]>([]);
+  const discardRecordingRef = useRef(false);
+  const recordingTimerRef = useRef<number | null>(null);
   const chatChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const typingTimeoutRef = useRef<number | null>(null);
   const partnerTypingTimeoutRef = useRef<number | null>(null);
@@ -428,6 +437,8 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isRecordingPaused, setIsRecordingPaused] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const [partnerLastSeen, setPartnerLastSeen] = useState<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -438,17 +449,6 @@ export default function ChatPage() {
       ? couple.partner_two_id
       : couple.partner_one_id;
   }, [couple, currentUserId]);
-
-  const myProfile = useMemo(() => {
-    if (!couple || !currentUserId || !profile) return { name: "Вы", avatar: null as string | null };
-    const isPartnerOne = currentUserId === couple.partner_one_id;
-    return {
-      name: isPartnerOne ? profile.partner_one : profile.partner_two,
-      avatar: isPartnerOne
-        ? profile.avatar_one || profile.avatar || null
-        : profile.avatar_two || profile.avatar || null,
-    };
-  }, [couple, currentUserId, profile]);
 
   const partnerProfile = useMemo(() => {
     if (!couple || !currentUserId || !profile) {
@@ -613,6 +613,19 @@ export default function ChatPage() {
 
     return stickers;
   }, [activeStickerPack, favoriteStickerIds, recentStickerIds, stickerSearch]);
+
+  const stickerSuggestions = useMemo(() => {
+    const value = draft.trim().toLowerCase();
+    if (!value || pickerMode) return [];
+    const loveWords = ["люблю", "любимый", "любимая", "серд", "love", "целую", "скучаю"];
+    if (!loveWords.some((word) => value.includes(word))) return [];
+    return allStickers.filter((sticker) => ["love-4", "love-2", "love-3"].includes(sticker.id));
+  }, [draft, pickerMode]);
+
+  const profileMediaItems = useMemo(
+    () => [...profileItems.media, ...profileItems.gifs],
+    [profileItems.gifs, profileItems.media]
+  );
 
   useEffect(() => {
     function handleKeyDown(event: globalThis.KeyboardEvent) {
@@ -826,9 +839,82 @@ export default function ChatPage() {
     }
   }, [messages.length, showScrollButton]);
 
+  useEffect(() => {
+    if (!isRecording || isRecordingPaused) {
+      if (recordingTimerRef.current) {
+        window.clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      return;
+    }
+
+    recordingTimerRef.current = window.setInterval(() => {
+      setRecordingSeconds((current) => current + 1);
+    }, 1000);
+
+    return () => {
+      if (recordingTimerRef.current) {
+        window.clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    };
+  }, [isRecording, isRecordingPaused]);
+
   function scrollToBottom() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     setShowScrollButton(false);
+  }
+
+  function getChatUserMeta(userId: string) {
+    if (!couple) return { name: "?", avatar: null as string | null, initial: "?" };
+    if (userId === couple.partner_one_id) {
+      const name = profile?.partner_one || "A";
+      return {
+        name,
+        avatar: profile?.avatar_one || profile?.avatar || null,
+        initial: getInitial(name),
+      };
+    }
+
+    const name = profile?.partner_two || "B";
+    return {
+      name,
+      avatar: profile?.avatar_two || profile?.avatar || null,
+      initial: getInitial(name),
+    };
+  }
+
+  function openProfileMediaViewer(item: ProfileAttachmentItem) {
+    if (!couple || !item.attachment) return;
+    setViewerMessage({
+      id: item.messageId,
+      couple_id: couple.id,
+      sender_id: partnerId || "",
+      body: null,
+      created_at: item.createdAt,
+      edited_at: null,
+      read_at: null,
+      reply_to_id: null,
+      reactions: [],
+      attachment_url: item.attachment.url,
+      attachment_type: "image",
+      attachment_name: item.attachment.name,
+      attachments: [item.attachment],
+      pinned_at: null,
+      deleted_for: [],
+      deleted_for_everyone: false,
+    });
+  }
+
+  function showNextViewerMedia(direction: 1 | -1) {
+    if (!viewerMessage?.attachment_url || profileMediaItems.length === 0) return;
+    const currentIndex = profileMediaItems.findIndex(
+      (item) => item.attachment?.url === viewerMessage.attachment_url
+    );
+    if (currentIndex === -1) return;
+    const nextIndex =
+      (currentIndex + direction + profileMediaItems.length) % profileMediaItems.length;
+    openProfileMediaViewer(profileMediaItems[nextIndex]);
   }
 
   function handleScroll() {
@@ -1195,6 +1281,7 @@ export default function ChatPage() {
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
       mediaRecorderRef.current = recorder;
+      discardRecordingRef.current = false;
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) audioChunksRef.current.push(event.data);
@@ -1202,6 +1289,14 @@ export default function ChatPage() {
 
       recorder.onstop = () => {
         stream.getTracks().forEach((track) => track.stop());
+        setIsRecording(false);
+        setIsRecordingPaused(false);
+        setRecordingSeconds(0);
+        if (discardRecordingRef.current) {
+          discardRecordingRef.current = false;
+          audioChunksRef.current = [];
+          return;
+        }
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const audioFile = new File([audioBlob], `voice-${Date.now()}.webm`, {
           type: "audio/webm",
@@ -1218,14 +1313,42 @@ export default function ChatPage() {
 
       recorder.start();
       setIsRecording(true);
+      setIsRecordingPaused(false);
+      setRecordingSeconds(0);
     } catch {
       setErrorMessage("Не удалось включить микрофон");
     }
   }
 
   function stopRecording() {
+    discardRecordingRef.current = false;
     mediaRecorderRef.current?.stop();
     setIsRecording(false);
+    setIsRecordingPaused(false);
+  }
+
+  function cancelRecording() {
+    discardRecordingRef.current = true;
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+    setIsRecordingPaused(false);
+    setRecordingSeconds(0);
+  }
+
+  function toggleRecordingPause() {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || !isRecording) return;
+
+    if (recorder.state === "recording") {
+      recorder.pause();
+      setIsRecordingPaused(true);
+      return;
+    }
+
+    if (recorder.state === "paused") {
+      recorder.resume();
+      setIsRecordingPaused(false);
+    }
   }
 
   async function updateMessage(id: string, patch: Partial<ChatMessage>) {
@@ -1395,32 +1518,34 @@ export default function ChatPage() {
         setIsDraggingFile(false);
         addPendingFiles(Array.from(event.dataTransfer.files));
       }}
-      className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#fff1f5] via-[#fff7fb] to-[#fce7f3] px-0 pb-24 pt-20 text-[#831843] dark:from-[#19050d] dark:via-[#12040b] dark:to-black dark:text-white md:px-6 md:pb-8 md:pt-28"
+      className="relative h-dvh overflow-hidden bg-gradient-to-br from-[#fff1f5] via-[#fff7fb] to-[#fce7f3] px-0 pb-0 pt-0 text-[#831843] dark:from-[#19050d] dark:via-[#12040b] dark:to-black dark:text-white md:min-h-screen md:px-6 md:pb-8 md:pt-28"
     >
       <div className="pointer-events-none absolute inset-0">
         <div className="chat-blob absolute left-[-8rem] top-24 h-80 w-80 rounded-full bg-rose-300/35 blur-3xl dark:bg-rose-500/12" />
         <div className="chat-blob chat-blob-delay absolute right-[-9rem] top-48 h-96 w-96 rounded-full bg-fuchsia-300/30 blur-3xl dark:bg-fuchsia-500/12" />
       </div>
 
-      <section className="relative mx-auto flex h-[calc(100vh-7rem)] max-w-5xl flex-col overflow-hidden border-y border-white/60 bg-white/44 shadow-[0_32px_110px_rgba(190,18,60,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:h-[calc(100vh-9rem)] md:rounded-[2rem] md:border">
+      <section className="relative mx-auto flex h-dvh max-w-5xl flex-col overflow-hidden border-y border-white/60 bg-white/44 shadow-[0_32px_110px_rgba(190,18,60,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:h-[calc(100vh-9rem)] md:rounded-[2rem] md:border">
         {isDraggingFile && (
           <div className="pointer-events-none absolute inset-3 z-50 grid place-items-center rounded-[1.5rem] border-2 border-dashed border-[#be123c]/55 bg-white/55 text-center text-xl font-black text-[#be123c] shadow-inner backdrop-blur-xl dark:bg-black/45 dark:text-white">
             Отпустите файл, чтобы добавить вложение
           </div>
         )}
         <header className="sticky top-0 z-20 border-b border-white/50 bg-white/70 px-4 py-3 backdrop-blur-2xl dark:border-white/10 dark:bg-black/35 md:px-6">
-          <div className="flex items-center justify-between gap-4">
+          <Link
+            href="/dashboard"
+            className="absolute left-3 top-3 grid h-11 w-11 place-items-center rounded-full bg-white/72 text-xl font-black text-[#be123c] shadow-inner backdrop-blur transition hover:bg-white dark:bg-white/10 dark:text-white md:hidden"
+            aria-label="В кабинет"
+          >
+            ‹
+          </Link>
+          <div className="flex items-center justify-center gap-4 md:justify-between">
             <button
               type="button"
               onClick={() => setIsProfilePanelOpen(true)}
-              className="flex min-w-0 items-center gap-3 rounded-2xl text-left transition hover:bg-white/40 dark:hover:bg-white/8"
+              className="flex min-w-0 items-center gap-3 rounded-full bg-white/68 px-4 py-2 text-left shadow-inner transition hover:bg-white/80 dark:bg-white/10 dark:hover:bg-white/14 md:rounded-2xl md:bg-transparent md:px-0 md:py-0 md:shadow-none"
             >
-              <div className="relative flex -space-x-3">
-                {myProfile.avatar ? (
-                  <Image src={myProfile.avatar} alt={myProfile.name} width={44} height={44} sizes="44px" className="h-11 w-11 rounded-full object-cover ring-2 ring-white/80" />
-                ) : (
-                  <span className="grid h-11 w-11 place-items-center rounded-full bg-rose-100 font-black shadow-inner ring-2 ring-white/80 dark:bg-white/10">{getInitial(myProfile.name)}</span>
-                )}
+              <div className="relative flex">
                 {partnerProfile.avatar ? (
                   <Image src={partnerProfile.avatar} alt={partnerProfile.name} width={44} height={44} sizes="44px" className="h-11 w-11 rounded-full object-cover ring-2 ring-white/80" />
                 ) : (
@@ -1429,7 +1554,7 @@ export default function ChatPage() {
               </div>
               <div className="min-w-0 pr-2">
                 <h1 className="truncate text-lg font-black md:text-2xl">
-                  {myProfile.name} + {partnerProfile.name}
+                  {partnerProfile.name}
                 </h1>
                 <p className="text-xs font-black text-rose-500/70">
                   {isPartnerTyping ? (
@@ -1457,7 +1582,7 @@ export default function ChatPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Поиск по чату"
-            className="mt-3 h-10 w-full rounded-full border border-rose-200/70 bg-white/72 px-4 text-sm font-bold outline-none transition focus:border-rose-500 dark:border-white/10 dark:bg-white/10 md:hidden"
+            className="mt-3 hidden h-10 w-full rounded-full border border-rose-200/70 bg-white/72 px-4 text-sm font-bold outline-none transition focus:border-rose-500 dark:border-white/10 dark:bg-white/10"
           />
           {activePinnedMessage && (
             <div className="relative mt-3 rounded-2xl bg-rose-100/80 px-3 py-2 text-sm font-black text-rose-700 shadow-inner dark:bg-white/10 dark:text-rose-100">
@@ -1579,6 +1704,12 @@ export default function ChatPage() {
                 );
                 const isVoiceMessage = Boolean(voiceAttachment);
                 const isStickerMessage = Boolean(stickerAttachment);
+                const isBigEmojiMessage =
+                  !message.deleted_for_everyone &&
+                  !isVoiceMessage &&
+                  !isStickerMessage &&
+                  attachments.length === 0 &&
+                  isSingleEmojiText(message.body);
                 const linkUrl = extractFirstUrl(message.body || "");
                 const metaNode = (
                   <span
@@ -1595,9 +1726,9 @@ export default function ChatPage() {
                     {isMine && <span>{message.read_at ? "✓✓" : "✓"}</span>}
                   </span>
                 );
-                const groupedReactions = (message.reactions || []).reduce<Record<string, number>>(
+                const groupedReactions = (message.reactions || []).reduce<Record<string, string[]>>(
                   (acc, reaction) => {
-                    acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1;
+                    acc[reaction.emoji] = [...(acc[reaction.emoji] || []), reaction.user_id];
                     return acc;
                   },
                   {}
@@ -1619,9 +1750,9 @@ export default function ChatPage() {
                           setMenuMessageId(message.id);
                         }}
                         className={`relative w-fit max-w-[78%] rounded-[14px] shadow-[0_4px_14px_rgba(0,0,0,0.1)] transition hover:-translate-y-0.5 md:max-w-[62%] ${
-                          isStickerMessage ? "px-0 py-0 shadow-none" : isVoiceMessage ? "px-3 py-2" : "px-3 py-1.5"
+                          isStickerMessage || isBigEmojiMessage ? "px-0 py-0 shadow-none" : isVoiceMessage ? "px-3 py-2" : "px-3 py-1.5"
                         } ${
-                          isStickerMessage
+                          isStickerMessage || isBigEmojiMessage
                             ? "bg-transparent text-white"
                             : isVoiceMessage
                             ? `bg-gradient-to-br from-[#be123c] to-[#db2777] text-white shadow-rose-500/18 ${
@@ -1636,7 +1767,7 @@ export default function ChatPage() {
                             : `bg-[#242426] text-white shadow-black/10 ${isLastInGroup ? "rounded-bl-[4px]" : ""}`
                         }`}
                       >
-                        {isLastInGroup && !isStickerMessage && (
+                        {isLastInGroup && !isStickerMessage && !isBigEmojiMessage && (
                           <span
                             className={`pointer-events-none absolute bottom-0 h-3 w-3 ${
                               isMine
@@ -1661,6 +1792,18 @@ export default function ChatPage() {
                           <p className="italic opacity-60">Сообщение удалено</p>
                             ) : (
                           <>
+                            {isBigEmojiMessage && (
+                              <div className={`chat-big-emoji-message ${isMine ? "ml-auto" : ""}`}>
+                                <div className="text-6xl leading-none drop-shadow-[0_12px_26px_rgba(0,0,0,0.25)] md:text-7xl">
+                                  {message.body}
+                                </div>
+                                <div className={`mt-1 flex ${isMine ? "justify-end" : "justify-start"}`}>
+                                  <span className="rounded-full bg-black/34 px-2 py-0.5 backdrop-blur">
+                                    {metaNode}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                             {stickerAttachment && (
                               <div className={`chat-sticker-message ${isMine ? "ml-auto" : ""}`}>
                                 <button
@@ -1860,14 +2003,14 @@ export default function ChatPage() {
                                 />
                               </div>
                             )}
-                            {message.body && !isVoiceMessage && !isStickerMessage && (
+                            {message.body && !isVoiceMessage && !isStickerMessage && !isBigEmojiMessage && (
                               <p className="whitespace-pre-wrap break-words text-[15px] font-medium leading-5">
                                 {message.body}
                                 <span className="inline-block w-2" />
                                 {metaNode}
                               </p>
                             )}
-                            {linkUrl && !isVoiceMessage && !isStickerMessage && (
+                            {linkUrl && !isVoiceMessage && !isStickerMessage && !isBigEmojiMessage && (
                               <LinkPreviewCard url={linkUrl} isMine={isMine} />
                             )}
                           </>
@@ -1877,14 +2020,22 @@ export default function ChatPage() {
                         )}
                         {Object.keys(groupedReactions).length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1">
-                            {Object.entries(groupedReactions).map(([emoji, count]) => {
+                            {Object.entries(groupedReactions).map(([emoji, userIds]) => {
                               const isMyReaction = (message.reactions || []).some(
                                 (reaction) =>
                                   reaction.user_id === currentUserId && reaction.emoji === emoji
                               );
+                              const singleUser = userIds.length === 1 ? getChatUserMeta(userIds[0]) : null;
                               return (
-                              <button key={emoji} onClick={() => toggleReaction(message, emoji)} className={`chat-reaction-pill rounded-full px-2 py-1 text-xs font-black shadow-inner ${isMyReaction ? "bg-rose-100 text-rose-700 ring-2 ring-white/70 dark:bg-rose-500/30 dark:text-white" : "bg-white/72 text-rose-700 dark:bg-black/25 dark:text-white"}`}>
-                                {emoji} {count}
+                              <button key={emoji} onClick={() => toggleReaction(message, emoji)} className={`chat-reaction-pill inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-black shadow-inner ${isMyReaction ? "bg-rose-100 text-rose-700 ring-2 ring-white/70 dark:bg-rose-500/30 dark:text-white" : "bg-white/72 text-rose-700 dark:bg-black/25 dark:text-white"}`}>
+                                <span>{emoji}</span>
+                                {userIds.length > 1 ? (
+                                  <span className="text-[11px]">{userIds.length}</span>
+                                ) : singleUser?.avatar ? (
+                                  <Image src={singleUser.avatar} alt={singleUser.name} width={18} height={18} sizes="18px" className="h-[18px] w-[18px] rounded-full object-cover ring-1 ring-white/80" />
+                                ) : (
+                                  <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-white/70 text-[9px] text-[#be123c] ring-1 ring-white/80 dark:bg-black/30 dark:text-white">{singleUser?.initial || "?"}</span>
+                                )}
                               </button>
                               );
                             })}
@@ -1987,6 +2138,63 @@ export default function ChatPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {stickerSuggestions.length > 0 && (
+            <div className="chat-reply-preview mb-3 flex items-center gap-2 rounded-2xl border border-rose-100 bg-white/82 p-2 shadow-[0_16px_45px_rgba(190,18,60,0.14)] backdrop-blur-xl dark:border-white/10 dark:bg-black/35">
+              <span className="px-2 text-xs font-black text-rose-600/70 dark:text-rose-100/60">
+                Стикер?
+              </span>
+              <div className="flex gap-1">
+                {stickerSuggestions.map((sticker) => (
+                  <button
+                    key={sticker.id}
+                    type="button"
+                    onClick={() => sendSticker(sticker)}
+                    className="chat-sticker-hover h-12 w-12 rounded-xl bg-contain bg-center bg-no-repeat transition hover:bg-rose-50 dark:hover:bg-white/10"
+                    style={{ backgroundImage: `url("${sticker.url}")` }}
+                    aria-label={sticker.name}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          {isRecording && (
+            <div className="chat-reply-preview mb-3 flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-red-700 shadow-[0_16px_45px_rgba(220,38,38,0.16)] dark:border-red-400/20 dark:bg-red-500/12 dark:text-red-100">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className={`grid h-3 w-3 shrink-0 place-items-center rounded-full bg-red-500 ${isRecordingPaused ? "" : "animate-pulse"}`} />
+                <div className="min-w-0">
+                  <p className="text-sm font-black">
+                    {isRecordingPaused ? "Запись на паузе" : "Идёт запись"}
+                  </p>
+                  <div className="mt-1 flex h-5 items-center gap-[2px]">
+                    {Array.from({ length: 24 }).map((_, index) => (
+                      <span
+                        key={index}
+                        className={`w-1 rounded-full bg-red-500/70 ${isRecordingPaused ? "" : "chat-voice-wave"}`}
+                        style={{
+                          height: Math.max(5, 9 + Math.sin(index * 0.9) * 7),
+                          animationDelay: `${index * 0.04}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="rounded-full bg-white/80 px-3 py-1 text-sm font-black shadow-inner dark:bg-black/25">
+                  {formatAudioTime(recordingSeconds)}
+                </span>
+                <button type="button" onClick={toggleRecordingPause} className="rounded-full bg-white px-3 py-1.5 text-sm font-black shadow transition hover:-translate-y-0.5 dark:bg-black/25">
+                  {isRecordingPaused ? "Продолжить" : "Пауза"}
+                </button>
+                <button type="button" onClick={cancelRecording} className="rounded-full bg-white/80 px-3 py-1.5 text-sm font-black text-red-700 shadow transition hover:-translate-y-0.5 dark:bg-black/25 dark:text-red-100">
+                  Отмена
+                </button>
+                <button type="button" onClick={stopRecording} className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-black text-white shadow transition hover:-translate-y-0.5">
+                  Готово
+                </button>
+              </div>
             </div>
           )}
           {pickerMode && (
@@ -2376,24 +2584,7 @@ export default function ChatPage() {
                                 window.open(attachment.url, "_blank", "noreferrer");
                                 return;
                               }
-                              setViewerMessage({
-                                id: item.messageId,
-                                couple_id: couple.id,
-                                sender_id: partnerId || "",
-                                body: null,
-                                created_at: item.createdAt,
-                                edited_at: null,
-                                read_at: null,
-                                reply_to_id: null,
-                                reactions: [],
-                                attachment_url: attachment.url,
-                                attachment_type: "image",
-                                attachment_name: attachment.name,
-                                attachments: [attachment],
-                                pinned_at: null,
-                                deleted_for: [],
-                                deleted_for_everyone: false,
-                              });
+                              openProfileMediaViewer(item);
                             }}
                             className="group relative aspect-square overflow-hidden rounded-md bg-white/45 shadow-inner dark:bg-white/8"
                           >
@@ -2494,6 +2685,30 @@ export default function ChatPage() {
       {viewerMessage?.attachment_url && (
         <div className="chat-viewer-in fixed inset-0 z-[70] grid place-items-center bg-black/88 p-4" onClick={() => setViewerMessage(null)}>
           <button className="absolute right-5 top-5 rounded-full bg-white/12 px-4 py-2 text-2xl font-black text-white">×</button>
+          {profileMediaItems.length > 1 && profileMediaItems.some((item) => item.attachment?.url === viewerMessage.attachment_url) && (
+            <>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  showNextViewerMedia(-1);
+                }}
+                className="absolute left-4 top-1/2 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/14 text-3xl font-black text-white backdrop-blur transition hover:bg-white/24"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  showNextViewerMedia(1);
+                }}
+                className="absolute right-4 top-1/2 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/14 text-3xl font-black text-white backdrop-blur transition hover:bg-white/24"
+              >
+                ›
+              </button>
+            </>
+          )}
           {viewerMessage.attachment_type === "image" && (
             <Image src={viewerMessage.attachment_url} alt={viewerMessage.attachment_name || "Фото"} width={1400} height={1000} sizes="100vw" className="max-h-[86vh] w-auto rounded-3xl object-contain shadow-2xl" />
           )}

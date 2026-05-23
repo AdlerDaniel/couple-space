@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { notificationsUpdatedEventName } from "@/lib/notifications";
+import { getPageTheme } from "@/lib/pageThemes";
 import { profileUpdatedEventName } from "@/lib/profileEvents";
 import { useDashboardAccent } from "@/lib/useDashboardAccent";
 import type { User } from "@supabase/supabase-js";
@@ -243,57 +244,19 @@ export default function Navbar() {
   const isChat = pathname.startsWith("/chat");
   const isDashboard = pathname.startsWith("/dashboard");
   const isProfilePage = pathname.startsWith("/profile");
-  const homeAccent = "#ea580c";
-  const profileAccent = "#92400e";
-
-  const accent = isLogin
-    ? "#f3f4f6"
-    : isHome
-      ? homeAccent
-      : isMemories
-        ? "#2563eb"
-        : isQuestions
-          ? "#27ae60"
-          : isQuizzes
-            ? "#7c3aed"
-            : isTracker
-              ? "#ca8a04"
-              : isChat
-                ? "#0284c7"
-                : isDashboard
-                  ? dashboardAccent
-                  : isProfilePage
-                  ? profileAccent
-                    : "#1c8b59";
-
-  const navStyle = isHome
-    ? {
-        background:
-          "linear-gradient(135deg, rgba(234, 88, 12, 0.22), rgba(245, 158, 11, 0.16))",
-        borderColor: "rgba(234, 88, 12, 0.3)",
-        boxShadow: "0 18px 58px rgba(234, 88, 12, 0.2)",
-      }
-    : isProfilePage && !isLogin
-      ? {
-          background:
-            "linear-gradient(135deg, rgba(146, 64, 14, 0.22), rgba(180, 83, 9, 0.16))",
-          borderColor: "rgba(146, 64, 14, 0.3)",
-          boxShadow: "0 16px 48px rgba(146, 64, 14, 0.18)",
-        }
-      : isTracker && !isLogin
-      ? {
-          background:
-            "linear-gradient(135deg, rgba(202, 138, 4, 0.22), rgba(250, 204, 21, 0.16))",
-          borderColor: "rgba(202, 138, 4, 0.3)",
-          boxShadow: "0 16px 48px rgba(202, 138, 4, 0.18)",
-        }
+  const theme = getPageTheme(pathname, dashboardAccent);
+  const accent = isLogin ? "#f3f4f6" : theme.accent;
+  const profileAccent = getPageTheme("/profile").accent;
+  const navStyle =
+    !isLogin && theme.nav
+      ? theme.nav
       : isDashboard && !isLogin
-      ? {
-          backgroundColor: `${dashboardAccent}24`,
-          borderColor: `${dashboardAccent}55`,
-          boxShadow: `0 12px 40px ${dashboardAccent}33`,
-        }
-      : undefined;
+        ? {
+            backgroundColor: `${dashboardAccent}24`,
+            borderColor: `${dashboardAccent}55`,
+            boxShadow: `0 12px 40px ${dashboardAccent}33`,
+          }
+        : undefined;
 
   async function logout() {
     setIsProfileOpen(false);
@@ -383,7 +346,7 @@ export default function Navbar() {
               backgroundColor: isLogin
                 ? "#f3f4f6"
                 : isHome
-                  ? homeAccent
+                  ? theme.accent
                   : isMemories
                     ? "#2563eb"
                     : isQuestions

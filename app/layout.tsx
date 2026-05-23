@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -15,6 +16,16 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+export const metadata: Metadata = {
+  title: {
+    default: "Couple Space",
+    template: "%s | Couple Space",
+  },
+  description:
+    "Личное пространство для пары: вопросы дня, воспоминания, викторины, чат и трекер совместных событий.",
+  applicationName: "Couple Space",
+};
 
 export default function RootLayout({
   children,

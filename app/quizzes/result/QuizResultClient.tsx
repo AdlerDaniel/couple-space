@@ -144,8 +144,15 @@ export default function QuizResultClient() {
     }
 
     async function loadRemote() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const authHeaders: Record<string, string> = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
       const response = await fetch(
-        `/api/quizzes/progress?coupleId=${activeCouple.id}&quizId=${activeQuiz.id}`
+        `/api/quizzes/progress?coupleId=${activeCouple.id}&quizId=${activeQuiz.id}`,
+        { headers: authHeaders }
       );
       const result = response.ok
         ? ((await response.json()) as {

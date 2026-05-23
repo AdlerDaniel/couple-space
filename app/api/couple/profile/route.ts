@@ -1,4 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
+import {
+  getAdminClient,
+  getAuthenticatedUser,
+  getAuthorizedCouple,
+} from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
@@ -7,22 +11,6 @@ type Couple = {
   partner_one_id: string | null;
   partner_two_id: string | null;
 };
-
-function getAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    return null;
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-}
 
 function getDisplayName(user: {
   email?: string;
@@ -65,21 +53,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const authorization = request.headers.get("authorization");
-  const token = authorization?.replace("Bearer ", "");
-
-  if (!token) {
-    return Response.json({ error: "Не выполнен вход" }, { status: 401 });
-  }
-
-  const {
-    data: { user },
-    error: userError,
-  } = await adminSupabase.auth.getUser(token);
-
-  if (userError || !user) {
-    return Response.json({ error: "Не удалось проверить пользователя" }, { status: 401 });
-  }
+  const user = await getAuthenticatedUser(adminSupabase, request);
+  if (!user) return Response.json({ error: "Не выполнен вход" }, { status: 401 });
 
   const body = (await request.json()) as { coupleId?: string };
 
@@ -87,22 +62,15 @@ export async function POST(request: Request) {
     return Response.json({ error: "Не передана пара" }, { status: 400 });
   }
 
-  const { data: couple, error: coupleError } = await adminSupabase
-    .from("couples")
-    .select("id, partner_one_id, partner_two_id")
-    .eq("id", body.coupleId)
-    .single<Couple>();
-
-  if (coupleError || !couple) {
-    return Response.json({ error: "Пара не найдена" }, { status: 404 });
+  const authorization = await getAuthorizedCouple(adminSupabase, body.coupleId, user.id);
+  if (!authorization.couple) {
+    return Response.json(
+      { error: authorization.error },
+      { status: authorization.status }
+    );
   }
 
-  const isMember =
-    couple.partner_one_id === user.id || couple.partner_two_id === user.id;
-
-  if (!isMember) {
-    return Response.json({ error: "Нет доступа к этой паре" }, { status: 403 });
-  }
+  const couple: Couple = authorization.couple;
 
   const existing = await adminSupabase
     .from("couple_profiles")

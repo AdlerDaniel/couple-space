@@ -1,6 +1,7 @@
 "use client";
 
 import { notificationsUpdatedEventName } from "@/lib/notifications";
+import { getPageTheme } from "@/lib/pageThemes";
 import { supabase } from "@/lib/supabaseClient";
 import { useDashboardAccent } from "@/lib/useDashboardAccent";
 import Link from "next/link";
@@ -55,19 +56,6 @@ const links = [
   },
 ];
 
-function getRouteAccent(pathname: string, dashboardAccent: string) {
-  if (pathname === "/") return "#ea580c";
-  if (pathname.startsWith("/dashboard")) return dashboardAccent;
-  if (pathname.startsWith("/profile")) return "#92400e";
-  if (pathname.startsWith("/memories")) return "#2563eb";
-  if (pathname.startsWith("/questions")) return "#27ae60";
-  if (pathname.startsWith("/quizzes")) return "#7c3aed";
-  if (pathname.startsWith("/tracker")) return "#ca8a04";
-  if (pathname.startsWith("/chat")) return "#0284c7";
-  if (pathname.startsWith("/login")) return "#be123c";
-  return "#1c8b59";
-}
-
 function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -98,7 +86,7 @@ function formatNotificationTime(date: string) {
 export default function MobileNav() {
   const pathname = usePathname();
   const dashboardAccent = useDashboardAccent();
-  const accent = getRouteAccent(pathname, dashboardAccent);
+  const accent = getPageTheme(pathname, dashboardAccent).accent;
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<CoupleNotification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -191,7 +179,13 @@ export default function MobileNav() {
     };
   }, [currentUserId]);
 
-  if (pathname.startsWith("/chat")) return null;
+  if (
+    pathname.startsWith("/chat") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/logout")
+  ) {
+    return null;
+  }
 
   const unreadNotifications = notifications.filter((notification) => !notification.read_at).length;
 
@@ -300,9 +294,9 @@ export default function MobileNav() {
           borderColor: `${accent}85`,
           boxShadow: `0 18px 48px ${accent}3f`,
         }}
-        className="fixed bottom-3 left-3 right-3 z-40 rounded-[1.35rem] border px-1.5 py-1.5 shadow-2xl backdrop-blur-2xl md:hidden"
+        className="fixed bottom-2 left-2 right-2 z-40 rounded-[1.1rem] border px-1 py-1 shadow-2xl backdrop-blur-2xl md:hidden"
       >
-        <div className="grid grid-cols-4 items-start gap-x-1 gap-y-1 text-center text-[10px] font-black leading-tight min-[380px]:text-[11px]">
+        <div className="grid grid-cols-8 items-stretch gap-1 text-center text-[8px] font-black leading-tight min-[380px]:text-[9px]">
           <button
             type="button"
             onClick={openNotifications}
@@ -313,12 +307,12 @@ export default function MobileNav() {
             }
             className={
               isNotificationsOpen
-                ? "relative flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 shadow-lg"
-                : "relative flex min-w-0 flex-col items-center gap-1 rounded-2xl bg-white/72 px-1 py-1.5 opacity-100 shadow-inner dark:bg-black/30"
+                ? "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 shadow-lg"
+                : "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-white/72 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
             }
             aria-label="Уведомления"
           >
-            <span className="text-xl leading-none min-[380px]:text-[1.35rem]">🔔</span>
+            <span className="text-base leading-none min-[380px]:text-lg">🔔</span>
             <span className="max-w-full truncate whitespace-nowrap">Увед.</span>
             {unreadNotifications > 0 && (
               <span className="absolute -right-0.5 -top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#ef4444] px-1 text-[9px] font-black leading-none text-white shadow-[0_0_14px_rgba(239,68,68,0.8)] ring-2 ring-white">
@@ -341,11 +335,11 @@ export default function MobileNav() {
                 }
                 className={
                   isActive
-                    ? "flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 shadow-lg"
-                    : "flex min-w-0 flex-col items-center gap-1 rounded-2xl bg-white/72 px-1 py-1.5 opacity-100 shadow-inner dark:bg-black/30"
+                    ? "flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 shadow-lg"
+                    : "flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-white/72 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
                 }
               >
-                <span className="text-xl leading-none min-[380px]:text-[1.35rem]">{link.icon}</span>
+                <span className="text-base leading-none min-[380px]:text-lg">{link.icon}</span>
                 <span className="max-w-full truncate whitespace-nowrap">{link.label}</span>
               </Link>
             );

@@ -435,6 +435,7 @@ export default function ChatPage() {
   const [audioDurations, setAudioDurations] = useState<Record<string, number>>({});
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [needsLogin, setNeedsLogin] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isRecordingPaused, setIsRecordingPaused] = useState(false);
@@ -670,10 +671,12 @@ export default function ChatPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push("/login");
+        setNeedsLogin(true);
+        setIsLoading(false);
         return;
       }
 
+      setNeedsLogin(false);
       setCurrentUserId(user.id);
 
       const { data: coupleData, error: coupleError } = await supabase
@@ -1469,6 +1472,9 @@ export default function ChatPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] px-6 pt-28 text-[#0284c7] dark:from-[#031b2e] dark:via-[#021526] dark:to-black dark:text-white">
         <div className="w-full max-w-xl space-y-4 rounded-[2rem] bg-white/55 p-6 shadow-2xl backdrop-blur-xl dark:bg-white/10">
+          <p className="text-center text-sm font-black uppercase tracking-[0.18em] text-[#0284c7]/70 dark:text-white/60">
+            Загружаем чат...
+          </p>
           {[0, 1, 2, 3].map((item) => (
             <div
               key={item}
@@ -1478,6 +1484,28 @@ export default function ChatPage() {
             />
           ))}
         </div>
+      </main>
+    );
+  }
+
+  if (needsLogin) {
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] px-6 pb-24 pt-28 text-[#075985] dark:from-[#031b2e] dark:via-[#021526] dark:to-black dark:text-white">
+        <section className="mx-auto max-w-2xl rounded-[2rem] border border-white/60 bg-white/55 p-8 text-center shadow-[0_32px_110px_rgba(2,132,199,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8">
+          <p className="text-sm font-black uppercase tracking-[0.22em] text-sky-500/70">
+            Чат
+          </p>
+          <h1 className="mt-3 text-4xl font-black">Войдите, чтобы открыть чат</h1>
+          <p className="mt-4 font-semibold text-[#075985]/68 dark:text-white/60">
+            Сообщения пары доступны только после входа в аккаунт.
+          </p>
+          <Link
+            href="/login"
+            className="mt-7 inline-flex rounded-full bg-[#0284c7] px-7 py-4 font-black text-white shadow-xl transition hover:-translate-y-0.5 hover:bg-[#0ea5e9]"
+          >
+            Перейти ко входу
+          </Link>
+        </section>
       </main>
     );
   }

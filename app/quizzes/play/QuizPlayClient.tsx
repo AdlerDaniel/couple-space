@@ -144,15 +144,22 @@ export default function QuizPlayClient() {
     stored[currentUserId] = answers;
     localStorage.setItem(key, JSON.stringify(stored));
 
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const authHeaders: Record<string, string> = session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : {};
+
     const response = await fetch("/api/quizzes/progress", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders,
       },
       body: JSON.stringify({
         quizId: quiz.id,
         coupleId: couple.id,
-        userId: currentUserId,
         answers,
       }),
     });

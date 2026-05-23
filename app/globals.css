@@ -951,6 +951,32 @@ body {
     padding-bottom: 6.5rem !important;
   }
 
+  section,
+  article,
+  aside,
+  form {
+    max-width: 100%;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font-size: 16px;
+  }
+
+  .grid {
+    min-width: 0;
+  }
+
+  .rounded-\[2\.5rem\] {
+    border-radius: 1.65rem;
+  }
+
+  .rounded-\[2rem\] {
+    border-radius: 1.45rem;
+  }
+
   main.home-main {
     padding-top: 1.25rem !important;
   }

@@ -87,6 +87,12 @@ export default function QuizzesPage() {
       if (!coupleData) return;
 
       setCouple(coupleData);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const authHeaders: Record<string, string> = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
 
       const partnerId =
         user.id === coupleData.partner_one_id
@@ -110,11 +116,11 @@ export default function QuizzesPage() {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
+                  ...authHeaders,
                 },
                 body: JSON.stringify({
                   quizId: quiz.id,
                   coupleId: coupleData.id,
-                  userId: user.id,
                   answers: stored[user.id],
                 }),
               })
@@ -128,7 +134,9 @@ export default function QuizzesPage() {
 
       await Promise.allSettled(localSyncJobs);
 
-      const response = await fetch(`/api/quizzes/progress?coupleId=${coupleData.id}`);
+      const response = await fetch(`/api/quizzes/progress?coupleId=${coupleData.id}`, {
+        headers: authHeaders,
+      });
       const result = response.ok
         ? ((await response.json()) as {
             answers?: Array<{ quiz_id: string; user_id: string }>;

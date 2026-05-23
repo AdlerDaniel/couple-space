@@ -1,22 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
+import {
+  getAdminClient,
+  getAuthenticatedUser,
+  getAuthorizedCouple,
+} from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
-
-function getAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    return null;
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-}
 
 export async function GET(request: Request) {
   const adminSupabase = getAdminClient();
@@ -34,6 +22,19 @@ export async function GET(request: Request) {
 
   if (!coupleId) {
     return Response.json({ error: "Не передана пара" }, { status: 400 });
+  }
+
+  const user = await getAuthenticatedUser(adminSupabase, request);
+  if (!user) {
+    return Response.json({ error: "Не выполнен вход" }, { status: 401 });
+  }
+
+  const authorization = await getAuthorizedCouple(adminSupabase, coupleId, user.id);
+  if (!authorization.couple) {
+    return Response.json(
+      { error: authorization.error },
+      { status: authorization.status }
+    );
   }
 
   let query = adminSupabase
@@ -67,14 +68,26 @@ export async function POST(request: Request) {
   const body = (await request.json()) as {
     quizId?: string;
     coupleId?: string;
-    userId?: string;
     answers?: Record<string, string>;
   };
 
-  if (!body.quizId || !body.coupleId || !body.userId || !body.answers) {
+  if (!body.quizId || !body.coupleId || !body.answers) {
     return Response.json(
       { error: "Не хватает данных для сохранения викторины" },
       { status: 400 }
+    );
+  }
+
+  const user = await getAuthenticatedUser(adminSupabase, request);
+  if (!user) {
+    return Response.json({ error: "Не выполнен вход" }, { status: 401 });
+  }
+
+  const authorization = await getAuthorizedCouple(adminSupabase, body.coupleId, user.id);
+  if (!authorization.couple) {
+    return Response.json(
+      { error: authorization.error },
+      { status: authorization.status }
     );
   }
 
@@ -83,7 +96,7 @@ export async function POST(request: Request) {
     .select("id")
     .eq("quiz_id", body.quizId)
     .eq("couple_id", body.coupleId)
-    .eq("user_id", body.userId)
+    .eq("user_id", user.id)
     .limit(1)
     .maybeSingle();
 
@@ -94,7 +107,7 @@ export async function POST(request: Request) {
   const payload = {
     quiz_id: body.quizId,
     couple_id: body.coupleId,
-    user_id: body.userId,
+    user_id: user.id,
     answers: body.answers,
     updated_at: new Date().toISOString(),
   };

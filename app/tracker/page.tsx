@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -288,14 +289,6 @@ export default function TrackerPage() {
     });
   }, [events, viewDate]);
   const weekDays = useMemo(() => getWeekDays(parseDateKey(selectedDate)), [selectedDate]);
-  const weekEvents = useMemo(() => {
-    const start = weekDays[0];
-    const end = weekDays[6];
-    return events.filter((event) => {
-      const date = parseDateKey(event.date);
-      return date >= start && date <= end;
-    });
-  }, [events, weekDays]);
   const eventsByDate = useMemo(() => groupByDate(events), [events]);
   const selectedRange = useMemo(() => getDateRange(parseDateKey(selectedDate), period), [period, selectedDate]);
   const rangeEvents = useMemo(
@@ -305,7 +298,7 @@ export default function TrackerPage() {
 
   useEffect(() => {
     if (!goalCategoryId && categories.length > 0) {
-      setGoalCategoryId(categories[0].id);
+      queueMicrotask(() => setGoalCategoryId(categories[0].id));
     }
   }, [categories, goalCategoryId]);
 
@@ -465,6 +458,23 @@ export default function TrackerPage() {
 
     setGoals((current) => current.map((goal) => (goal.id === optimisticGoal.id ? data : goal)));
     setGoalTargetCount(1);
+
+    const recipientId =
+      currentUserId === couple.partner_one_id ? couple.partner_two_id : couple.partner_one_id;
+
+    if (recipientId) {
+      await supabase.from("couple_notifications").insert({
+        recipient_id: recipientId,
+        actor_id: currentUserId,
+        couple_id: couple.id,
+        type: "tracker_goal_created",
+        title: "Новая цель пары",
+        body: `${category.name}: ${goalTargetCount} ${
+          goalPeriods.find((item) => item.key === goalPeriod)?.label || "за неделю"
+        }`,
+        href: "/tracker",
+      });
+    }
   }
 
   async function deleteGoal(goalId: string) {
@@ -892,9 +902,14 @@ function PairGoalsPanel({
 
       <div className="mt-4 space-y-3">
         {goals.length === 0 ? (
-          <div className="rounded-2xl bg-white/55 p-4 text-sm font-bold opacity-65 shadow-inner dark:bg-white/8">
-            Целей пока нет. Добавьте первую цель для пары.
-          </div>
+          <EmptyState
+            icon="◫"
+            title="Целей пока нет"
+            text="Выберите категорию, период и количество, чтобы поставить первую цель пары."
+            actionHref="/tracker"
+            actionLabel="Остаться здесь"
+            accent="#ca8a04"
+          />
         ) : (
           goals.map((goal) => {
             const isMine = goal.created_by === currentUserId;

@@ -1,7 +1,8 @@
 "use client";
 
+import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
-import { getQuizById } from "@/lib/quizzes";
+import { getQuizById, quizzes } from "@/lib/quizzes";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -33,6 +34,15 @@ function localAnswersKey(coupleId: string, quizId: string) {
 function localCommentsKey(coupleId: string, quizId: string) {
   return `couple-space:quiz-comments:${coupleId}:${quizId}`;
 }
+
+function getReadableName(value?: string | null, fallback = "Партнёр") {
+  const name = value?.trim();
+  if (!name) return fallback;
+  if (/^\d{5,}$/.test(name)) return fallback;
+  return name;
+}
+
+const quizDiscussionDraftKey = "couple-space:chat-draft";
 
 function AnswerValue({ value, isPhoto }: { value?: string; isPhoto: boolean }) {
   if (!value) {
@@ -213,6 +223,13 @@ export default function QuizResultClient() {
         text: newComment.text,
       },
     ]);
+
+    await createPartnerNotification(couple, currentUserId, {
+      type: "quiz_comment",
+      title: "Комментарий к результатам",
+      body: newComment.text,
+      href: `/quizzes/result?quiz=${quiz.id}`,
+    });
   }
 
   if (isLoading) {
@@ -244,15 +261,68 @@ export default function QuizResultClient() {
   const isPartnerOne = currentUserId === couple.partner_one_id;
   const myId = currentUserId;
   const partnerId = isPartnerOne ? couple.partner_two_id : couple.partner_one_id;
-  const myName = isPartnerOne ? profile?.partner_one || "Я" : profile?.partner_two || "Я";
+  const myName = isPartnerOne
+    ? getReadableName(profile?.partner_one, "Я")
+    : getReadableName(profile?.partner_two, "Я");
   const partnerName = isPartnerOne
-    ? profile?.partner_two || "Партнёр"
-    : profile?.partner_one || "Партнёр";
+    ? getReadableName(profile?.partner_two, "Партнёр")
+    : getReadableName(profile?.partner_one, "Партнёр");
   const myAnswers = answersByUser[myId] || {};
   const partnerAnswers = partnerId ? answersByUser[partnerId] || {} : {};
   const matches = quiz.questions.filter(
     (question) => myAnswers[question.id] && myAnswers[question.id] === partnerAnswers[question.id]
   ).length;
+  const answeredTogether = quiz.questions.filter(
+    (question) => myAnswers[question.id] && partnerAnswers[question.id]
+  ).length;
+  const matchPercent =
+    quiz.questions.length > 0 ? Math.round((matches / quiz.questions.length) * 100) : 0;
+  const differences = Math.max(0, answeredTogether - matches);
+  const discussionTopics = quiz.questions
+    .filter((question) => {
+      const myAnswer = myAnswers[question.id];
+      const partnerAnswer = partnerAnswers[question.id];
+      return myAnswer && partnerAnswer && myAnswer !== partnerAnswer;
+    })
+    .slice(0, 3);
+  const strongestMatch = quiz.questions.find((question) => {
+    const myAnswer = myAnswers[question.id];
+    return myAnswer && myAnswer === partnerAnswers[question.id];
+  });
+  const similarQuiz =
+    quizzes.find((item) => item.category === quiz.category && item.id !== quiz.id) ||
+    quizzes.find((item) => item.id !== quiz.id);
+
+  function sendResultToChat() {
+    if (!quiz) return;
+
+    const lines = [
+      `Я хочу обсудить викторину “${quiz.title}”.`,
+      `Совпадение: ${matchPercent}% (${matches} из ${quiz.questions.length}).`,
+      discussionTopics.length
+        ? `Темы: ${discussionTopics.map((topic) => topic.text).join("; ")}`
+        : "Кажется, у нас нет явных расхождений в ответах.",
+    ];
+
+    localStorage.setItem(quizDiscussionDraftKey, lines.join("\n"));
+    router.push("/chat");
+  }
+
+  function sendQuestionToChat(question: { id: string; text: string }) {
+    if (!quiz) return;
+
+    const myAnswer = myAnswers[question.id] || "нет ответа";
+    const partnerAnswer = partnerAnswers[question.id] || "нет ответа";
+    const lines = [
+      `Хочу обсудить вопрос из викторины “${quiz.title}”.`,
+      `Вопрос: ${question.text}`,
+      `${myName}: ${myAnswer}`,
+      `${partnerName}: ${partnerAnswer}`,
+    ];
+
+    localStorage.setItem(quizDiscussionDraftKey, lines.join("\n"));
+    router.push("/chat");
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#f1e7ff] to-[#fbf7ff] px-6 pb-28 pt-28 text-[#7c3aed] transition-colors dark:from-[#170525] dark:to-[#09020f] dark:text-[#c084fc]">
@@ -271,17 +341,88 @@ export default function QuizResultClient() {
               </p>
             </div>
 
-            <button
-              onClick={() => router.push(`/quizzes/play?quiz=${quiz.id}`)}
-              className="rounded-full bg-[#7c3aed] px-6 py-3 font-semibold text-white shadow-lg transition hover:bg-[#8b5cf6]"
-            >
-              Изменить мои ответы
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => router.push(`/quizzes/play?quiz=${quiz.id}`)}
+                className="rounded-full bg-[#7c3aed] px-6 py-3 font-semibold text-white shadow-lg transition hover:bg-[#8b5cf6]"
+              >
+                Изменить мои ответы
+              </button>
+              <button
+                onClick={sendResultToChat}
+                className="rounded-full bg-white/60 px-6 py-3 font-semibold text-[#6d28d9] shadow-inner transition hover:bg-violet-50 dark:bg-white/10 dark:text-[#d8b4fe]"
+              >
+                Отправить в чат
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-2xl bg-white/38 p-4 font-semibold text-[#6d28d9]/72 shadow-inner dark:bg-white/8 dark:text-[#d8b4fe]/72">
+            {!Object.keys(myAnswers).length
+              ? "Вы ещё не прошли тест. Ответьте, чтобы увидеть сравнение."
+              : partnerId && !Object.keys(partnerAnswers).length
+                ? "Партнёр ещё не прошёл тест. Результаты обновятся после его ответов."
+                : answeredTogether === quiz.questions.length
+                  ? "Оба прошли тест, можно сравнить ответы по каждому вопросу."
+                  : "Часть ответов ещё не заполнена, поэтому сравнение неполное."}
+          </div>
+
+          <div className="mt-6 grid gap-3 md:grid-cols-4">
+            {[
+              ["Совпадение", `${matchPercent}%`],
+              ["Одинаково", matches],
+              ["Различается", differences],
+              ["Ответили оба", answeredTogether],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-2xl bg-white/42 p-4 text-center shadow-inner dark:bg-white/8">
+                <p className="text-3xl font-black text-[#6d28d9] dark:text-[#c084fc]">{value}</p>
+                <p className="mt-1 text-xs font-black uppercase tracking-wide text-[#6d28d9]/58 dark:text-[#d8b4fe]/58">
+                  {label}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-5">
+            {(discussionTopics.length > 0 || strongestMatch) && (
+              <section className="rounded-3xl bg-gradient-to-b from-[#dfc8ff] to-[#eadcff] p-6 shadow-lg dark:from-[#2b1240] dark:to-[#1b0828]">
+                <h2 className="text-2xl font-black text-[#6d28d9] dark:text-[#c084fc]">
+                  Что обсудить
+                </h2>
+                {strongestMatch && (
+                  <div className="mt-4 rounded-2xl bg-emerald-100 p-4 text-emerald-800 shadow-inner dark:bg-emerald-500/15 dark:text-emerald-100">
+                    <p className="text-sm font-black uppercase tracking-wide opacity-65">
+                      Самое сильное совпадение
+                    </p>
+                    <p className="mt-1 font-black">{strongestMatch.text}</p>
+                  </div>
+                )}
+                {discussionTopics.length > 0 && (
+                  <div className="mt-4 grid gap-2">
+                    {discussionTopics.map((topic, index) => (
+                      <div
+                        key={topic.id}
+                        className="rounded-2xl bg-white/42 p-4 font-semibold text-[#6d28d9] shadow-inner dark:bg-white/8 dark:text-[#d8b4fe]"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <span>{index + 1}. {topic.text}</span>
+                          <button
+                            type="button"
+                            onClick={() => sendQuestionToChat(topic)}
+                            className="rounded-full bg-[#7c3aed] px-4 py-2 text-sm font-black text-white shadow-lg"
+                          >
+                            Обсудить
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
             {quiz.questions.map((question, index) => {
               const myAnswer = myAnswers[question.id];
               const partnerAnswer = partnerAnswers[question.id];
@@ -316,6 +457,28 @@ export default function QuizResultClient() {
                       <AnswerValue value={partnerAnswer} isPhoto={isPhotoQuestion} />
                     </div>
                   </div>
+                  {myAnswer && partnerAnswer && (
+                    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div
+                        className={`rounded-2xl px-4 py-3 text-sm font-black shadow-inner ${
+                          myAnswer === partnerAnswer
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-100"
+                            : "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-100"
+                        }`}
+                      >
+                        {myAnswer === partnerAnswer ? "Совпали" : "Разные ответы, стоит обсудить"}
+                      </div>
+                      {myAnswer !== partnerAnswer && (
+                        <button
+                          type="button"
+                          onClick={() => sendQuestionToChat(question)}
+                          className="rounded-full bg-[#7c3aed] px-5 py-3 text-sm font-black text-white shadow-lg"
+                        >
+                          Обсудить в чате
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </section>
               );
             })}
@@ -357,10 +520,20 @@ export default function QuizResultClient() {
 
             <button
               onClick={addComment}
+              disabled={!commentText.trim()}
               className="mt-3 w-full rounded-full bg-[#7c3aed] px-6 py-3 font-semibold text-white shadow-lg transition hover:bg-[#8b5cf6]"
             >
               Добавить комментарий
             </button>
+
+            {similarQuiz && (
+              <button
+                onClick={() => router.push(`/quizzes/play?quiz=${similarQuiz.id}`)}
+                className="mt-3 w-full rounded-full bg-white/55 px-6 py-3 font-semibold text-[#6d28d9] shadow-inner transition hover:bg-violet-50 dark:bg-white/10 dark:text-[#d8b4fe]"
+              >
+                Пройти похожую викторину
+              </button>
+            )}
           </aside>
         </div>
       </section>

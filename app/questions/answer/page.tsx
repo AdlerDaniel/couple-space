@@ -63,9 +63,13 @@ export default function QuestionAnswerPage() {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [nowMs, setNowMs] = useState(0);
+  const [dailyQuestionState, setDailyQuestionState] = useState(() => ({
+    question: getDailyQuestion(),
+    date: getDailyQuestionDate(),
+  }));
 
-  const questionOfTheDay = getDailyQuestion();
-  const todayDate = getDailyQuestionDate();
+  const questionOfTheDay = dailyQuestionState.question;
+  const todayDate = dailyQuestionState.date;
   const isPartnerOne = currentUserId === couple?.partner_one_id;
   const answerField = isPartnerOne ? "answer_one" : "answer_two";
   const editedAtField = isPartnerOne ? "answer_one_edited_at" : "answer_two_edited_at";
@@ -412,12 +416,24 @@ export default function QuestionAnswerPage() {
 
       setCouple(coupleData);
 
+      const { data: profileData } = await supabase
+        .from("couple_profiles")
+        .select("time_zone")
+        .eq("couple_id", coupleData.id)
+        .limit(1)
+        .maybeSingle<{ time_zone: string | null }>();
+
+      const timeZone = profileData?.time_zone || "Europe/Moscow";
+      const activeQuestion = getDailyQuestion(new Date(), timeZone);
+      const activeDate = getDailyQuestionDate(new Date(), timeZone);
+      setDailyQuestionState({ question: activeQuestion, date: activeDate });
+
       const { data: answerData } = await supabase
         .from("question_answers")
         .select("*")
         .eq("couple_id", coupleData.id)
-        .eq("date", todayDate)
-        .eq("question", questionOfTheDay)
+        .eq("date", activeDate)
+        .eq("question", activeQuestion)
         .limit(1)
         .single();
 
@@ -440,7 +456,7 @@ export default function QuestionAnswerPage() {
     }
 
     loadPageData();
-  }, [router, questionOfTheDay, todayDate]);
+  }, [router]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {

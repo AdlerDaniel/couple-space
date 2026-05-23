@@ -44,10 +44,13 @@ function getFallbackName(user: User) {
   const login = user.user_metadata?.login;
   const fullName = user.user_metadata?.full_name;
   const name = user.user_metadata?.name;
-  if (typeof login === "string" && login.trim()) return login.trim();
-  if (typeof fullName === "string" && fullName.trim()) return fullName.trim();
-  if (typeof name === "string" && name.trim()) return name.trim();
-  return user.email?.split("@")[0] || "Профиль";
+  const candidates = [login, fullName, name, user.email?.split("@")[0]];
+  const readable = candidates.find(
+    (candidate) =>
+      typeof candidate === "string" && candidate.trim() && !/^\d{5,}$/.test(candidate.trim()),
+  );
+
+  return typeof readable === "string" ? readable.trim() : "Профиль";
 }
 
 function getFallbackAvatar(user: User) {
@@ -126,8 +129,12 @@ export default function Navbar() {
 
         if (coupleProfile) {
           const isPartnerOne = user.id === coupleData.partner_one_id;
+          const profileName = isPartnerOne ? coupleProfile.partner_one : coupleProfile.partner_two;
           nextProfile = {
-            name: isPartnerOne ? coupleProfile.partner_one : coupleProfile.partner_two,
+            name:
+              profileName && !/^\d{5,}$/.test(profileName.trim())
+                ? profileName
+                : getFallbackName(user),
             avatar: isPartnerOne
               ? coupleProfile.avatar_one || coupleProfile.avatar || null
               : coupleProfile.avatar_two || coupleProfile.avatar || null,
@@ -318,6 +325,7 @@ export default function Navbar() {
 
         <div className="hidden gap-6 md:flex">
           {[
+            ["Сегодня", "/today"],
             ["Главная", "/"],
             ["Кабинет", "/dashboard"],
             ["Воспоминания", "/memories"],

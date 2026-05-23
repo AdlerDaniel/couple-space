@@ -114,6 +114,7 @@ const draftStoragePrefix = "couple-space:chat-draft:";
 const frequentEmojiStorageKey = "couple-space:chat-frequent-emojis";
 const recentStickerStorageKey = "couple-space:chat-recent-stickers";
 const favoriteStickerStorageKey = "couple-space:chat-favorite-stickers";
+const externalChatDraftKey = "couple-space:chat-draft";
 const reactions = ["❤️", "😂", "🥺", "👍", "👎", "😡", "😮", "🤢"];
 const maxMediaSize = 25 * 1024 * 1024;
 const maxVoiceSize = 15 * 1024 * 1024;
@@ -476,6 +477,15 @@ export default function ChatPage() {
       );
     });
   }, [currentUserId, messages, search]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      const externalDraft = localStorage.getItem(externalChatDraftKey);
+      if (!externalDraft) return;
+      setDraft(externalDraft);
+      localStorage.removeItem(externalChatDraftKey);
+    });
+  }, []);
 
   const pinnedMessages = useMemo(
     () =>

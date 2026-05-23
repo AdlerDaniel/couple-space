@@ -1,5 +1,6 @@
 "use client";
 
+import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -30,6 +31,7 @@ type AnswerSocialControlsProps<TRecord extends object> = {
   likeColumn: string;
   answerKey: "answer_one" | "answer_two";
   disabled?: boolean;
+  notificationHref?: string;
   onUpdate: (record: TRecord) => void;
 };
 
@@ -47,11 +49,14 @@ export default function AnswerSocialControls<TRecord extends object>({
   likeColumn,
   answerKey,
   disabled = false,
+  notificationHref = "/questions/today",
   onUpdate,
 }: AnswerSocialControlsProps<TRecord>) {
   const [isSaving, setIsSaving] = useState(false);
   const [couple, setCouple] = useState<Couple | null>(null);
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [commentMessage, setCommentMessage] = useState("");
   const socialRecord = record as Record<string, unknown>;
   const userReaction = currentUserId
     ? readMap(socialRecord[reactionColumn])[currentUserId]
@@ -64,6 +69,10 @@ export default function AnswerSocialControls<TRecord extends object>({
     : undefined;
   const isFavorite = favoriteAnswer === answerKey;
   const currentReactions = readMap(socialRecord[reactionColumn]);
+  const isCurrentUsersAnswer =
+    (answerKey === "answer_one" && currentUserId === couple?.partner_one_id) ||
+    (answerKey === "answer_two" && currentUserId === couple?.partner_two_id);
+  const shouldNotifyPartner = Boolean(couple && currentUserId && !isCurrentUsersAnswer);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -123,7 +132,7 @@ export default function AnswerSocialControls<TRecord extends object>({
   }
 
   async function updateSocial(nextPatch: Record<string, JsonMap>) {
-    if (!currentUserId || disabled) return;
+    if (!currentUserId || disabled) return false;
 
     setIsSaving(true);
 
@@ -136,12 +145,37 @@ export default function AnswerSocialControls<TRecord extends object>({
 
     if (!error && data) {
       onUpdate(data as TRecord);
+      setIsSaving(false);
+      return true;
     }
 
     setIsSaving(false);
+    return false;
   }
 
-  function toggleReaction(reaction: string) {
+  async function notifyPartner(
+    kind: "reaction" | "like" | "favorite" | "comment",
+    reaction?: string,
+    comment?: string,
+  ) {
+    if (!couple || !currentUserId || !shouldNotifyPartner) return;
+
+    const bodyByKind = {
+      reaction: `Партнёр отреагировал ${reaction || ""} на ваш ответ.`,
+      like: "Партнёр отметил ваш ответ.",
+      favorite: "Партнёр сохранил ваш ответ в избранное.",
+      comment: comment ? `Комментарий к вашему ответу: ${comment}` : "Партнёр оставил комментарий к вашему ответу.",
+    };
+
+    await createPartnerNotification(couple, currentUserId, {
+      type: kind === "comment" ? "question_comment" : "question_reaction",
+      title: kind === "comment" ? "Комментарий к ответу" : "Новая реакция",
+      body: bodyByKind[kind],
+      href: notificationHref,
+    });
+  }
+
+  async function toggleReaction(reaction: string) {
     if (!currentUserId) return;
 
     const nextReactions = {
@@ -153,10 +187,13 @@ export default function AnswerSocialControls<TRecord extends object>({
       delete nextReactions[currentUserId];
     }
 
-    updateSocial({ [reactionColumn]: nextReactions });
+    const didUpdate = await updateSocial({ [reactionColumn]: nextReactions });
+    if (didUpdate && userReaction !== reaction) {
+      await notifyPartner("reaction", reaction);
+    }
   }
 
-  function toggleLike() {
+  async function toggleLike() {
     if (!currentUserId) return;
 
     const currentLikes = readMap(socialRecord[likeColumn]);
@@ -169,10 +206,13 @@ export default function AnswerSocialControls<TRecord extends object>({
       delete nextLikes[currentUserId];
     }
 
-    updateSocial({ [likeColumn]: nextLikes });
+    const didUpdate = await updateSocial({ [likeColumn]: nextLikes });
+    if (didUpdate && !hasLiked) {
+      await notifyPartner("like");
+    }
   }
 
-  function toggleFavorite() {
+  async function toggleFavorite() {
     if (!currentUserId) return;
 
     const currentFavorites = readMap(socialRecord.favorite_answers);
@@ -185,7 +225,23 @@ export default function AnswerSocialControls<TRecord extends object>({
       delete nextFavorites[currentUserId];
     }
 
-    updateSocial({ favorite_answers: nextFavorites });
+    const didUpdate = await updateSocial({ favorite_answers: nextFavorites });
+    if (didUpdate && !isFavorite) {
+      await notifyPartner("favorite");
+    }
+  }
+
+  async function sendShortComment() {
+    if (!currentUserId || !shouldNotifyPartner) return;
+
+    const trimmedComment = commentText.trim();
+    if (!trimmedComment) return;
+
+    setIsSaving(true);
+    await notifyPartner("comment", undefined, trimmedComment.slice(0, 180));
+    setCommentText("");
+    setCommentMessage("Комментарий отправлен партнёру");
+    setIsSaving(false);
   }
 
   return (
@@ -245,6 +301,39 @@ export default function AnswerSocialControls<TRecord extends object>({
           ⭐ Любимый ответ
         </button>
       </div>
+
+      {shouldNotifyPartner && (
+        <div className="rounded-2xl border border-white/70 bg-white/54 p-3 shadow-inner dark:border-white/10 dark:bg-white/8">
+          <label className="text-xs font-black uppercase tracking-wide text-emerald-700/60 dark:text-emerald-100/60">
+            Короткий комментарий
+          </label>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input
+              value={commentText}
+              onChange={(event) => {
+                setCommentText(event.target.value);
+                setCommentMessage("");
+              }}
+              maxLength={180}
+              placeholder="Например: мне очень откликнулось"
+              className="min-h-11 flex-1 rounded-full border border-emerald-200/70 bg-white/72 px-4 text-sm font-semibold text-emerald-950 outline-none transition placeholder:text-emerald-800/35 focus:border-emerald-400 dark:border-white/10 dark:bg-black/20 dark:text-white"
+            />
+            <button
+              type="button"
+              onClick={sendShortComment}
+              disabled={disabled || isSaving || !commentText.trim()}
+              className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Отправить
+            </button>
+          </div>
+          {commentMessage && (
+            <p className="mt-2 text-xs font-black text-emerald-700 dark:text-emerald-100">
+              {commentMessage}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

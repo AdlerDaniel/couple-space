@@ -18,11 +18,33 @@ type CoupleNotification = {
   created_at: string;
 };
 
+type Couple = {
+  id: string;
+  partner_one_id: string;
+  partner_two_id: string | null;
+};
+
+type CoupleProfile = {
+  partner_one: string | null;
+  partner_two: string | null;
+};
+
+type TrackerGoal = {
+  title: string;
+};
+
+type QuickState = {
+  couple: Couple | null;
+  profile: CoupleProfile | null;
+  answerStreak: number;
+  latestGoal: TrackerGoal | null;
+};
+
 const mainLinks = [
   {
-    href: "/",
-    label: "Главная",
-    icon: "⌂",
+    href: "/today",
+    label: "Сегодня",
+    icon: "●",
   },
   {
     href: "/questions",
@@ -43,6 +65,11 @@ const mainLinks = [
 
 const moreLinks = [
   {
+    href: "/",
+    label: "Главная",
+    icon: "⌂",
+  },
+  {
     href: "/dashboard",
     label: "Кабинет",
     icon: "♡",
@@ -58,6 +85,14 @@ const moreLinks = [
     icon: "◫",
   },
   {
+    href: "/achievements",
+    label: "Достижения",
+    icon: "🏆",
+  },
+];
+
+const accountLinks = [
+  {
     href: "/profile",
     label: "Профиль",
     icon: "◉",
@@ -66,6 +101,11 @@ const moreLinks = [
     href: "/settings",
     label: "Настройки",
     icon: "⚙",
+  },
+  {
+    href: "/logout",
+    label: "Выйти",
+    icon: "↗",
   },
 ];
 
@@ -96,12 +136,25 @@ function formatNotificationTime(date: string) {
   return `${days} дн назад`;
 }
 
+function getReadableName(value?: string | null, fallback = "Партнёр") {
+  const name = value?.trim();
+  if (!name) return fallback;
+  if (/^\d{5,}$/.test(name)) return fallback;
+  return name;
+}
+
 export default function MobileNav() {
   const pathname = usePathname();
   const dashboardAccent = useDashboardAccent();
   const accent = getPageTheme(pathname, dashboardAccent).accent;
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<CoupleNotification[]>([]);
+  const [quickState, setQuickState] = useState<QuickState>({
+    couple: null,
+    profile: null,
+    answerStreak: 0,
+    latestGoal: null,
+  });
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
@@ -121,6 +174,52 @@ export default function MobileNav() {
       }
     }
 
+    async function loadQuickState(userId: string) {
+      const { data: couple } = await supabase
+        .from("couples")
+        .select("id, partner_one_id, partner_two_id")
+        .or(`partner_one_id.eq.${userId},partner_two_id.eq.${userId}`)
+        .limit(1)
+        .maybeSingle<Couple>();
+
+      if (!couple) {
+        if (!ignore) {
+          setQuickState({ couple: null, profile: null, answerStreak: 0, latestGoal: null });
+        }
+        return;
+      }
+
+      const [profileResult, answersResult, goalResult] = await Promise.all([
+        supabase
+          .from("couple_profiles")
+          .select("partner_one, partner_two")
+          .eq("couple_id", couple.id)
+          .limit(1)
+          .maybeSingle<CoupleProfile>(),
+        supabase
+          .from("question_answers")
+          .select("id", { count: "exact", head: true })
+          .eq("couple_id", couple.id)
+          .or(`answer_one.not.is.null,answer_two.not.is.null`),
+        supabase
+          .from("tracker_goals")
+          .select("title")
+          .eq("couple_id", couple.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle<TrackerGoal>(),
+      ]);
+
+      if (!ignore) {
+        setQuickState({
+          couple,
+          profile: profileResult.data || null,
+          answerStreak: answersResult.count || 0,
+          latestGoal: goalResult.data || null,
+        });
+      }
+    }
+
     async function checkUser() {
       const {
         data: { user },
@@ -129,11 +228,12 @@ export default function MobileNav() {
       if (!user) {
         setCurrentUserId(null);
         setNotifications([]);
+        setQuickState({ couple: null, profile: null, answerStreak: 0, latestGoal: null });
         return;
       }
 
       setCurrentUserId(user.id);
-      await loadNotifications(user.id);
+      await Promise.all([loadNotifications(user.id), loadQuickState(user.id)]);
     }
 
     checkUser();
@@ -147,9 +247,11 @@ export default function MobileNav() {
         if (session?.user) {
           setCurrentUserId(session.user.id);
           loadNotifications(session.user.id);
+          loadQuickState(session.user.id);
         } else {
           setCurrentUserId(null);
           setNotifications([]);
+          setQuickState({ couple: null, profile: null, answerStreak: 0, latestGoal: null });
         }
       }, 0);
     });
@@ -203,6 +305,16 @@ export default function MobileNav() {
   }
 
   const unreadNotifications = notifications.filter((notification) => !notification.read_at).length;
+  const coupleTitle = quickState.profile
+    ? `${getReadableName(quickState.profile.partner_one, "Партнёр 1")} + ${getReadableName(quickState.profile.partner_two, "Партнёр 2")}`
+    : quickState.couple
+      ? "Ваша пара"
+      : "Пара не создана";
+  const coupleSubtitle = quickState.couple?.partner_two_id
+    ? "Общее пространство активно"
+    : quickState.couple
+      ? "Пригласите партнёра"
+      : "Создайте пару в профиле";
 
   async function openNotifications() {
     const nextIsOpen = !isNotificationsOpen;
@@ -306,12 +418,36 @@ export default function MobileNav() {
 
       {isMoreOpen && (
         <div
-          className="fixed bottom-20 left-3 right-3 z-40 rounded-[1.4rem] border bg-white/94 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl dark:bg-black/86"
+          className="fixed bottom-20 left-3 right-3 z-40 max-h-[72vh] overflow-y-auto rounded-[1.4rem] border bg-white/94 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl dark:bg-black/86"
           style={{
             borderColor: `${accent}55`,
             color: accent,
           }}
         >
+          <div className="mb-3 rounded-2xl bg-white/72 p-3 shadow-inner dark:bg-white/10">
+            <p className="truncate text-base font-black">{coupleTitle}</p>
+            <p className="mt-1 text-xs font-bold opacity-58">{coupleSubtitle}</p>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
+                <p className="text-lg font-black">{unreadNotifications}</p>
+                <p className="truncate text-[10px] font-black uppercase opacity-50">Новых</p>
+              </div>
+              <div className="rounded-xl bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
+                <p className="text-lg font-black">{quickState.answerStreak}</p>
+                <p className="truncate text-[10px] font-black uppercase opacity-50">Ответов</p>
+              </div>
+              <div className="rounded-xl bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
+                <p className="truncate text-xs font-black">
+                  {quickState.latestGoal?.title || "Нет цели"}
+                </p>
+                <p className="truncate text-[10px] font-black uppercase opacity-50">Цель</p>
+              </div>
+            </div>
+          </div>
+
+          <p className="mb-2 px-2 text-[10px] font-black uppercase tracking-wide opacity-45">
+            Основные разделы
+          </p>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -342,6 +478,32 @@ export default function MobileNav() {
                   }
                 >
                   <span className="text-xl">{link.icon}</span>
+                  <span className="truncate">{link.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          <p className="mb-2 mt-3 px-2 text-[10px] font-black uppercase tracking-wide opacity-45">
+            Аккаунт
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {accountLinks.map((link) => {
+              const isActive = isActivePath(pathname, link.href);
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsMoreOpen(false)}
+                  style={isActive ? { backgroundColor: accent } : undefined}
+                  className={
+                    isActive
+                      ? "flex min-w-0 items-center justify-center gap-2 rounded-2xl px-2 py-3 text-sm font-black text-white shadow-lg"
+                      : "flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-white/72 px-2 py-3 text-sm font-black shadow-inner dark:bg-white/10"
+                  }
+                >
+                  <span>{link.icon}</span>
                   <span className="truncate">{link.label}</span>
                 </Link>
               );

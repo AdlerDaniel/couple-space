@@ -1,6 +1,7 @@
 "use client";
 
 import AnswerSocialControls from "@/components/AnswerSocialControls";
+import QuestionComments from "@/components/QuestionComments";
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { parseQuestionDate } from "@/lib/questionArchive";
 import { supabase } from "@/lib/supabaseClient";
@@ -14,6 +15,12 @@ type Couple = {
   id: string;
   partner_one_id: string;
   partner_two_id: string | null;
+};
+
+type CoupleProfile = {
+  partner_one: string | null;
+  partner_two: string | null;
+  time_zone?: string | null;
 };
 
 type Answer = {
@@ -39,14 +46,19 @@ type Answer = {
 export default function TodayQuestionPage() {
   const router = useRouter();
   const [couple, setCouple] = useState<Couple | null>(null);
+  const [profile, setProfile] = useState<CoupleProfile | null>(null);
   const [answerRecord, setAnswerRecord] = useState<Answer | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [nowMs, setNowMs] = useState(0);
   const [answerStreak, setAnswerStreak] = useState(0);
+  const [dailyQuestionState, setDailyQuestionState] = useState(() => ({
+    date: getDailyQuestionDate(),
+    question: getDailyQuestion(),
+    timeZone: "Europe/Moscow",
+  }));
 
-  const todayDate = getDailyQuestionDate();
-  const questionOfTheDay = getDailyQuestion();
+  const questionOfTheDay = dailyQuestionState.question;
   const isPartnerOne = currentUserId === couple?.partner_one_id;
   const myAnswer = isPartnerOne ? answerRecord?.answer_one : answerRecord?.answer_two;
   const partnerAnswer = isPartnerOne ? answerRecord?.answer_two : answerRecord?.answer_one;
@@ -132,6 +144,19 @@ export default function TodayQuestionPage() {
 
       setCouple(coupleData);
 
+      const { data: profileData } = await supabase
+        .from("couple_profiles")
+        .select("partner_one, partner_two, time_zone")
+        .eq("couple_id", coupleData.id)
+        .limit(1)
+        .maybeSingle<CoupleProfile>();
+
+      setProfile(profileData || null);
+      const timeZone = profileData?.time_zone || "Europe/Moscow";
+      const activeDate = getDailyQuestionDate(new Date(), timeZone);
+      const activeQuestion = getDailyQuestion(new Date(), timeZone);
+      setDailyQuestionState({ date: activeDate, question: activeQuestion, timeZone });
+
       const { data: streakRows } = await supabase
         .from("question_answers")
         .select("date, answer_one, answer_two")
@@ -145,13 +170,15 @@ export default function TodayQuestionPage() {
         .from("question_answers")
         .select("*")
         .eq("couple_id", coupleData.id)
-        .eq("date", todayDate)
-        .eq("question", questionOfTheDay)
+        .eq("date", activeDate)
+        .eq("question", activeQuestion)
         .limit(1)
         .single();
 
       if (!answerData) {
-        router.push("/questions");
+        setAnswerRecord(null);
+        setIsLoading(false);
+        setNowMs(Date.now());
         return;
       }
 
@@ -161,7 +188,7 @@ export default function TodayQuestionPage() {
     }
 
     loadData();
-  }, [router, questionOfTheDay, todayDate]);
+  }, [router]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -215,6 +242,9 @@ export default function TodayQuestionPage() {
             >
               Архив
             </button>
+            <p className="inline-flex rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-black text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
+              {dailyQuestionState.timeZone}
+            </p>
           </div>
           <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-black leading-tight text-[#15803d] dark:text-white md:text-6xl">
             {questionOfTheDay}
@@ -373,6 +403,16 @@ export default function TodayQuestionPage() {
             </div>
           </article>
         </div>
+
+        {answerRecord && (
+          <QuestionComments
+            answerId={answerRecord.id}
+            question={questionOfTheDay}
+            couple={couple}
+            currentUserId={currentUserId}
+            profile={profile}
+          />
+        )}
       </section>
     </main>
   );

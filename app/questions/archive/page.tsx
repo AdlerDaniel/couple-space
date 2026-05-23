@@ -24,6 +24,11 @@ type AnswerRow = {
   question: string;
   answer_one: string | null;
   answer_two: string | null;
+  answer_one_reactions?: Record<string, string>;
+  answer_two_reactions?: Record<string, string>;
+  answer_one_likes?: Record<string, boolean>;
+  answer_two_likes?: Record<string, boolean>;
+  favorite_answers?: Record<string, string>;
   date: string;
   couple_id: string;
 };
@@ -41,6 +46,38 @@ const groupOrder: QuestionArchiveGroup[] = [
   "Этот месяц",
   "Раньше",
 ];
+
+function readObject<TValue>(value: unknown): Record<string, TValue> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, TValue>)
+    : {};
+}
+
+function getReactionBadges(
+  reactions: Record<string, string> | undefined,
+  likes: Record<string, boolean> | undefined,
+  favorites: Record<string, string> | undefined,
+  answerKey: "answer_one" | "answer_two",
+) {
+  const reactionCounts = Object.values(readObject<string>(reactions)).reduce<Record<string, number>>(
+    (counts, reaction) => {
+      if (!reaction) return counts;
+      counts[reaction] = (counts[reaction] || 0) + 1;
+      return counts;
+    },
+    {},
+  );
+  const likeCount = Object.values(readObject<boolean>(likes)).filter(Boolean).length;
+  const favoriteCount = Object.values(readObject<string>(favorites)).filter(
+    (favorite) => favorite === answerKey,
+  ).length;
+
+  return [
+    ...Object.entries(reactionCounts).map(([reaction, count]) => `${reaction} ${count}`),
+    likeCount > 0 ? `👍 ${likeCount}` : null,
+    favoriteCount > 0 ? `⭐ ${favoriteCount}` : null,
+  ].filter(Boolean) as string[];
+}
 
 export default function QuestionsArchivePage() {
   const router = useRouter();
@@ -80,7 +117,9 @@ export default function QuestionsArchivePage() {
 
       const { data: answerRows } = await supabase
         .from("question_answers")
-        .select("id, question, answer_one, answer_two, date, couple_id")
+        .select(
+          "id, question, answer_one, answer_two, answer_one_reactions, answer_two_reactions, answer_one_likes, answer_two_likes, favorite_answers, date, couple_id",
+        )
         .eq("couple_id", coupleData.id);
 
       const archiveRows =
@@ -201,6 +240,18 @@ export default function QuestionsArchivePage() {
                     const isPartnerOne = currentUserId === couple?.partner_one_id;
                     const myAnswer = isPartnerOne ? row.answer_one : row.answer_two;
                     const partnerAnswer = isPartnerOne ? row.answer_two : row.answer_one;
+                    const myBadges = getReactionBadges(
+                      isPartnerOne ? row.answer_one_reactions : row.answer_two_reactions,
+                      isPartnerOne ? row.answer_one_likes : row.answer_two_likes,
+                      row.favorite_answers,
+                      isPartnerOne ? "answer_one" : "answer_two",
+                    );
+                    const partnerBadges = getReactionBadges(
+                      isPartnerOne ? row.answer_two_reactions : row.answer_one_reactions,
+                      isPartnerOne ? row.answer_two_likes : row.answer_one_likes,
+                      row.favorite_answers,
+                      isPartnerOne ? "answer_two" : "answer_one",
+                    );
 
                     return (
                       <button
@@ -222,9 +273,33 @@ export default function QuestionsArchivePage() {
                         <div className="mt-5 grid gap-2 text-sm font-bold md:grid-cols-2">
                           <div className="rounded-2xl bg-emerald-50/80 p-3 text-emerald-800 dark:bg-white/8 dark:text-emerald-100">
                             {myAnswer ? "Вы ответили" : "Ваш ответ пуст"}
+                            {myBadges.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {myBadges.map((badge) => (
+                                  <span
+                                    key={badge}
+                                    className="rounded-full bg-white/78 px-2 py-1 text-xs shadow-sm dark:bg-white/10"
+                                  >
+                                    {badge}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className="rounded-2xl bg-cyan-50/80 p-3 text-cyan-800 dark:bg-white/8 dark:text-cyan-100">
                             {partnerAnswer ? "Партнёр ответил" : "Партнёр не ответил"}
+                            {partnerBadges.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {partnerBadges.map((badge) => (
+                                  <span
+                                    key={badge}
+                                    className="rounded-full bg-white/78 px-2 py-1 text-xs shadow-sm dark:bg-white/10"
+                                  >
+                                    {badge}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </button>

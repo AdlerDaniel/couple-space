@@ -16,12 +16,27 @@ type CoupleNotification = {
   created_at: string;
 };
 
+type Couple = {
+  id: string;
+};
+
 const filters = [
   { key: "all", label: "Все" },
   { key: "unread", label: "Новые" },
+  { key: "questions", label: "Вопросы" },
+  { key: "quizzes", label: "Викторины" },
+  { key: "chat", label: "Чат" },
+  { key: "reactions", label: "Реакции" },
   { key: "achievement", label: "Достижения" },
-  { key: "activity", label: "Активность" },
 ] as const;
+
+const defaultNotificationSettings = {
+  chat: true,
+  questions: true,
+  quizzes: true,
+  goals: true,
+  reactions: true,
+};
 
 function formatTime(date: string) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -42,10 +57,23 @@ function getIcon(type: string) {
   return "♡";
 }
 
+function getTypeLabel(type: string) {
+  if (type === "achievement_unlocked") return "Достижение";
+  if (type.includes("reaction")) return "Реакция";
+  if (type.includes("comment")) return "Комментарий";
+  if (type.includes("question")) return "Вопрос";
+  if (type.includes("quiz")) return "Викторина";
+  if (type.includes("chat")) return "Чат";
+  if (type.includes("memory")) return "Воспоминание";
+  if (type.includes("tracker")) return "Трекер";
+  return "Событие";
+}
+
 export default function NotificationsPage() {
   const theme = getPageTheme("/dashboard");
   const [items, setItems] = useState<CoupleNotification[]>([]);
   const [filter, setFilter] = useState<(typeof filters)[number]["key"]>("all");
+  const [enabledCategories, setEnabledCategories] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isClearing, setIsClearing] = useState(false);
 
@@ -58,6 +86,30 @@ export default function NotificationsPage() {
       if (!user) {
         setIsLoading(false);
         return;
+      }
+
+      const { data: couple } = await supabase
+        .from("couples")
+        .select("id")
+        .or(`partner_one_id.eq.${user.id},partner_two_id.eq.${user.id}`)
+        .limit(1)
+        .maybeSingle<Couple>();
+
+      if (couple) {
+        const { data: settingsData } = await supabase
+          .from("user_notification_settings")
+          .select("settings")
+          .eq("couple_id", couple.id)
+          .eq("user_id", user.id)
+          .limit(1)
+          .maybeSingle<{ settings: Record<string, boolean> | null }>();
+
+        setEnabledCategories({
+          ...defaultNotificationSettings,
+          ...(settingsData?.settings || {}),
+        });
+      } else {
+        setEnabledCategories(defaultNotificationSettings);
       }
 
       const { data } = await supabase
@@ -75,11 +127,27 @@ export default function NotificationsPage() {
   }, []);
 
   const visibleItems = useMemo(() => {
-    if (filter === "unread") return items.filter((item) => !item.read_at);
-    if (filter === "achievement") return items.filter((item) => item.type === "achievement_unlocked");
-    if (filter === "activity") return items.filter((item) => item.type !== "achievement_unlocked");
-    return items;
-  }, [filter, items]);
+    const categoryFiltered = items.filter((item) => {
+      if (item.type.includes("chat")) return enabledCategories.chat !== false;
+      if (item.type.includes("question")) return enabledCategories.questions !== false;
+      if (item.type.includes("quiz")) return enabledCategories.quizzes !== false;
+      if (item.type.includes("tracker")) return enabledCategories.goals !== false;
+      if (item.type.includes("reaction") || item.type.includes("comment")) {
+        return enabledCategories.reactions !== false;
+      }
+      return true;
+    });
+
+    if (filter === "unread") return categoryFiltered.filter((item) => !item.read_at);
+    if (filter === "questions") return categoryFiltered.filter((item) => item.type.includes("question"));
+    if (filter === "quizzes") return categoryFiltered.filter((item) => item.type.includes("quiz"));
+    if (filter === "chat") return categoryFiltered.filter((item) => item.type.includes("chat"));
+    if (filter === "reactions") {
+      return categoryFiltered.filter((item) => item.type.includes("reaction") || item.type.includes("comment"));
+    }
+    if (filter === "achievement") return categoryFiltered.filter((item) => item.type === "achievement_unlocked");
+    return categoryFiltered;
+  }, [enabledCategories, filter, items]);
 
   const groupedItems = useMemo(() => {
     return visibleItems.reduce<Array<{ label: string; rows: CoupleNotification[] }>>((groups, item) => {
@@ -208,6 +276,12 @@ export default function NotificationsPage() {
                           <div className="flex items-center gap-2">
                             {!item.read_at && <span className="h-2.5 w-2.5 rounded-full bg-[#ef4444]" />}
                             <p className="truncate font-black">{item.title}</p>
+                            <span
+                              className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white"
+                              style={{ backgroundColor: theme.accent }}
+                            >
+                              {getTypeLabel(item.type)}
+                            </span>
                           </div>
                           {item.body && <p className="mt-1 line-clamp-2 text-sm font-bold opacity-65">{item.body}</p>}
                           <p className="mt-2 text-xs font-black uppercase tracking-wide opacity-45">

@@ -30,7 +30,15 @@ function generateInviteCode() {
 }
 
 function fallbackName(email?: string) {
-  return email?.split("@")[0] || "Профиль";
+  const value = email?.split("@")[0]?.trim();
+  if (!value || /^\d{5,}$/.test(value)) return "Партнёр";
+  return value;
+}
+
+function readableProfileName(name: string | null | undefined, email?: string) {
+  const value = name?.trim();
+  if (!value || /^\d{5,}$/.test(value)) return fallbackName(email);
+  return value;
 }
 
 function notifyProfileUpdated(profile: { name?: string; avatar?: string | null }) {
@@ -46,6 +54,7 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState("");
+  const [inviteLink, setInviteLink] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -55,6 +64,17 @@ export default function ProfilePage() {
     () => Boolean(currentUserId && couple?.partner_one_id === currentUserId),
     [couple?.partner_one_id, currentUserId]
   );
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      if (typeof window === "undefined" || !couple?.invite_code) {
+        setInviteLink("");
+        return;
+      }
+
+      setInviteLink(`${window.location.origin}/invite?code=${couple.invite_code}`);
+    });
+  }, [couple?.invite_code]);
 
   async function ensureCoupleProfile(activeCouple: Couple) {
     const { data: existingProfile } = await supabase
@@ -130,7 +150,10 @@ export default function ProfilePage() {
       const userIsPartnerOne = user.id === coupleData.partner_one_id;
       setProfile(activeProfile);
       setDisplayName(
-        userIsPartnerOne ? activeProfile.partner_one : activeProfile.partner_two
+        readableProfileName(
+          userIsPartnerOne ? activeProfile.partner_one : activeProfile.partner_two,
+          user.email,
+        )
       );
       setAvatarUrl(
         userIsPartnerOne
@@ -195,7 +218,7 @@ export default function ProfilePage() {
     setCouple(data);
     const activeProfile = await ensureCoupleProfile(data);
     setProfile(activeProfile);
-    setDisplayName(activeProfile.partner_one || fallbackName(userEmail));
+    setDisplayName(readableProfileName(activeProfile.partner_one, userEmail));
     setAvatarUrl(activeProfile.avatar_one || activeProfile.avatar || null);
     setMessage("Пара создана. Отправьте invite-код партнёру");
     setIsSaving(false);
@@ -244,7 +267,7 @@ export default function ProfilePage() {
     setCouple(data);
     const activeProfile = await ensureCoupleProfile(data);
     setProfile(activeProfile);
-    setDisplayName(activeProfile.partner_two || fallbackName(userEmail));
+    setDisplayName(readableProfileName(activeProfile.partner_two, userEmail));
     setAvatarUrl(activeProfile.avatar_two || activeProfile.avatar || null);
     setMessage("Вы присоединились к паре");
     setIsSaving(false);
@@ -362,6 +385,14 @@ export default function ProfilePage() {
     setDisplayName(fallbackName(userEmail));
     setMessage("Вы покинули пару");
     setIsSaving(false);
+  }
+
+  async function copyInviteLink() {
+    const value = inviteLink || couple?.invite_code;
+    if (!value) return;
+
+    await navigator.clipboard.writeText(value);
+    setMessage("Ссылка приглашения скопирована");
   }
 
   if (isLoading) {
@@ -483,7 +514,7 @@ export default function ProfilePage() {
               </div>
               {couple && (
                 <div className="rounded-full bg-white/65 px-4 py-2 text-sm font-black shadow-inner dark:bg-white/10">
-                  Invite: {couple.invite_code}
+                  {couple.partner_two_id ? "Партнёр присоединился" : "Ждём партнёра"}
                 </div>
               )}
             </div>
@@ -498,8 +529,18 @@ export default function ProfilePage() {
                     {couple.invite_code}
                   </p>
                   <p className="mt-3 text-sm font-semibold text-[#92400e]/65 dark:text-white/60">
-                    Отправьте этот код партнёру, чтобы он присоединился.
+                    Отправьте код или ссылку партнёру, чтобы он присоединился.
                   </p>
+                  <div className="mt-4 rounded-2xl bg-white/60 p-3 text-sm font-black shadow-inner dark:bg-black/20">
+                    <p className="truncate">{inviteLink || "Ссылка появится после загрузки"}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={copyInviteLink}
+                    className="mt-4 w-full rounded-2xl bg-[#92400e] px-5 py-3 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#b45309]"
+                  >
+                    Скопировать ссылку
+                  </button>
                 </div>
                 <div className="rounded-3xl bg-white/45 p-5 shadow-inner dark:bg-white/5">
                   <p className="text-sm font-black text-[#92400e]/70 dark:text-white/60">

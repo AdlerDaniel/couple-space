@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 const QUIZZES_PER_PAGE = 9;
 
 type ProgressFilter = "all" | "not-started" | "both" | "waiting";
+type SortMode = "recommended" | "short" | "long";
 
 const progressFilters: Array<{
   key: ProgressFilter;
@@ -18,6 +19,12 @@ const progressFilters: Array<{
   { key: "not-started", label: "Не проходили", description: "Ещё нет вашего ответа" },
   { key: "both", label: "Прошли оба", description: "Можно сравнить" },
   { key: "waiting", label: "Ждёт партнёра", description: "Вы прошли, партнёр нет" },
+];
+
+const sortOptions: Array<{ key: SortMode; label: string }> = [
+  { key: "recommended", label: "Рекомендуемые" },
+  { key: "short", label: "Короткие" },
+  { key: "long", label: "Длинные" },
 ];
 
 const categoryNotes: Record<string, string> = {
@@ -56,6 +63,7 @@ export default function QuizzesPage() {
   const [couple, setCouple] = useState<Couple | null>(null);
   const [activeCategory, setActiveCategory] = useState<QuizCategory>(quizCategories[0]);
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>("all");
+  const [sortMode, setSortMode] = useState<SortMode>("recommended");
   const [currentPage, setCurrentPage] = useState(1);
   const [progress, setProgress] = useState<QuizProgress>({
     mine: new Set(),
@@ -67,7 +75,7 @@ export default function QuizzesPage() {
     [activeCategory]
   );
   const filteredCategoryQuizzes = useMemo(() => {
-    return activeCategoryQuizzes.filter((quiz) => {
+    const filtered = activeCategoryQuizzes.filter((quiz) => {
       const mine = progress.mine.has(quiz.id);
       const partner = progress.partner.has(quiz.id);
 
@@ -76,7 +84,23 @@ export default function QuizzesPage() {
       if (progressFilter === "waiting") return mine && !partner;
       return true;
     });
-  }, [activeCategoryQuizzes, progress, progressFilter]);
+
+    return [...filtered].sort((first, second) => {
+      if (sortMode === "short") return first.questions.length - second.questions.length;
+      if (sortMode === "long") return second.questions.length - first.questions.length;
+
+      const firstScore =
+        (progress.mine.has(first.id) ? 0 : 4) +
+        (progress.partner.has(first.id) ? 2 : 0) +
+        (first.category === activeCategory ? 1 : 0);
+      const secondScore =
+        (progress.mine.has(second.id) ? 0 : 4) +
+        (progress.partner.has(second.id) ? 2 : 0) +
+        (second.category === activeCategory ? 1 : 0);
+
+      return secondScore - firstScore;
+    });
+  }, [activeCategory, activeCategoryQuizzes, progress, progressFilter, sortMode]);
   const totalPages = Math.max(
     1,
     Math.ceil(filteredCategoryQuizzes.length / QUIZZES_PER_PAGE)
@@ -91,6 +115,14 @@ export default function QuizzesPage() {
   const activePartnerCompletedCount = activeCategoryQuizzes.filter((quiz) =>
     progress.partner.has(quiz.id)
   ).length;
+  const recommendedToday = (
+    quizzes.find((quiz) => !progress.mine.has(quiz.id)) ||
+    quizzes.find((quiz) => progress.mine.has(quiz.id) && !progress.partner.has(quiz.id)) ||
+    quizzes[0]
+  )!;
+  const waitingComparison = quizzes.filter(
+    (quiz) => progress.mine.has(quiz.id) && progress.partner.has(quiz.id),
+  );
 
   useEffect(() => {
     async function loadProgress() {
@@ -197,6 +229,11 @@ export default function QuizzesPage() {
     setCurrentPage(1);
   }
 
+  function changeSortMode(mode: SortMode) {
+    setSortMode(mode);
+    setCurrentPage(1);
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#f1e7ff] to-[#fbf7ff] px-6 pb-28 pt-28 text-[#7c3aed] transition-colors dark:from-[#170525] dark:to-[#09020f] dark:text-[#c084fc]">
       <section className="mx-auto max-w-6xl">
@@ -222,6 +259,10 @@ export default function QuizzesPage() {
               const completedCount = categoryQuizzes.filter((quiz) =>
                 progress.mine.has(quiz.id)
               ).length;
+              const progressPercent =
+                categoryQuizzes.length > 0
+                  ? Math.round((completedCount / categoryQuizzes.length) * 100)
+                  : 0;
               const isActive = category === activeCategory;
 
               return (
@@ -245,10 +286,83 @@ export default function QuizzesPage() {
                   >
                     {completedCount} из {categoryQuizzes.length} пройдено
                   </span>
+                  <span className="mt-3 block h-2 overflow-hidden rounded-full bg-white/35 dark:bg-white/10">
+                    <span
+                      className={`block h-full rounded-full ${
+                        isActive ? "bg-white" : "bg-[#7c3aed]"
+                      }`}
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </span>
                 </button>
               );
             })}
           </div>
+        </div>
+
+        <div className="mt-8 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+          <article className="rounded-[2rem] border border-white/55 bg-white/45 p-5 shadow-[0_24px_90px_rgba(124,58,237,0.14)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
+            <p className="text-sm font-black uppercase tracking-wide text-[#8b5cf6] dark:text-[#d8b4fe]">
+              Рекомендуем сегодня
+            </p>
+            <h2 className="mt-2 text-3xl font-black text-[#6d28d9] dark:text-[#c084fc]">
+              {recommendedToday.title}
+            </h2>
+            <p className="mt-3 max-w-2xl font-semibold leading-7 text-[#6d28d9]/68 dark:text-[#d8b4fe]/68">
+              {recommendedToday.description}
+            </p>
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-[#7c3aed]/12 px-3 py-1 text-sm font-black text-[#6d28d9] dark:bg-white/10 dark:text-[#d8b4fe]">
+                {recommendedToday.category}
+              </span>
+              <span className="rounded-full bg-[#7c3aed]/12 px-3 py-1 text-sm font-black text-[#6d28d9] dark:bg-white/10 dark:text-[#d8b4fe]">
+                {recommendedToday.duration}
+              </span>
+            </div>
+            <Link
+              href={
+                progress.mine.has(recommendedToday.id)
+                  ? `/quizzes/result?quiz=${recommendedToday.id}`
+                  : `/quizzes/play?quiz=${recommendedToday.id}`
+              }
+              className="mt-6 inline-flex rounded-full bg-[#7c3aed] px-6 py-3 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#8b5cf6]"
+            >
+              {progress.mine.has(recommendedToday.id) ? "Открыть результат" : "Начать сегодня"}
+            </Link>
+          </article>
+
+          <article className="rounded-[2rem] border border-white/55 bg-white/45 p-5 shadow-[0_24px_90px_rgba(124,58,237,0.14)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5">
+            <p className="text-sm font-black uppercase tracking-wide text-[#8b5cf6] dark:text-[#d8b4fe]">
+              Ждёт сравнения
+            </p>
+            <div className="mt-4 space-y-3">
+              {waitingComparison.length === 0 ? (
+                <div className="rounded-2xl bg-white/55 p-4 font-semibold text-[#6d28d9]/68 shadow-inner dark:bg-white/8 dark:text-[#d8b4fe]/68">
+                  Пока нет викторин, которые прошли оба. Завершите один тест каждый, и здесь появится экран результатов пары.
+                </div>
+              ) : (
+                waitingComparison.slice(0, 3).map((quiz) => (
+                  <Link
+                    key={quiz.id}
+                    href={`/quizzes/result?quiz=${quiz.id}`}
+                    className="flex items-center justify-between gap-3 rounded-2xl bg-white/55 p-4 shadow-inner transition hover:bg-violet-50 dark:bg-white/8 dark:hover:bg-violet-500/15"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-black text-[#6d28d9] dark:text-[#c084fc]">
+                        {quiz.title}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-[#6d28d9]/58 dark:text-[#d8b4fe]/58">
+                        Отдельный экран результатов пары
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-[#7c3aed] px-3 py-1 text-sm font-black text-white">
+                      Сравнить
+                    </span>
+                  </Link>
+                ))
+              )}
+            </div>
+          </article>
         </div>
 
         <section className="mt-8 rounded-[2rem] bg-gradient-to-b from-[#dfc8ff] to-[#eadcff] p-6 shadow-2xl dark:from-[#2b1240] dark:to-[#1b0828]">
@@ -357,6 +471,32 @@ export default function QuizzesPage() {
                 </button>
               );
             })}
+          </div>
+
+          <div className="mb-6 flex flex-col gap-3 rounded-3xl bg-white/35 p-3 shadow-inner dark:bg-white/5 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm font-bold text-[#6d28d9]/70 dark:text-[#d8b4fe]/70">
+              Сортировка по длине и рекомендации
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {sortOptions.map((option) => {
+                const isActive = sortMode === option.key;
+
+                return (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => changeSortMode(option.key)}
+                    className={
+                      isActive
+                        ? "rounded-full bg-[#7c3aed] px-4 py-2 text-sm font-black text-white shadow-lg"
+                        : "rounded-full bg-white/70 px-4 py-2 text-sm font-black text-[#6d28d9] shadow transition hover:bg-violet-50 dark:bg-white/10 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
+                    }
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {visibleQuizzes.length === 0 ? (

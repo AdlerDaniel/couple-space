@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 
 type Couple = {
   id: string;
+  invite_code?: string | null;
   partner_one_id: string | null;
   partner_two_id: string | null;
 };
@@ -16,6 +17,7 @@ type CoupleProfile = {
   partner_one: string;
   partner_two: string;
   start_date: string | null;
+  time_zone?: string | null;
 };
 
 type MemoryPreview = {
@@ -39,6 +41,11 @@ type ChatPreview = {
 type QuestionAnswer = {
   answer_one: string | null;
   answer_two: string | null;
+  answer_one_reactions?: Record<string, string>;
+  answer_two_reactions?: Record<string, string>;
+  answer_one_likes?: Record<string, boolean>;
+  answer_two_likes?: Record<string, boolean>;
+  favorite_answers?: Record<string, string>;
 };
 
 type TrackerEvent = {
@@ -57,6 +64,16 @@ type TrackerGoal = {
   created_at: string;
 };
 
+type CoupleNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  href: string | null;
+  read_at: string | null;
+  created_at: string;
+};
+
 type HomeState = {
   isLoading: boolean;
   userId: string | null;
@@ -67,6 +84,8 @@ type HomeState = {
   todayAnswer: QuestionAnswer | null;
   todayTrackerEvents: TrackerEvent[];
   latestGoal: TrackerGoal | null;
+  latestUnreadNotification: CoupleNotification | null;
+  loadedAt: number;
   stats: {
     memories: number;
     answers: number;
@@ -86,6 +105,8 @@ const emptyState: HomeState = {
   todayAnswer: null,
   todayTrackerEvents: [],
   latestGoal: null,
+  latestUnreadNotification: null,
+  loadedAt: 0,
   stats: {
     memories: 0,
     answers: 0,
@@ -118,7 +139,14 @@ const quickActions = [
     color: "from-violet-600 to-fuchsia-600",
   },
   {
-    title: "Написать в чат",
+    title: "Отметить цель",
+    text: "Быстро внесите прогресс по привычке, свиданию или общей договорённости.",
+    href: "/tracker",
+    icon: "◫",
+    color: "from-amber-500 to-orange-600",
+  },
+  {
+    title: "Написать",
     text: "Сообщения, голосовые, фото, реакции, стикеры и закрепы.",
     href: "/chat",
     icon: "◌",
@@ -174,15 +202,25 @@ function getGoalPeriodLabel(period: string) {
   return "на неделю";
 }
 
+function getReadableName(value?: string | null, fallback = "Партнёр") {
+  const name = value?.trim();
+  if (!name) return fallback;
+  if (/^\d{5,}$/.test(name)) return fallback;
+  return name;
+}
+
 export default function Home() {
   const [state, setState] = useState<HomeState>(emptyState);
-  const todayQuestion = getDailyQuestion();
-  const todayQuestionDate = getDailyQuestionDate();
+  const [dailyQuestionState, setDailyQuestionState] = useState(() => ({
+    question: getDailyQuestion(),
+    date: getDailyQuestionDate(),
+  }));
+  const todayQuestion = dailyQuestionState.question;
   const recommendedQuiz = quizzes[0];
 
   const coupleName = useMemo(() => {
     if (!state.profile) return "Ваша пара";
-    return `${state.profile.partner_one || "Партнёр 1"} + ${state.profile.partner_two || "Партнёр 2"}`;
+    return `${getReadableName(state.profile.partner_one, "Партнёр 1")} + ${getReadableName(state.profile.partner_two, "Партнёр 2")}`;
   }, [state.profile]);
 
   const daysTogether = getDaysTogether(state.profile?.start_date);
@@ -192,12 +230,183 @@ export default function Home() {
   const isWaitingForPartnerAnswer = Boolean(myAnswer && !partnerAnswer);
   const isPartnerAnswerReady = Boolean(partnerAnswer);
   const lastChat = state.chats[0];
+  const partnerId = isPartnerOne ? state.couple?.partner_two_id : state.couple?.partner_one_id;
+  const partnerReactionOnMyAnswer =
+    partnerId && state.todayAnswer
+      ? (isPartnerOne
+          ? state.todayAnswer.answer_one_reactions?.[partnerId]
+          : state.todayAnswer.answer_two_reactions?.[partnerId])
+      : null;
+  const chatIsQuiet =
+    !lastChat || state.loadedAt - new Date(lastChat.created_at).getTime() > 1000 * 60 * 60 * 24;
   const totalStats =
     state.stats.memories +
     state.stats.answers +
     state.stats.quizzes +
     state.stats.tracker +
     state.stats.chat;
+  const onboardingSteps = [
+    {
+      title: "Создайте пару",
+      text: "Общее пространство и invite-код.",
+      href: "/profile",
+      done: Boolean(state.couple),
+    },
+    {
+      title: "Пригласите партнёра",
+      text: "Поделитесь кодом или ссылкой.",
+      href: state.couple?.invite_code ? `/invite?code=${state.couple.invite_code}` : "/profile",
+      done: Boolean(state.couple?.partner_two_id),
+    },
+    {
+      title: "Ответьте на первый вопрос",
+      text: "Откроет ежедневный ритуал.",
+      href: "/questions/answer",
+      done: state.stats.answers > 0,
+    },
+    {
+      title: "Добавьте первое воспоминание",
+      text: "Фото, дата и подпись.",
+      href: "/memories",
+      done: state.stats.memories > 0,
+    },
+  ];
+  const hasOnboarding = state.userId && onboardingSteps.some((step) => !step.done);
+  const primaryAction = (() => {
+    if (!state.userId) {
+      return {
+        label: "Первый шаг",
+        title: "Войдите, чтобы открыть пространство пары",
+        text: "После входа здесь появится личный сценарий на сегодня.",
+        href: "/login",
+        button: "Войти",
+        icon: "↗",
+        tone: "orange",
+      };
+    }
+
+    if (!state.couple) {
+      return {
+        label: "Первый шаг",
+        title: "Создайте пару",
+        text: "Заполните профиль и пригласите партнёра, чтобы открыть общий центр активности.",
+        href: "/profile",
+        button: "Создать пару",
+        icon: "＋",
+        tone: "orange",
+      };
+    }
+
+    if (!state.couple.partner_two_id) {
+      return {
+        label: "Приглашение",
+        title: "Пригласите партнёра",
+        text: "Пространство станет живым, когда второй человек присоединится к паре.",
+        href: "/profile",
+        button: "Открыть профиль",
+        icon: "↗",
+        tone: "orange",
+      };
+    }
+
+    if (!myAnswer && !partnerAnswer) {
+      return {
+        label: "Лучший следующий шаг",
+        title: "Ответьте на первый вопрос дня",
+        text: "Оба ещё не отвечали. Начните коротко, а партнёр увидит свой шаг следом.",
+        href: "/questions/answer",
+        button: "Ответить",
+        icon: "✉",
+        tone: "emerald",
+      };
+    }
+
+    if (myAnswer && !partnerAnswer) {
+      return {
+        label: "Статус дня",
+        title: "Ждём ответ партнёра",
+        text: "Ваш ответ сохранён. Можно перейти в чат и мягко напомнить.",
+        href: "/chat",
+        button: "Написать",
+        icon: "⌛",
+        tone: "sky",
+      };
+    }
+
+    if (partnerAnswer) {
+      return {
+        label: partnerReactionOnMyAnswer ? "Новая реакция" : "Ответ готов",
+        title: partnerReactionOnMyAnswer
+          ? `Партнёр отреагировал ${partnerReactionOnMyAnswer}`
+          : "Откройте ответ партнёра и оставьте реакцию",
+        text: partnerReactionOnMyAnswer
+          ? "Можно открыть карточку, посмотреть ответ и ответить своей реакцией."
+          : "Ответ уже доступен. Самый тёплый следующий шаг - реакция или лайк.",
+        href: "/questions/today",
+        button: "Открыть ответ",
+        icon: partnerReactionOnMyAnswer || "❤",
+        tone: "emerald",
+      };
+    }
+
+    if (state.latestUnreadNotification) {
+      return {
+        label: "Новое событие",
+        title: state.latestUnreadNotification.title,
+        text:
+          state.latestUnreadNotification.body ||
+          "Откройте уведомление и продолжите действие партнёра.",
+        href: state.latestUnreadNotification.href || "/notifications",
+        button: "Открыть",
+        icon: "●",
+        tone: "orange",
+      };
+    }
+
+    if (state.latestGoal) {
+      return {
+        label: "Цель пары",
+        title: "Внесите прогресс по цели",
+        text: `${state.latestGoal.title}: ${state.latestGoal.target_count} ${getGoalPeriodLabel(state.latestGoal.period)}.`,
+        href: "/tracker",
+        button: "Отметить",
+        icon: "◫",
+        tone: "amber",
+      };
+    }
+
+    if (chatIsQuiet) {
+      return {
+        label: "Связь",
+        title: "Напишите короткое сообщение",
+        text: "В чате давно не было новых сообщений. Одной фразы достаточно, чтобы оживить день.",
+        href: "/chat",
+        button: "Открыть чат",
+        icon: "◌",
+        tone: "sky",
+      };
+    }
+
+    return {
+      label: "Рекомендуем сегодня",
+      title: recommendedQuiz?.title || "Выберите короткую викторину",
+      text: recommendedQuiz?.description || "Пройдите тест отдельно, а потом сравните результаты.",
+      href: recommendedQuiz ? `/quizzes/play?quiz=${recommendedQuiz.id}` : "/quizzes",
+      button: "Начать",
+      icon: "✦",
+      tone: "violet",
+    };
+  })();
+  const primaryToneClass =
+    primaryAction.tone === "emerald"
+      ? "from-emerald-50 via-white to-teal-50 text-emerald-900 dark:from-emerald-500/16 dark:via-white/8 dark:to-teal-500/12"
+      : primaryAction.tone === "sky"
+        ? "from-sky-50 via-white to-cyan-50 text-sky-900 dark:from-sky-500/16 dark:via-white/8 dark:to-cyan-500/12"
+        : primaryAction.tone === "amber"
+          ? "from-amber-50 via-white to-orange-50 text-amber-900 dark:from-amber-500/16 dark:via-white/8 dark:to-orange-500/12"
+          : primaryAction.tone === "violet"
+            ? "from-violet-50 via-white to-fuchsia-50 text-violet-900 dark:from-violet-500/16 dark:via-white/8 dark:to-fuchsia-500/12"
+            : "from-orange-50 via-white to-amber-50 text-orange-900 dark:from-orange-500/16 dark:via-white/8 dark:to-amber-500/12";
 
   useEffect(() => {
     async function loadHome() {
@@ -212,7 +421,7 @@ export default function Home() {
 
       const { data: couple } = await supabase
         .from("couples")
-        .select("id, partner_one_id, partner_two_id")
+        .select("id, invite_code, partner_one_id, partner_two_id")
         .or(`partner_one_id.eq.${user.id},partner_two_id.eq.${user.id}`)
         .limit(1)
         .maybeSingle<Couple>();
@@ -222,9 +431,20 @@ export default function Home() {
         return;
       }
 
+      const { data: profileData } = await supabase
+        .from("couple_profiles")
+        .select("partner_one, partner_two, start_date, time_zone")
+        .eq("couple_id", couple.id)
+        .limit(1)
+        .maybeSingle<CoupleProfile>();
+
+      const timeZone = profileData?.time_zone || "Europe/Moscow";
+      const activeQuestion = getDailyQuestion(new Date(), timeZone);
+      const activeQuestionDate = getDailyQuestionDate(new Date(), timeZone);
+      setDailyQuestionState({ question: activeQuestion, date: activeQuestionDate });
+
       const todayKey = getTodayKey();
       const [
-        profileResult,
         memoriesResult,
         memoryCountResult,
         answersCountResult,
@@ -235,13 +455,8 @@ export default function Home() {
         latestGoalResult,
         chatCountResult,
         chatResult,
+        latestNotificationResult,
       ] = await Promise.all([
-        supabase
-          .from("couple_profiles")
-          .select("partner_one, partner_two, start_date")
-          .eq("couple_id", couple.id)
-          .limit(1)
-          .maybeSingle<CoupleProfile>(),
         supabase
           .from("memories")
           .select("id, title, caption, image, event_date, created_at")
@@ -258,10 +473,12 @@ export default function Home() {
           .eq("couple_id", couple.id),
         supabase
           .from("question_answers")
-          .select("answer_one, answer_two")
+          .select(
+            "answer_one, answer_two, answer_one_reactions, answer_two_reactions, answer_one_likes, answer_two_likes, favorite_answers",
+          )
           .eq("couple_id", couple.id)
-          .eq("date", todayQuestionDate)
-          .eq("question", todayQuestion)
+          .eq("date", activeQuestionDate)
+          .eq("question", activeQuestion)
           .limit(1)
           .maybeSingle<QuestionAnswer>(),
         supabase
@@ -296,18 +513,28 @@ export default function Home() {
           .eq("deleted_for_everyone", false)
           .order("created_at", { ascending: false })
           .limit(3),
+        supabase
+          .from("couple_notifications")
+          .select("id, type, title, body, href, read_at, created_at")
+          .eq("recipient_id", user.id)
+          .is("read_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle<CoupleNotification>(),
       ]);
 
       setState({
         isLoading: false,
         userId: user.id,
         couple,
-        profile: profileResult.data || null,
+        profile: profileData || null,
         memories: (memoriesResult.data || []) as MemoryPreview[],
         chats: (chatResult.data || []) as ChatPreview[],
         todayAnswer: todayAnswerResult.data || null,
         todayTrackerEvents: (todayTrackerResult.data || []) as TrackerEvent[],
         latestGoal: latestGoalResult.data || null,
+        latestUnreadNotification: latestNotificationResult.data || null,
+        loadedAt: Date.now(),
         stats: {
           memories: memoryCountResult.count || 0,
           answers: answersCountResult.count || 0,
@@ -319,7 +546,7 @@ export default function Home() {
     }
 
     loadHome();
-  }, [todayQuestion, todayQuestionDate]);
+  }, []);
 
   return (
     <main className="home-main min-h-screen bg-[#fff8ed] px-4 pb-24 pt-3 text-[#7c2d12] transition-colors dark:bg-[#140b05] dark:text-[#ffedd5] md:px-6 md:pt-24">
@@ -359,6 +586,45 @@ export default function Home() {
             </div>
           ))}
         </div>
+
+        {hasOnboarding && (
+          <div className="mt-3 rounded-[1.35rem] border border-white/60 bg-white/62 p-4 shadow-[0_18px_58px_rgba(194,65,12,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[1.8rem] md:p-5">
+            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ea580c]/58 dark:text-orange-100/55">
+                  Первый запуск
+                </p>
+                <h2 className="mt-1 !text-xl font-black text-[#c2410c] dark:text-white">
+                  Быстрый путь к живому пространству
+                </h2>
+              </div>
+              <span className="text-sm font-black text-[#7c2d12]/58 dark:text-white/50">
+                {onboardingSteps.filter((step) => step.done).length} из {onboardingSteps.length}
+              </span>
+            </div>
+            <div className="mt-4 grid gap-2 md:grid-cols-4">
+              {onboardingSteps.map((step, index) => (
+                <Link
+                  key={step.title}
+                  href={step.href}
+                  className={`rounded-2xl p-3 shadow-inner transition hover:-translate-y-0.5 ${
+                    step.done
+                      ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-500/12 dark:text-emerald-100"
+                      : "bg-orange-50 text-orange-900 dark:bg-orange-500/12 dark:text-orange-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/72 text-sm font-black shadow-inner dark:bg-white/10">
+                      {step.done ? "✓" : index + 1}
+                    </span>
+                    <p className="min-w-0 truncate font-black">{step.title}</p>
+                  </div>
+                  <p className="mt-2 line-clamp-2 text-xs font-semibold opacity-65">{step.text}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="mx-auto mt-3 max-w-7xl rounded-[1.35rem] border border-white/60 bg-white/66 p-4 shadow-[0_20px_64px_rgba(194,65,12,0.10)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:mt-5 md:rounded-[2rem] md:p-6">
@@ -379,7 +645,34 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <Link
+          href={primaryAction.href}
+          className={`mt-4 block rounded-[1.4rem] border border-white/70 bg-gradient-to-br p-5 shadow-[0_18px_58px_rgba(194,65,12,0.12)] transition hover:-translate-y-0.5 dark:border-white/10 md:rounded-[1.8rem] md:p-6 ${primaryToneClass}`}
+        >
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-black uppercase tracking-[0.16em] opacity-55">
+                {primaryAction.label}
+              </p>
+              <h3 className="mt-2 !text-2xl font-black leading-tight md:!text-4xl">
+                {primaryAction.title}
+              </h3>
+              <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 opacity-68 md:text-base">
+                {primaryAction.text}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 md:shrink-0">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/72 text-2xl shadow-inner dark:bg-white/10">
+                {primaryAction.icon}
+              </span>
+              <span className="rounded-full bg-[#ea580c] px-5 py-3 text-sm font-black text-white shadow-lg">
+                {primaryAction.button}
+              </span>
+            </div>
+          </div>
+        </Link>
+
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
             {
               label: "Вопрос дня",
@@ -505,35 +798,50 @@ export default function Home() {
           </div>
 
           <div className="mt-5 grid gap-3">
-            {(state.memories.length ? state.memories : [null, null, null]).map((memory, index) => (
+            {state.memories.length === 0 ? (
               <Link
-                key={memory?.id || index}
                 href="/memories"
-                className="grid grid-cols-[4.5rem_1fr] gap-3 rounded-2xl bg-blue-50/80 p-2 shadow-inner transition hover:bg-blue-100 dark:bg-white/8 dark:hover:bg-blue-500/15"
+                className="rounded-2xl bg-blue-50/80 p-5 text-center shadow-inner transition hover:bg-blue-100 dark:bg-white/8 dark:hover:bg-blue-500/15"
               >
-                <div
-                  className="h-16 rounded-xl bg-cover bg-center bg-blue-200"
-                  style={{
-                    backgroundImage: memory?.image
-                      ? `url("${memory.image}")`
-                      : "linear-gradient(135deg,#bfdbfe,#dbeafe)",
-                  }}
-                />
-                <div className="min-w-0 py-1">
-                  <p className="truncate font-black text-blue-950 dark:text-white">
-                    {memory?.title || "Добавьте новое воспоминание"}
-                  </p>
-                  <p className="mt-1 line-clamp-2 text-sm font-semibold text-blue-950/58 dark:text-white/50">
-                    {memory?.caption || (memory ? formatDate(memory.event_date) : "Фото, описание и дата события появятся здесь.")}
-                  </p>
-                </div>
+                <p className="text-3xl">▣</p>
+                <p className="mt-2 font-black text-blue-950 dark:text-white">
+                  Добавьте первое воспоминание
+                </p>
+                <p className="mt-1 text-sm font-semibold text-blue-950/58 dark:text-white/50">
+                  Фото, дата и короткая подпись сделают главную живее.
+                </p>
               </Link>
-            ))}
+            ) : (
+              state.memories.map((memory) => (
+                <Link
+                  key={memory.id}
+                  href="/memories"
+                  className="grid grid-cols-[4.5rem_1fr] gap-3 rounded-2xl bg-blue-50/80 p-2 shadow-inner transition hover:bg-blue-100 dark:bg-white/8 dark:hover:bg-blue-500/15"
+                >
+                  <div
+                    className="h-16 rounded-xl bg-cover bg-center bg-blue-200"
+                    style={{
+                      backgroundImage: memory.image
+                        ? `url("${memory.image}")`
+                        : "linear-gradient(135deg,#bfdbfe,#dbeafe)",
+                    }}
+                  />
+                  <div className="min-w-0 py-1">
+                    <p className="truncate font-black text-blue-950 dark:text-white">
+                      {memory.title || "Воспоминание"}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-sm font-semibold text-blue-950/58 dark:text-white/50">
+                      {memory.caption || formatDate(memory.event_date)}
+                    </p>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </article>
       </section>
 
-      <section className="mx-auto mt-3 grid max-w-7xl grid-cols-2 gap-3 md:mt-5 lg:grid-cols-4">
+      <section className="mx-auto mt-3 grid max-w-7xl grid-cols-2 gap-3 md:mt-5 lg:grid-cols-5">
         {quickActions.map((action) => (
           <Link
             key={action.href}
@@ -581,7 +889,9 @@ export default function Home() {
             ))}
           </div>
           <p className="mt-4 rounded-2xl bg-white/64 p-3 text-sm font-semibold text-amber-950/62 shadow-inner dark:bg-white/8 dark:text-white/55 md:mt-5 md:p-4">
-            Сегодня отмечено: {state.todayTrackerEvents.length || 0}. Полная история, графики и heatmap доступны в трекере.
+            {state.latestGoal
+              ? `Сегодня отмечено: ${state.todayTrackerEvents.length || 0}. Полная история, графики и heatmap доступны в трекере.`
+              : "Поставьте первую цель: свидания, спорт, вечер без телефона или любой общий ритуал."}
           </p>
         </article>
 
@@ -627,20 +937,34 @@ export default function Home() {
               </Link>
             </div>
             <div className="mt-5 space-y-2">
-              {(state.chats.length ? state.chats : [null, null, null]).map((message, index) => (
+              {state.chats.length === 0 ? (
                 <Link
-                  key={message?.id || index}
                   href="/chat"
-                  className="block rounded-2xl bg-sky-50 p-3 shadow-inner transition hover:bg-sky-100 dark:bg-white/8 dark:hover:bg-sky-500/15"
+                  className="block rounded-2xl bg-sky-50 p-4 text-center shadow-inner transition hover:bg-sky-100 dark:bg-white/8 dark:hover:bg-sky-500/15"
                 >
-                  <p className="line-clamp-1 font-black text-sky-950 dark:text-white">
-                    {message ? getMessagePreview(message) : "Сообщений пока нет"}
+                  <p className="font-black text-sky-950 dark:text-white">
+                    Напишите первое сообщение
                   </p>
-                  <p className="mt-1 text-xs font-semibold text-sky-950/50 dark:text-white/45">
-                    {message ? formatTime(message.created_at) : "Начните диалог в чате"}
+                  <p className="mt-2 text-sm font-semibold text-sky-950/50 dark:text-white/45">
+                    “Как прошёл день?”, “Что сделаем вечером?” или просто тёплая фраза.
                   </p>
                 </Link>
-              ))}
+              ) : (
+                state.chats.map((message) => (
+                  <Link
+                    key={message.id}
+                    href="/chat"
+                    className="block rounded-2xl bg-sky-50 p-3 shadow-inner transition hover:bg-sky-100 dark:bg-white/8 dark:hover:bg-sky-500/15"
+                  >
+                    <p className="line-clamp-1 font-black text-sky-950 dark:text-white">
+                      {getMessagePreview(message)}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-sky-950/50 dark:text-white/45">
+                      {formatTime(message.created_at)}
+                    </p>
+                  </Link>
+                ))
+              )}
             </div>
           </article>
         </div>

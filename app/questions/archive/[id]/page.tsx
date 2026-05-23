@@ -1,6 +1,7 @@
 "use client";
 
 import AnswerSocialControls from "@/components/AnswerSocialControls";
+import QuestionComments from "@/components/QuestionComments";
 import {
   formatQuestionArchiveDate,
   getQuestionCategory,
@@ -14,6 +15,11 @@ type Couple = {
   id: string;
   partner_one_id: string;
   partner_two_id: string | null;
+};
+
+type CoupleProfile = {
+  partner_one: string | null;
+  partner_two: string | null;
 };
 
 type AnswerRow = {
@@ -34,6 +40,7 @@ export default function QuestionArchiveDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const [couple, setCouple] = useState<Couple | null>(null);
+  const [profile, setProfile] = useState<CoupleProfile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [answerRecord, setAnswerRecord] = useState<AnswerRow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,6 +71,15 @@ export default function QuestionArchiveDetailPage() {
       }
 
       setCouple(coupleData);
+
+      const { data: profileData } = await supabase
+        .from("couple_profiles")
+        .select("partner_one, partner_two")
+        .eq("couple_id", coupleData.id)
+        .limit(1)
+        .maybeSingle<CoupleProfile>();
+
+      setProfile(profileData || null);
 
       const { data } = await supabase
         .from("question_answers")
@@ -192,6 +208,14 @@ export default function QuestionArchiveDetailPage() {
             </div>
           </article>
         </div>
+
+        <QuestionComments
+          answerId={answerRecord.id}
+          question={answerRecord.question}
+          couple={couple}
+          currentUserId={currentUserId}
+          profile={profile}
+        />
       </section>
     </main>
   );

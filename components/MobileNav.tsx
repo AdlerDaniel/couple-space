@@ -80,6 +80,11 @@ const moreLinks = [
     icon: "▣",
   },
   {
+    href: "/watch",
+    label: "Что посмотрим",
+    icon: "▥",
+  },
+  {
     href: "/tracker",
     label: "Трекер",
     icon: "◫",

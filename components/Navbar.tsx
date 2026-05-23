@@ -331,6 +331,7 @@ export default function Navbar() {
             ["Воспоминания", "/memories"],
             ["Вопросы", "/questions"],
             ["Викторины", "/quizzes"],
+            ["Что посмотрим", "/watch"],
             ["Чат", "/chat"],
             ["Трекер", "/tracker"],
           ].map(([label, href]) => (

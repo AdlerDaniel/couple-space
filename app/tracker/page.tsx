@@ -40,6 +40,19 @@ type TrackerEvent = {
   updated_at: string;
 };
 
+type TrackerGoal = {
+  id: string;
+  couple_id: string;
+  title: string;
+  category_id: string | null;
+  period: GoalPeriod;
+  target_count: number;
+  created_by: string;
+  created_at: string;
+};
+
+type GoalPeriod = "day" | "week" | "month" | "year";
+
 const fallbackCategories = [
   { name: "Поели", slug: "food", icon: "🍽️", color: "#facc15", sort_order: 10, is_default: true },
   { name: "Секс", slug: "sex", icon: "❤️", color: "#fde047", sort_order: 20, is_default: true },
@@ -63,6 +76,13 @@ const periodTabs: { key: Period; label: string }[] = [
   { key: "week", label: "Неделя" },
   { key: "month", label: "Месяц" },
   { key: "year", label: "Год" },
+];
+
+const goalPeriods: { key: GoalPeriod; label: string }[] = [
+  { key: "day", label: "за день" },
+  { key: "week", label: "за неделю" },
+  { key: "month", label: "за месяц" },
+  { key: "year", label: "за год" },
 ];
 
 const moods: { key: Mood; label: string; icon: string }[] = [
@@ -135,6 +155,10 @@ function getDateRange(date: Date, period: Period) {
     };
   }
   return { from: toDateKey(startOfMonth(date)), to: toDateKey(endOfMonth(date)) };
+}
+
+function getGoalDateRange(period: GoalPeriod) {
+  return getDateRange(new Date(), period);
 }
 
 function sumEvents(events: TrackerEvent[], categoryId?: string) {
@@ -228,19 +252,15 @@ function getWeekDays(selectedDate: Date) {
   return Array.from({ length: 7 }, (_, index) => addDays(start, index));
 }
 
-function normalizeTime(value: string) {
-  return value ? `${value}:00` : null;
-}
-
-function timeForInput(value: string | null) {
-  return value ? value.slice(0, 5) : "";
-}
-
 export default function TrackerPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
   const [categories, setCategories] = useState<TrackerCategory[]>([]);
   const [events, setEvents] = useState<TrackerEvent[]>([]);
+  const [goals, setGoals] = useState<TrackerGoal[]>([]);
+  const [goalCategoryId, setGoalCategoryId] = useState("");
+  const [goalPeriod, setGoalPeriod] = useState<GoalPeriod>("week");
+  const [goalTargetCount, setGoalTargetCount] = useState(1);
   const [period, setPeriod] = useState<Period>("month");
   const [selectedDate, setSelectedDate] = useState(toDateKey(new Date()));
   const [viewDate, setViewDate] = useState(new Date());
@@ -282,6 +302,12 @@ export default function TrackerPage() {
     () => events.filter((event) => event.date >= selectedRange.from && event.date <= selectedRange.to),
     [events, selectedRange]
   );
+
+  useEffect(() => {
+    if (!goalCategoryId && categories.length > 0) {
+      setGoalCategoryId(categories[0].id);
+    }
+  }, [categories, goalCategoryId]);
 
   useEffect(() => {
     async function loadTracker() {
@@ -352,6 +378,17 @@ export default function TrackerPage() {
         .order("created_at", { ascending: false });
 
       setEvents((eventRows || []) as TrackerEvent[]);
+
+      const { data: goalRows, error: goalsError } = await supabase
+        .from("tracker_goals")
+        .select("*")
+        .eq("couple_id", coupleData.id)
+        .order("created_at", { ascending: false });
+
+      if (!goalsError) {
+        setGoals((goalRows || []) as TrackerGoal[]);
+      }
+
       setIsLoading(false);
     }
 
@@ -371,6 +408,82 @@ export default function TrackerPage() {
       .order("created_at", { ascending: false });
 
     setEvents((data || []) as TrackerEvent[]);
+  }
+
+  async function reloadGoals() {
+    if (!couple) return;
+
+    const { data, error } = await supabase
+      .from("tracker_goals")
+      .select("*")
+      .eq("couple_id", couple.id)
+      .order("created_at", { ascending: false });
+
+    if (!error) {
+      setGoals((data || []) as TrackerGoal[]);
+    }
+  }
+
+  async function createGoal() {
+    const category = categories.find((item) => item.id === goalCategoryId);
+    if (!category || !couple || !currentUserId) return;
+
+    const title = category.name;
+
+    const optimisticGoal: TrackerGoal = {
+      id: `local-${Date.now()}`,
+      couple_id: couple.id,
+      title,
+      category_id: category.id,
+      period: goalPeriod,
+      target_count: goalTargetCount,
+      created_by: currentUserId,
+      created_at: new Date().toISOString(),
+    };
+
+    setGoals((current) => [optimisticGoal, ...current]);
+
+    const { data, error } = await supabase
+      .from("tracker_goals")
+      .insert({
+        couple_id: couple.id,
+        title,
+        category_id: category.id,
+        period: goalPeriod,
+        target_count: goalTargetCount,
+        created_by: currentUserId,
+      })
+      .select("*")
+      .single<TrackerGoal>();
+
+    if (error || !data) {
+      setGoals((current) => current.filter((goal) => goal.id !== optimisticGoal.id));
+      setMessage(error?.message || "Не удалось сохранить цель.");
+      window.setTimeout(() => setMessage(""), 2400);
+      return;
+    }
+
+    setGoals((current) => current.map((goal) => (goal.id === optimisticGoal.id ? data : goal)));
+    setGoalTargetCount(1);
+  }
+
+  async function deleteGoal(goalId: string) {
+    if (!currentUserId) return;
+
+    const previousGoals = goals;
+    setGoals((current) => current.filter((goal) => goal.id !== goalId));
+
+    const { error } = await supabase
+      .from("tracker_goals")
+      .delete()
+      .eq("id", goalId)
+      .eq("created_by", currentUserId);
+
+    if (error) {
+      setGoals(previousGoals);
+      setMessage("Удалить можно только свою цель.");
+      window.setTimeout(() => setMessage(""), 2000);
+    }
   }
 
   async function adjustCategory(category: TrackerCategory, delta: 1 | -1) {
@@ -546,12 +659,6 @@ export default function TrackerPage() {
     return { date, dateKey, rows, score: sumEvents(rows) };
   });
   const maxYearScore = Math.max(1, ...filteredYearDays.map((day) => day.score));
-  const goals = [
-    { label: "спорт 3 раза в неделю", value: countOnly(weekEvents, categories.find((item) => item.slug === "sport")?.id), target: 3 },
-    { label: "игры 2 раза в неделю", value: countOnly(weekEvents, categories.find((item) => item.slug === "games")?.id), target: 2 },
-    { label: "свидание 1 раз в неделю", value: mySelectedDayEvents.length ? 1 : 0, target: 1 },
-  ];
-
   return (
     <main className="tracker-theme min-h-screen overflow-hidden bg-gradient-to-br from-[#fffbeb] via-[#fefce8] to-[#fef9c3] px-4 pb-28 pt-24 text-[#713f12] dark:from-[#171204] dark:via-[#111006] dark:to-black dark:text-white md:px-6 md:pt-28">
       <div className="pointer-events-none fixed inset-0 opacity-70">
@@ -662,32 +769,197 @@ export default function TrackerPage() {
               onReload={reloadEvents}
             />
 
-            <div className="rounded-[2rem] border border-white/45 bg-white/68 p-5 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-white/8">
-              <h2 className="text-xl font-black">Цели недели</h2>
-              <div className="mt-4 space-y-3">
-                {goals.map((goal) => {
-                  const percent = Math.min(100, Math.round((goal.value / goal.target) * 100));
-                  return (
-                    <div key={goal.label}>
-                      <div className="flex items-center justify-between text-sm font-black">
-                        <span>{goal.label}</span>
-                        <span>{goal.value}/{goal.target}</span>
-                      </div>
-                      <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/70 shadow-inner dark:bg-white/10">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-[#ca8a04] to-[#facc15] transition-all"
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <PairGoalsPanel
+              goals={goals}
+              categories={categories}
+              events={events}
+              currentUserId={currentUserId}
+              selectedCategoryId={goalCategoryId}
+              period={goalPeriod}
+              targetCount={goalTargetCount}
+              onCategoryChange={setGoalCategoryId}
+              onPeriodChange={setGoalPeriod}
+              onTargetCountChange={setGoalTargetCount}
+              onCreate={createGoal}
+              onDelete={deleteGoal}
+              onReload={reloadGoals}
+            />
           </div>
         </section>
       </div>
     </main>
+  );
+}
+
+function PairGoalsPanel({
+  goals,
+  categories,
+  events,
+  currentUserId,
+  selectedCategoryId,
+  period,
+  targetCount,
+  onCategoryChange,
+  onPeriodChange,
+  onTargetCountChange,
+  onCreate,
+  onDelete,
+  onReload,
+}: {
+  goals: TrackerGoal[];
+  categories: TrackerCategory[];
+  events: TrackerEvent[];
+  currentUserId: string;
+  selectedCategoryId: string;
+  period: GoalPeriod;
+  targetCount: number;
+  onCategoryChange: (categoryId: string) => void;
+  onPeriodChange: (period: GoalPeriod) => void;
+  onTargetCountChange: (value: number) => void;
+  onCreate: () => void;
+  onDelete: (goalId: string) => void;
+  onReload: () => void;
+}) {
+  return (
+    <section className="rounded-[2rem] border border-white/45 bg-white/68 p-5 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-white/8">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700/70 dark:text-amber-100/70">
+            Цели пары
+          </p>
+          <h2 className="mt-1 text-xl font-black">Ваши цели</h2>
+        </div>
+        <button
+          type="button"
+          onClick={onReload}
+          className="rounded-full bg-white/70 px-3 py-1.5 text-xs font-black shadow transition hover:-translate-y-0.5 dark:bg-white/10"
+        >
+          обновить
+        </button>
+      </div>
+
+      <form
+        className="mt-4 space-y-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onCreate();
+        }}
+      >
+        <div className="flex gap-2">
+          <select
+            value={selectedCategoryId}
+            onChange={(event) => onCategoryChange(event.target.value)}
+            className="min-w-0 flex-1 rounded-2xl border border-white/45 bg-white/70 px-4 py-3 text-sm font-black outline-none transition focus:shadow-[0_0_0_4px_rgba(202,138,4,0.14)] dark:border-white/10 dark:bg-white/10"
+          >
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.icon} {category.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            disabled={!selectedCategoryId || targetCount < 1}
+            className="rounded-2xl bg-[#ca8a04] px-4 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            +
+          </button>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-[1fr_8rem]">
+          <select
+            value={period}
+            onChange={(event) => onPeriodChange(event.target.value as GoalPeriod)}
+            className="rounded-2xl border border-white/45 bg-white/70 px-4 py-3 text-sm font-black outline-none transition focus:shadow-[0_0_0_4px_rgba(202,138,4,0.14)] dark:border-white/10 dark:bg-white/10"
+          >
+            {goalPeriods.map((item) => (
+              <option key={item.key} value={item.key}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min={1}
+            max={999}
+            value={targetCount}
+            onChange={(event) => onTargetCountChange(Math.max(1, Number(event.target.value || 1)))}
+            className="rounded-2xl border border-white/45 bg-white/70 px-4 py-3 text-sm font-black outline-none transition focus:shadow-[0_0_0_4px_rgba(202,138,4,0.14)] dark:border-white/10 dark:bg-white/10"
+            aria-label="Количество"
+          />
+        </div>
+      </form>
+
+      <div className="mt-4 space-y-3">
+        {goals.length === 0 ? (
+          <div className="rounded-2xl bg-white/55 p-4 text-sm font-bold opacity-65 shadow-inner dark:bg-white/8">
+            Целей пока нет. Добавьте первую цель для пары.
+          </div>
+        ) : (
+          goals.map((goal) => {
+            const isMine = goal.created_by === currentUserId;
+            const category = categories.find((item) => item.id === goal.category_id);
+            const goalRange = getGoalDateRange(goal.period || "week");
+            const progress = countOnly(
+              events.filter(
+                (event) =>
+                  event.category_id === goal.category_id &&
+                  event.date >= goalRange.from &&
+                  event.date <= goalRange.to
+              )
+            );
+            const target = goal.target_count || 1;
+            const percent = Math.min(100, Math.round((progress / target) * 100));
+            const isCompleted = progress >= target;
+
+            return (
+              <div key={goal.id} className="rounded-2xl bg-white/58 p-4 shadow-inner dark:bg-white/8">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words font-black">
+                      {category ? `${category.icon} ${category.name}` : goal.title}
+                    </p>
+                    <p className="mt-1 text-sm font-black text-[#ca8a04] dark:text-amber-100">
+                      Условие: {goal.target_count || 1} {goalPeriods.find((item) => item.key === goal.period)?.label || "за неделю"}
+                    </p>
+                    <div className="mt-3">
+                      <div className="mb-1 flex items-center justify-between gap-3 text-xs font-black uppercase tracking-wide text-[#713f12]/55 dark:text-white/45">
+                        <span>Прогресс</span>
+                        <span className={isCompleted ? "text-[#65a30d] dark:text-lime-200" : ""}>
+                          {progress}/{target}
+                        </span>
+                      </div>
+                      <div className="h-3 overflow-hidden rounded-full bg-white/65 shadow-inner dark:bg-white/10">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            isCompleted
+                              ? "bg-gradient-to-r from-[#84cc16] to-[#bef264]"
+                              : "bg-gradient-to-r from-[#ca8a04] to-[#facc15]"
+                          }`}
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                    <p className="mt-1 text-xs font-black uppercase tracking-wide text-[#713f12]/50 dark:text-white/45">
+                      Автор: {isMine ? "вы" : "партнёр"}
+                    </p>
+                  </div>
+                  {isMine && (
+                    <button
+                      type="button"
+                      onClick={() => onDelete(goal.id)}
+                      className="shrink-0 rounded-full bg-[#713f12]/10 px-3 py-1.5 text-xs font-black text-[#713f12] transition hover:bg-[#713f12]/16 dark:bg-white/10 dark:text-white"
+                    >
+                      удалить
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -1089,24 +1361,6 @@ function DayDetailsPanel({
               />
               {event && (
                 <div className="mt-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="time"
-                      value={timeForInput(event.time)}
-                      onChange={(input) => onUpdate(event.id, { time: normalizeTime(input.target.value) })}
-                      className="rounded-2xl border border-white/45 bg-white/70 px-3 py-3 font-bold outline-none dark:border-white/10 dark:bg-white/10"
-                    />
-                    <input
-                      type="number"
-                      min={0}
-                      value={event.duration_minutes}
-                      onChange={(input) =>
-                        onUpdate(event.id, { duration_minutes: Number(input.target.value || 0) })
-                      }
-                      className="rounded-2xl border border-white/45 bg-white/70 px-3 py-3 font-bold outline-none dark:border-white/10 dark:bg-white/10"
-                      placeholder="минуты"
-                    />
-                  </div>
                   <MoodSelector value={event.mood} onChange={(mood) => onUpdate(event.id, { mood })} />
                   <textarea
                     value={event.note || ""}

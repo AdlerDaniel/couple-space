@@ -208,7 +208,7 @@ export default function QuizPlayClient() {
       <section className="mx-auto max-w-4xl">
         <button
           onClick={() => router.push("/quizzes")}
-          className="mb-6 rounded-full border border-[#7c3aed]/20 bg-white/45 px-5 py-2 font-semibold text-[#6d28d9] shadow-lg backdrop-blur transition hover:bg-white/70 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe]"
+          className="mb-6 rounded-full border border-[#7c3aed]/20 bg-white/45 px-5 py-2 font-semibold text-[#6d28d9] shadow-lg backdrop-blur transition hover:bg-violet-50 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
         >
           Назад
         </button>
@@ -240,7 +240,7 @@ export default function QuizPlayClient() {
 
               {question.answerType === "photo" ? (
                 <div className="grid gap-4 md:grid-cols-[1fr_220px] md:items-center">
-                  <label className="cursor-pointer rounded-2xl border border-[#7c3aed]/20 bg-white/35 p-5 text-center font-bold text-[#6d28d9] shadow-inner transition hover:bg-white/55 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-white/10">
+                  <label className="cursor-pointer rounded-2xl border border-[#7c3aed]/20 bg-white/35 p-5 text-center font-bold text-[#6d28d9] shadow-inner transition hover:bg-violet-50/80 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15">
                     <input
                       type="file"
                       accept="image/*"
@@ -283,7 +283,7 @@ export default function QuizPlayClient() {
                         className={`rounded-2xl border p-4 text-left font-semibold shadow-inner transition ${
                           isSelected
                             ? "border-[#7c3aed] bg-[#7c3aed] text-white"
-                            : "border-[#7c3aed]/20 bg-white/35 text-[#6d28d9] hover:bg-white/55 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-white/10"
+                            : "border-[#7c3aed]/20 bg-white/35 text-[#6d28d9] hover:bg-violet-50/80 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
                         }`}
                       >
                         {option}

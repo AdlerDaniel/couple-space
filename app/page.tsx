@@ -1,361 +1,546 @@
-import Image from "next/image";
+"use client";
 
-const memories = [
+import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
+import { quizzes } from "@/lib/quizzes";
+import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+
+type Couple = {
+  id: string;
+  partner_one_id: string | null;
+  partner_two_id: string | null;
+};
+
+type CoupleProfile = {
+  partner_one: string;
+  partner_two: string;
+  start_date: string | null;
+};
+
+type MemoryPreview = {
+  id: string;
+  title: string | null;
+  caption: string | null;
+  image: string | null;
+  event_date: string | null;
+  created_at: string;
+};
+
+type ChatPreview = {
+  id: string;
+  body: string | null;
+  sender_id: string;
+  attachment_type: string | null;
+  attachment_name: string | null;
+  created_at: string;
+};
+
+type QuestionAnswer = {
+  answer_one: string | null;
+  answer_two: string | null;
+};
+
+type TrackerEvent = {
+  id: string;
+  count: number | null;
+  duration_minutes: number | null;
+  mood: string | null;
+  date: string;
+};
+
+type HomeState = {
+  isLoading: boolean;
+  userId: string | null;
+  couple: Couple | null;
+  profile: CoupleProfile | null;
+  memories: MemoryPreview[];
+  chats: ChatPreview[];
+  todayAnswer: QuestionAnswer | null;
+  todayTrackerEvents: TrackerEvent[];
+  stats: {
+    memories: number;
+    answers: number;
+    quizzes: number;
+    tracker: number;
+    chat: number;
+  };
+};
+
+const emptyState: HomeState = {
+  isLoading: true,
+  userId: null,
+  couple: null,
+  profile: null,
+  memories: [],
+  chats: [],
+  todayAnswer: null,
+  todayTrackerEvents: [],
+  stats: {
+    memories: 0,
+    answers: 0,
+    quizzes: 0,
+    tracker: 0,
+    chat: 0,
+  },
+};
+
+const quickActions = [
   {
-    title: "Первая поездка",
-    note: "маленький город, длинные прогулки",
-    image:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
-    rotate: "-rotate-3",
+    title: "Ответить на вопрос дня",
+    text: "Откройте сегодняшнюю карточку и сохраните ответ отдельно от партнёра.",
+    href: "/questions/answer",
+    icon: "✉",
+    color: "from-emerald-500 to-teal-500",
   },
   {
-    title: "Вечер дома",
-    note: "чай, плед и любимый сериал",
-    image:
-      "https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=900&q=80",
-    rotate: "rotate-2",
+    title: "Добавить воспоминание",
+    text: "Фото, подпись, дата события, реакции и комментарии партнёра.",
+    href: "/memories",
+    icon: "▣",
+    color: "from-blue-600 to-indigo-700",
   },
   {
-    title: "Наше лето",
-    note: "дни, которые хочется повторить",
-    image:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80",
-    rotate: "-rotate-1",
+    title: "Пройти викторину",
+    text: "Выберите категорию, ответьте отдельно и сравните ответы.",
+    href: "/quizzes",
+    icon: "✦",
+    color: "from-violet-600 to-fuchsia-600",
   },
   {
-    title: "Свидание",
-    note: "городские огни и разговоры до ночи",
-    image:
-      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80",
-    rotate: "rotate-3",
+    title: "Написать в чат",
+    text: "Сообщения, голосовые, фото, реакции, стикеры и закрепы.",
+    href: "/chat",
+    icon: "◌",
+    color: "from-sky-500 to-blue-700",
   },
 ];
 
-const stats = [
-  ["❤️", "42", "дня вместе"],
-  ["📸", "126", "воспоминаний"],
-  ["💌", "84", "ответа"],
-  ["🔥", "17", "дней подряд"],
+const trackerShortcuts = [
+  { label: "Поели", icon: "🍽️", href: "/tracker" },
+  { label: "Секс", icon: "❤️", href: "/tracker" },
+  { label: "Спорт", icon: "🏃", href: "/tracker" },
+  { label: "Игры", icon: "🎮", href: "/tracker" },
 ];
 
-const features = [
-  {
-    icon: "📸",
-    title: "Моменты, к которым возвращаются",
-    text: "Собирайте ваши фотографии, заметки и маленькие истории в одном красивом месте.",
-  },
-  {
-    icon: "💌",
-    title: "Разговоры глубже обычного",
-    text: "Вопросы дня помогают замечать друг друга даже в самые занятые недели.",
-  },
-  {
-    icon: "✨",
-    title: "История только для вас",
-    text: "Общее пространство пары с настроением, прогрессом, ачивками и личным ритмом.",
-  },
-];
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "дата не указана";
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "short",
+  }).format(new Date(value));
+}
+
+function formatTime(value: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function getDaysTogether(startDate?: string | null) {
+  if (!startDate) return null;
+  const start = new Date(startDate);
+  if (Number.isNaN(start.getTime())) return null;
+  const diff = Date.now() - start.getTime();
+  return Math.max(1, Math.floor(diff / 86400000) + 1);
+}
+
+function getMessagePreview(message: ChatPreview) {
+  if (message.body) return message.body;
+  if (message.attachment_type === "audio") return "Голосовое сообщение";
+  if (message.attachment_name) return message.attachment_name;
+  return "Вложение";
+}
 
 export default function Home() {
+  const [state, setState] = useState<HomeState>(emptyState);
+  const todayQuestion = getDailyQuestion();
+  const todayQuestionDate = getDailyQuestionDate();
+  const recommendedQuiz = quizzes[0];
+
+  const coupleName = useMemo(() => {
+    if (!state.profile) return "Ваша пара";
+    return `${state.profile.partner_one || "Партнёр 1"} + ${state.profile.partner_two || "Партнёр 2"}`;
+  }, [state.profile]);
+
+  const daysTogether = getDaysTogether(state.profile?.start_date);
+  const isPartnerOne = state.userId && state.couple?.partner_one_id === state.userId;
+  const myAnswer = isPartnerOne ? state.todayAnswer?.answer_one : state.todayAnswer?.answer_two;
+  const partnerAnswer = isPartnerOne ? state.todayAnswer?.answer_two : state.todayAnswer?.answer_one;
+  const totalStats =
+    state.stats.memories +
+    state.stats.answers +
+    state.stats.quizzes +
+    state.stats.tracker +
+    state.stats.chat;
+
+  useEffect(() => {
+    async function loadHome() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setState({ ...emptyState, isLoading: false });
+        return;
+      }
+
+      const { data: couple } = await supabase
+        .from("couples")
+        .select("id, partner_one_id, partner_two_id")
+        .or(`partner_one_id.eq.${user.id},partner_two_id.eq.${user.id}`)
+        .limit(1)
+        .maybeSingle<Couple>();
+
+      if (!couple) {
+        setState({ ...emptyState, isLoading: false, userId: user.id });
+        return;
+      }
+
+      const todayKey = getTodayKey();
+      const [
+        profileResult,
+        memoriesResult,
+        memoryCountResult,
+        answersCountResult,
+        todayAnswerResult,
+        quizCountResult,
+        trackerCountResult,
+        todayTrackerResult,
+        chatCountResult,
+        chatResult,
+      ] = await Promise.all([
+        supabase
+          .from("couple_profiles")
+          .select("partner_one, partner_two, start_date")
+          .eq("couple_id", couple.id)
+          .limit(1)
+          .maybeSingle<CoupleProfile>(),
+        supabase
+          .from("memories")
+          .select("id, title, caption, image, event_date, created_at")
+          .eq("couple_id", couple.id)
+          .order("created_at", { ascending: false })
+          .limit(3),
+        supabase
+          .from("memories")
+          .select("id", { count: "exact", head: true })
+          .eq("couple_id", couple.id),
+        supabase
+          .from("question_answers")
+          .select("id", { count: "exact", head: true })
+          .eq("couple_id", couple.id),
+        supabase
+          .from("question_answers")
+          .select("answer_one, answer_two")
+          .eq("couple_id", couple.id)
+          .eq("date", todayQuestionDate)
+          .eq("question", todayQuestion)
+          .limit(1)
+          .maybeSingle<QuestionAnswer>(),
+        supabase
+          .from("quiz_answers")
+          .select("quiz_id", { count: "exact", head: true })
+          .eq("couple_id", couple.id),
+        supabase
+          .from("tracker_events")
+          .select("id", { count: "exact", head: true })
+          .eq("couple_id", couple.id),
+        supabase
+          .from("tracker_events")
+          .select("id, count, duration_minutes, mood, date")
+          .eq("couple_id", couple.id)
+          .eq("date", todayKey)
+          .limit(8),
+        supabase
+          .from("couple_chat_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("couple_id", couple.id),
+        supabase
+          .from("couple_chat_messages")
+          .select("id, body, sender_id, attachment_type, attachment_name, created_at")
+          .eq("couple_id", couple.id)
+          .eq("deleted_for_everyone", false)
+          .order("created_at", { ascending: false })
+          .limit(3),
+      ]);
+
+      setState({
+        isLoading: false,
+        userId: user.id,
+        couple,
+        profile: profileResult.data || null,
+        memories: (memoriesResult.data || []) as MemoryPreview[],
+        chats: (chatResult.data || []) as ChatPreview[],
+        todayAnswer: todayAnswerResult.data || null,
+        todayTrackerEvents: (todayTrackerResult.data || []) as TrackerEvent[],
+        stats: {
+          memories: memoryCountResult.count || 0,
+          answers: answersCountResult.count || 0,
+          quizzes: quizCountResult.count || 0,
+          tracker: trackerCountResult.count || 0,
+          chat: chatCountResult.count || 0,
+        },
+      });
+    }
+
+    loadHome();
+  }, [todayQuestion, todayQuestionDate]);
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#fff7fb] text-[#7f1d1d] transition-colors dark:bg-[#130711] dark:text-[#ffe4ec]">
+    <main className="home-main min-h-screen bg-[#fff8ed] px-4 pb-24 pt-3 text-[#7c2d12] transition-colors dark:bg-[#140b05] dark:text-[#ffedd5] md:px-6 md:pt-24">
       <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(244,63,94,0.26),transparent_34%),radial-gradient(circle_at_84%_18%,rgba(124,58,237,0.22),transparent_32%),radial-gradient(circle_at_48%_84%,rgba(20,184,166,0.16),transparent_32%),linear-gradient(135deg,#fff7fb_0%,#fff1f2_42%,#f6f1ff_100%)] dark:bg-[radial-gradient(circle_at_18%_12%,rgba(244,63,94,0.22),transparent_34%),radial-gradient(circle_at_84%_18%,rgba(124,58,237,0.22),transparent_32%),radial-gradient(circle_at_48%_84%,rgba(20,184,166,0.12),transparent_32%),linear-gradient(135deg,#170711_0%,#230a18_46%,#120b24_100%)]" />
-        <div className="landing-noise absolute inset-0 opacity-[0.18]" />
-        <div className="landing-blob absolute left-[-10rem] top-32 h-96 w-96 rounded-full bg-rose-300/40 blur-3xl dark:bg-rose-500/18" />
-        <div className="landing-blob landing-blob-delayed absolute right-[-8rem] top-80 h-[28rem] w-[28rem] rounded-full bg-violet-300/35 blur-3xl dark:bg-violet-500/18" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_8%,rgba(249,115,22,0.22),transparent_28%),radial-gradient(circle_at_88%_14%,rgba(245,158,11,0.18),transparent_30%),radial-gradient(circle_at_50%_88%,rgba(234,88,12,0.12),transparent_34%),linear-gradient(135deg,#fff8ed_0%,#ffedd5_46%,#fff7ed_100%)] dark:bg-[radial-gradient(circle_at_14%_8%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_88%_14%,rgba(245,158,11,0.16),transparent_30%),linear-gradient(135deg,#140b05_0%,#271006_48%,#120a04_100%)]" />
       </div>
 
-      <section className="relative mx-auto grid min-h-screen max-w-7xl items-center gap-14 px-6 pb-20 pt-32 lg:grid-cols-[0.92fr_1.08fr]">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <span className="landing-heart absolute left-[8%] top-[18%] text-3xl text-rose-400/55">❤️</span>
-          <span className="landing-heart landing-heart-delay absolute left-[44%] top-[12%] text-2xl text-fuchsia-400/45">♥</span>
-          <span className="landing-heart landing-heart-slow absolute right-[7%] top-[22%] text-4xl text-violet-400/40">❤️</span>
+      <section className="mx-auto max-w-7xl">
+        <div className="flex flex-col gap-3 rounded-[1.35rem] border border-white/60 bg-white/66 p-4 shadow-[0_18px_58px_rgba(194,65,12,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 sm:flex-row sm:items-center sm:justify-between md:rounded-[1.8rem] md:p-5">
+          <div className="min-w-0">
+            <p className="truncate text-xl font-black leading-tight text-[#c2410c] dark:text-white md:text-2xl">
+              {state.isLoading ? "Загрузка..." : state.couple ? coupleName : "Couple Space"}
+            </p>
+            <p className="mt-1 text-sm font-bold text-[#7c2d12]/58 dark:text-white/52">
+              {daysTogether ? `${daysTogether} дней вместе` : state.couple ? "Дата начала пока не указана" : "Создайте пару в профиле"}
+            </p>
+          </div>
+          <Link
+            href={state.couple ? "/dashboard" : "/profile"}
+            className="rounded-full bg-[#ea580c] px-4 py-2.5 text-center text-sm font-black text-white shadow-[0_14px_34px_rgba(234,88,12,0.24)] transition hover:-translate-y-0.5 hover:bg-[#f97316] sm:shrink-0"
+          >
+            {state.couple ? "Кабинет" : "Профиль"}
+          </Link>
         </div>
 
-        <div className="landing-reveal relative z-10">
-          <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-white/60 bg-white/45 px-5 py-2 text-sm font-semibold text-rose-600 shadow-[0_18px_60px_rgba(244,63,94,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-rose-200">
-            <span>❤️</span>
-            Couple Space
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {[
+            ["Дней", daysTogether ?? "—"],
+            ["Воспоминаний", state.stats.memories],
+            ["Ответов", state.stats.answers],
+            ["Викторин", state.stats.quizzes],
+            ["Активности", totalStats],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-2xl border border-white/55 bg-white/58 p-3 shadow-inner backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:p-4">
+              <p className="text-[0.68rem] font-black uppercase tracking-[0.08em] text-[#c2410c]/52 dark:text-white/45">{label}</p>
+              <p className="mt-1 text-2xl font-black leading-none text-[#c2410c] dark:text-white md:text-3xl">{value}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto mt-3 grid max-w-7xl gap-3 md:mt-5 md:gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+        <article className="rounded-[1.35rem] border border-emerald-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(21,128,61,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-600/70 dark:text-emerald-100/70">
+                Вопрос дня
+              </p>
+              <h2 className="mt-2 !text-2xl font-black leading-tight text-emerald-800 dark:text-white md:mt-3 md:!text-5xl">
+                {todayQuestion}
+              </h2>
+            </div>
+            <Link
+              href="/questions/answer"
+              className="shrink-0 rounded-full bg-emerald-600 px-5 py-3 text-center font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-700"
+            >
+              Ответить
+            </Link>
           </div>
 
-          <h1 className="max-w-4xl text-6xl font-black leading-[0.92] tracking-normal text-[#7f1d1d] drop-shadow-[0_8px_24px_rgba(255,255,255,0.9)] dark:text-white dark:drop-shadow-[0_10px_34px_rgba(0,0,0,0.65)] md:text-8xl">
-            Место, которое будет только вашим
-          </h1>
+          <div className="mt-4 grid gap-2 md:mt-6 md:grid-cols-2 md:gap-3">
+            <div className="rounded-2xl bg-emerald-50 p-4 shadow-inner dark:bg-white/8">
+              <p className="text-sm font-black text-emerald-700 dark:text-emerald-100">Ваш статус</p>
+              <p className="mt-2 font-semibold text-emerald-950/70 dark:text-white/60">
+                {myAnswer ? "Вы уже ответили сегодня." : "Ответ ещё не сохранён."}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-emerald-50 p-4 shadow-inner dark:bg-white/8">
+              <p className="text-sm font-black text-emerald-700 dark:text-emerald-100">Партнёр</p>
+              <p className="mt-2 font-semibold text-emerald-950/70 dark:text-white/60">
+                {partnerAnswer ? "Ответ партнёра уже ждёт раскрытия." : "Партнёр ещё отвечает."}
+              </p>
+            </div>
+          </div>
+        </article>
 
-          <p className="mt-8 max-w-2xl rounded-[1.5rem] bg-white/32 p-4 text-xl font-semibold leading-9 text-[#7f1d1d]/88 shadow-[0_18px_60px_rgba(159,18,57,0.12)] backdrop-blur-sm dark:bg-black/14 dark:text-white/82 md:text-2xl">
-            Ваше личное пространство для любви, воспоминаний и маленьких
-            моментов, к которым хочется возвращаться снова.
+        <article className="rounded-[1.35rem] border border-blue-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(37,99,235,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-blue-600/70 dark:text-blue-100/70">
+                Воспоминания
+              </p>
+              <h2 className="mt-2 !text-2xl font-black text-blue-900 dark:text-white md:!text-3xl">
+                Последние моменты
+              </h2>
+            </div>
+            <Link href="/memories" className="rounded-full bg-blue-600 px-4 py-2 text-sm font-black text-white">
+              Открыть
+            </Link>
+          </div>
+
+          <div className="mt-5 grid gap-3">
+            {(state.memories.length ? state.memories : [null, null, null]).map((memory, index) => (
+              <Link
+                key={memory?.id || index}
+                href="/memories"
+                className="grid grid-cols-[4.5rem_1fr] gap-3 rounded-2xl bg-blue-50/80 p-2 shadow-inner transition hover:bg-blue-100 dark:bg-white/8 dark:hover:bg-blue-500/15"
+              >
+                <div
+                  className="h-16 rounded-xl bg-cover bg-center bg-blue-200"
+                  style={{
+                    backgroundImage: memory?.image
+                      ? `url("${memory.image}")`
+                      : "linear-gradient(135deg,#bfdbfe,#dbeafe)",
+                  }}
+                />
+                <div className="min-w-0 py-1">
+                  <p className="truncate font-black text-blue-950 dark:text-white">
+                    {memory?.title || "Добавьте новое воспоминание"}
+                  </p>
+                  <p className="mt-1 line-clamp-2 text-sm font-semibold text-blue-950/58 dark:text-white/50">
+                    {memory?.caption || (memory ? formatDate(memory.event_date) : "Фото, описание и дата события появятся здесь.")}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </article>
+      </section>
+
+      <section className="mx-auto mt-3 grid max-w-7xl grid-cols-2 gap-3 md:mt-5 lg:grid-cols-4">
+        {quickActions.map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            className="group rounded-[1.25rem] border border-white/60 bg-white/62 p-4 shadow-[0_18px_54px_rgba(194,65,12,0.10)] backdrop-blur-xl transition hover:-translate-y-1 dark:border-white/10 dark:bg-white/8 md:rounded-[1.6rem] md:p-5"
+          >
+            <div className={`grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br ${action.color} text-xl text-white shadow-lg md:h-13 md:w-13 md:text-2xl`}>
+              {action.icon}
+            </div>
+            <h3 className="mt-3 !text-base font-black leading-tight text-[#c2410c] dark:text-white md:mt-5 md:!text-xl">{action.title}</h3>
+            <p className="mt-2 hidden text-sm font-semibold leading-6 text-[#7c2d12]/62 dark:text-white/54 sm:block">{action.text}</p>
+            <p className="mt-4 text-sm font-black text-[#ea580c] transition group-hover:translate-x-1 dark:text-orange-100">
+              Перейти →
+            </p>
+          </Link>
+        ))}
+      </section>
+
+      <section className="mx-auto mt-3 grid max-w-7xl gap-3 md:mt-5 md:gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+        <article className="rounded-[1.35rem] border border-amber-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(217,119,6,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-amber-600/70 dark:text-amber-100/70">
+                Трекер пары
+              </p>
+              <h2 className="mt-2 !text-2xl font-black text-amber-900 dark:text-white md:!text-3xl">
+                Сегодня
+              </h2>
+            </div>
+            <Link href="/tracker" className="rounded-full bg-amber-600 px-4 py-2 text-sm font-black text-white">
+              Отметить
+            </Link>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 md:mt-5 md:gap-3">
+            {trackerShortcuts.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="rounded-2xl bg-amber-50 p-3 text-center shadow-inner transition hover:bg-amber-100 dark:bg-white/8 dark:hover:bg-amber-500/15 md:p-4"
+              >
+                <p className="text-2xl">{item.icon}</p>
+                <p className="mt-2 font-black text-amber-900 dark:text-white">{item.label}</p>
+              </Link>
+            ))}
+          </div>
+          <p className="mt-4 rounded-2xl bg-white/64 p-3 text-sm font-semibold text-amber-950/62 shadow-inner dark:bg-white/8 dark:text-white/55 md:mt-5 md:p-4">
+            Сегодня отмечено: {state.todayTrackerEvents.length || 0}. Полная история, графики и heatmap доступны в трекере.
           </p>
+        </article>
 
-          <div className="mt-10 flex">
-            <a
-              href="/login"
-              className="rounded-full bg-gradient-to-r from-rose-600 to-fuchsia-600 px-8 py-4 text-center text-lg font-bold text-white shadow-[0_18px_50px_rgba(225,29,72,0.35)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(225,29,72,0.45)]"
+        <div className="grid gap-3 md:grid-cols-2 md:gap-5">
+          <article className="rounded-[1.35rem] border border-violet-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(124,58,237,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-violet-600/70 dark:text-violet-100/70">
+              Викторина
+            </p>
+            <h2 className="mt-2 !text-2xl font-black text-violet-900 dark:text-white md:mt-3 md:!text-3xl">
+              {recommendedQuiz?.title || "Выберите тест"}
+            </h2>
+            <p className="mt-3 line-clamp-3 font-semibold leading-7 text-violet-950/62 dark:text-white/55">
+              {recommendedQuiz?.description || "Категории и тесты ждут вас в разделе викторин."}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-black text-violet-700 dark:bg-white/10 dark:text-violet-100">
+                {recommendedQuiz?.duration || "тесты"}
+              </span>
+              <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-black text-violet-700 dark:bg-white/10 dark:text-violet-100">
+                пройдено: {state.stats.quizzes}
+              </span>
+            </div>
+            <Link
+              href={recommendedQuiz ? `/quizzes/play?quiz=${recommendedQuiz.id}` : "/quizzes"}
+              className="mt-6 inline-flex rounded-full bg-violet-600 px-5 py-3 font-black text-white shadow-lg transition hover:-translate-y-0.5"
             >
               Начать
-            </a>
-          </div>
+            </Link>
+          </article>
 
-          <div className="mt-12 flex items-center gap-5">
-            <div className="flex -space-x-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-300 to-rose-600 text-2xl shadow-xl ring-4 ring-white/70 dark:ring-[#130711]">
-                Д
-              </div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-300 to-fuchsia-600 text-2xl shadow-xl ring-4 ring-white/70 dark:ring-[#130711]">
-                П
-              </div>
-            </div>
-            <div>
-              <p className="font-bold text-rose-700 dark:text-rose-100">Даниил + Полина</p>
-              <p className="text-sm font-semibold text-rose-700/60 dark:text-white/50">
-                42 дня создают свою историю
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div id="preview" className="landing-reveal landing-reveal-delay relative">
-          <div className="landing-float absolute -left-5 top-16 z-20 rounded-3xl border border-white/60 bg-white/70 px-5 py-4 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-white/10">
-            <p className="text-sm font-bold text-rose-500">💌 Вопрос дня</p>
-            <p className="mt-1 text-2xl font-black text-rose-700 dark:text-white">84 ответа</p>
-          </div>
-          <div className="landing-float landing-float-slow absolute -right-4 top-56 z-20 rounded-3xl border border-white/60 bg-white/70 px-5 py-4 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-white/10">
-            <p className="text-sm font-bold text-violet-500">🔥 Серия</p>
-            <p className="mt-1 text-2xl font-black text-violet-700 dark:text-white">17 дней</p>
-          </div>
-          <div className="landing-float landing-float-fast absolute bottom-10 left-8 z-20 rounded-3xl border border-white/60 bg-white/70 px-5 py-4 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-white/10">
-            <p className="text-sm font-bold text-teal-600">📸 Воспоминания</p>
-            <p className="mt-1 text-2xl font-black text-teal-700 dark:text-white">126</p>
-          </div>
-
-          <div className="relative rounded-[2.5rem] border border-white/70 bg-white/50 p-4 shadow-[0_36px_120px_rgba(159,18,57,0.28)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8">
-            <div className="overflow-hidden rounded-[2rem] border border-white/70 bg-[#fff8fb] shadow-inner dark:border-white/10 dark:bg-[#170916]">
-              <div className="flex items-center justify-between border-b border-rose-100/80 px-5 py-4 dark:border-white/10">
-                <div className="flex gap-2">
-                  <span className="h-3 w-3 rounded-full bg-rose-400" />
-                  <span className="h-3 w-3 rounded-full bg-amber-300" />
-                  <span className="h-3 w-3 rounded-full bg-teal-300" />
-                </div>
-                <span className="rounded-full bg-rose-100 px-4 py-1 text-xs font-bold text-rose-600 dark:bg-white/10 dark:text-rose-100">
-                  dashboard
-                </span>
-              </div>
-
-              <div className="grid gap-4 p-5 lg:grid-cols-[1.1fr_0.9fr]">
-                <div className="rounded-3xl bg-gradient-to-br from-rose-500 to-violet-600 p-5 text-white shadow-2xl">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-white/70">Вместе</p>
-                      <p className="mt-1 text-4xl font-black">42 дня</p>
-                    </div>
-                    <div className="flex -space-x-3">
-                      <span className="grid h-12 w-12 place-items-center rounded-full bg-white/25 ring-2 ring-white/60">
-                        Д
-                      </span>
-                      <span className="grid h-12 w-12 place-items-center rounded-full bg-white/25 ring-2 ring-white/60">
-                        П
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-8 grid grid-cols-3 gap-3">
-                    {["Фото", "Вопросы", "Серия"].map((item) => (
-                      <div key={item} className="rounded-2xl bg-white/16 p-3">
-                        <p className="text-xs font-bold text-white/70">{item}</p>
-                        <p className="mt-1 text-xl font-black">
-                          {item === "Фото" ? "126" : item === "Вопросы" ? "84" : "17"}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid gap-4">
-                  <div className="rounded-3xl bg-white p-5 shadow-xl dark:bg-white/10">
-                    <p className="text-sm font-bold text-rose-500">💌 Вопрос дня</p>
-                    <p className="mt-3 text-xl font-black text-rose-950 dark:text-white">
-                      Что ты больше всего любишь в наших обычных днях?
-                    </p>
-                    <div className="mt-4 space-y-2">
-                      <div className="rounded-2xl bg-rose-50 p-3 text-sm font-semibold text-rose-700 dark:bg-white/10 dark:text-rose-100">
-                        Когда мы готовим ужин и смеёмся без причины.
-                      </div>
-                      <div className="rounded-2xl bg-violet-50 p-3 text-sm font-semibold text-violet-700 dark:bg-white/10 dark:text-violet-100">
-                        Твои сообщения посреди дня.
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {["2025", "❤️", "2026"].map((item) => (
-                      <div key={item} className="rounded-2xl bg-white/80 p-4 text-center font-black shadow-lg dark:bg-white/10">
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="lg:col-span-2 grid grid-cols-4 gap-3">
-                  {memories.map((memory) => (
-                    <div
-                      key={memory.title}
-                      className="h-24 overflow-hidden rounded-2xl shadow-lg"
-                    >
-                      <Image
-                        src={memory.image}
-                        alt={memory.title}
-                        width={180}
-                        height={96}
-                        sizes="(min-width: 1024px) 180px, 25vw"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 py-24">
-        <div className="landing-reveal mx-auto max-w-3xl text-center">
-          <p className="text-sm font-black uppercase text-rose-500">Не просто функции</p>
-          <h2 className="mt-4 text-4xl font-black text-[#9f1239] dark:text-white md:text-6xl">
-            Сохраняйте то, что обычно теряется в переписках
-          </h2>
-        </div>
-
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
-          {features.map((feature) => (
-            <article
-              key={feature.title}
-              className="landing-reveal rounded-[2rem] border border-white/60 bg-white/48 p-8 shadow-[0_24px_80px_rgba(159,18,57,0.12)] backdrop-blur-xl transition hover:-translate-y-2 hover:bg-white/65 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/12"
-            >
-              <div className="mb-8 grid h-16 w-16 place-items-center rounded-3xl bg-gradient-to-br from-rose-100 to-violet-100 text-3xl shadow-inner dark:from-white/14 dark:to-white/6">
-                {feature.icon}
-              </div>
-              <h3 className="text-2xl font-black text-[#9f1239] dark:text-white">
-                {feature.title}
-              </h3>
-              <p className="mt-4 leading-7 text-[#9f1239]/68 dark:text-white/62">
-                {feature.text}
-              </p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-12 px-6 py-24 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-        <div className="landing-reveal">
-          <p className="text-sm font-black uppercase text-teal-600">Ваши воспоминания</p>
-          <h2 className="mt-4 text-5xl font-black leading-tight text-[#9f1239] dark:text-white">
-            Галерея моментов, которые выглядят как маленькая история
-          </h2>
-          <p className="mt-6 text-xl leading-8 text-[#9f1239]/68 dark:text-white/62">
-            Фотографии, подписи, даты и настроение дня собираются в живую ленту,
-            а не исчезают среди обычных сообщений.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-5">
-          {memories.map((memory, index) => (
-            <article
-              key={memory.title}
-              className={`landing-reveal ${memory.rotate} rounded-[1.6rem] bg-white p-3 shadow-[0_24px_70px_rgba(88,28,135,0.16)] transition hover:rotate-0 hover:scale-[1.03] dark:bg-white/10`}
-            >
-              <Image
-                src={memory.image}
-                alt={memory.title}
-                width={520}
-                height={420}
-                sizes="(min-width: 1024px) 520px, 50vw"
-                className={`w-full rounded-[1.1rem] object-cover ${
-                  index % 2 === 0 ? "h-56" : "h-72"
-                }`}
-              />
-              <div className="px-2 py-4">
-                <h3 className="font-black text-[#9f1239] dark:text-white">{memory.title}</h3>
-                <p className="mt-1 text-sm font-semibold text-[#9f1239]/55 dark:text-white/50">
-                  {memory.note}
+          <article className="rounded-[1.35rem] border border-sky-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(2,132,199,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-sky-600/70 dark:text-sky-100/70">
+                  Чат
                 </p>
+                <h2 className="mt-2 !text-2xl font-black text-sky-900 dark:text-white md:!text-3xl">
+                  Последнее
+                </h2>
               </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-8 px-6 py-24 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-        <div className="landing-reveal rounded-[2.5rem] border border-white/60 bg-white/55 p-8 shadow-[0_34px_100px_rgba(225,29,72,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8">
-          <div className="rounded-[2rem] bg-gradient-to-br from-rose-600 via-fuchsia-600 to-violet-700 p-8 text-white shadow-2xl">
-            <p className="text-sm font-black uppercase text-white/70">💌 Вопрос дня</p>
-            <h2 className="mt-5 text-4xl font-black leading-tight">
-              Что ты больше всего любишь в наших обычных днях?
-            </h2>
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
-              <div className="rounded-3xl bg-white/16 p-5 backdrop-blur">
-                <p className="text-sm font-bold text-white/60">Даниил</p>
-                <p className="mt-3 text-lg font-bold">
-                  Когда мы идём рядом и молчим, но всё равно понятно, что мы вместе.
-                </p>
-              </div>
-              <div className="rounded-3xl bg-white/16 p-5 backdrop-blur">
-                <p className="text-sm font-bold text-white/60">Полина</p>
-                <p className="mt-3 text-lg font-bold">
-                  Твоё “я дома” и то, как обычный день сразу становится теплее.
-                </p>
-              </div>
+              <Link href="/chat" className="rounded-full bg-sky-600 px-4 py-2 text-sm font-black text-white">
+                Открыть
+              </Link>
             </div>
-          </div>
-        </div>
-
-        <div className="landing-reveal">
-          <p className="text-sm font-black uppercase text-rose-500">Больше близости</p>
-          <h2 className="mt-4 text-5xl font-black leading-tight text-[#9f1239] dark:text-white">
-            Маленький вопрос может стать большим разговором
-          </h2>
-          <p className="mt-6 text-xl leading-8 text-[#9f1239]/68 dark:text-white/62">
-            Вы отвечаете отдельно, а потом видите ответы друг друга. Без давления,
-            без шума, только повод услышать партнёра внимательнее.
-          </p>
+            <div className="mt-5 space-y-2">
+              {(state.chats.length ? state.chats : [null, null, null]).map((message, index) => (
+                <Link
+                  key={message?.id || index}
+                  href="/chat"
+                  className="block rounded-2xl bg-sky-50 p-3 shadow-inner transition hover:bg-sky-100 dark:bg-white/8 dark:hover:bg-sky-500/15"
+                >
+                  <p className="line-clamp-1 font-black text-sky-950 dark:text-white">
+                    {message ? getMessagePreview(message) : "Сообщений пока нет"}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-sky-950/50 dark:text-white/45">
+                    {message ? formatTime(message.created_at) : "Начните диалог в чате"}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </article>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-24">
-        <div className="grid gap-5 md:grid-cols-4">
-          {stats.map(([icon, value, label]) => (
-            <div
-              key={label}
-              className="landing-reveal rounded-[2rem] border border-white/60 bg-white/50 p-7 text-center shadow-[0_26px_80px_rgba(159,18,57,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8"
+      <section className="mx-auto mt-3 max-w-7xl rounded-[1.35rem] border border-white/60 bg-white/62 p-4 shadow-[0_20px_64px_rgba(194,65,12,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:mt-5 md:rounded-[2rem] md:p-7">
+        <div className="grid gap-3 md:grid-cols-3 md:gap-4">
+          {[
+            ["Кабинет", "Статус, достижения, активность и таймлайн.", "/dashboard", "❤️"],
+            ["Профиль", "Имя, фото, пара и тёмная тема.", "/profile", "◉"],
+            ["Архив вопросов", "Прошлые ответы, поиск и категории.", "/questions/archive", "⌕"],
+          ].map(([title, text, href, icon]) => (
+            <Link
+              key={href}
+              href={href}
+              className="rounded-2xl bg-white/66 p-4 shadow-inner transition hover:bg-orange-50 dark:bg-white/8 dark:hover:bg-orange-500/15"
             >
-              <p className="text-4xl">{icon}</p>
-              <p className="mt-4 text-5xl font-black text-[#9f1239] dark:text-white">
-                {value}
-              </p>
-              <p className="mt-2 font-bold text-[#9f1239]/58 dark:text-white/52">
-                {label}
-              </p>
-            </div>
+              <p className="text-2xl">{icon}</p>
+              <h3 className="mt-3 !text-lg font-black text-[#c2410c] dark:text-white md:!text-xl">{title}</h3>
+              <p className="mt-2 text-sm font-semibold leading-6 text-[#7c2d12]/60 dark:text-white/52">{text}</p>
+            </Link>
           ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 pb-28 pt-16">
-        <div className="landing-reveal relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#be123c] via-[#c026d3] to-[#4f46e5] p-10 text-center text-white shadow-[0_36px_120px_rgba(190,18,60,0.28)] md:p-16">
-          <div className="absolute left-10 top-10 text-5xl opacity-30">❤️</div>
-          <div className="absolute bottom-10 right-12 text-6xl opacity-25">✨</div>
-          <h2 className="mx-auto max-w-4xl text-5xl font-black leading-tight md:text-7xl">
-            Начните создавать вашу историю уже сегодня
-          </h2>
-          <p className="mx-auto mt-6 max-w-2xl text-xl leading-8 text-white/72">
-            Создайте место, где будут жить ваши даты, ответы, фотографии и
-            маленькие доказательства любви.
-          </p>
-          <a
-            href="/login"
-            className="mt-10 inline-flex rounded-full bg-white px-9 py-4 text-lg font-black text-rose-700 shadow-2xl transition hover:-translate-y-0.5 hover:bg-rose-50"
-          >
-            Создать пространство
-          </a>
         </div>
       </section>
     </main>

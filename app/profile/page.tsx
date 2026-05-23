@@ -49,6 +49,7 @@ export default function ProfilePage() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
 
   const isPartnerOne = useMemo(
     () => Boolean(currentUserId && couple?.partner_one_id === currentUserId),
@@ -144,12 +145,29 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
+    queueMicrotask(() => {
+      setIsDarkTheme(localStorage.getItem("theme") === "dark");
+    });
+
     const timer = window.setTimeout(() => {
       loadData();
     }, 0);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function toggleDarkTheme() {
+    const nextTheme = !isDarkTheme;
+    setIsDarkTheme(nextTheme);
+
+    if (nextTheme) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }
 
   async function createCouple() {
     if (!currentUserId) return;
@@ -366,6 +384,37 @@ export default function ProfilePage() {
             </p>
             <h1 className="mt-3 text-4xl font-black">Ваш аккаунт</h1>
 
+            <div className="mt-5 rounded-3xl border border-white/50 bg-white/55 p-4 shadow-inner dark:border-white/10 dark:bg-black/20">
+              <div className="flex items-center justify-between gap-4">
+                <div className="text-left">
+                  <p className="text-sm font-black text-[#92400e] dark:text-amber-100">
+                    Тёмная тема
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-[#92400e]/60 dark:text-white/55">
+                    Применяется ко всем страницам сайта.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleDarkTheme}
+                  className={`relative h-9 w-16 shrink-0 rounded-full p-1 shadow-inner transition ${
+                    isDarkTheme
+                      ? "bg-[#92400e]"
+                      : "bg-white/85 ring-1 ring-[#92400e]/20"
+                  }`}
+                  aria-label="Переключить тёмную тему"
+                >
+                  <span
+                    className={`grid h-7 w-7 place-items-center rounded-full bg-white text-sm shadow-lg transition ${
+                      isDarkTheme ? "translate-x-7 text-[#92400e]" : "translate-x-0 text-[#92400e]"
+                    }`}
+                  >
+                    {isDarkTheme ? "☀️" : "🌙"}
+                  </span>
+                </button>
+              </div>
+            </div>
+
             <div className="mt-8 flex flex-col items-center text-center">
               <div className="relative">
                 {avatarUrl ? (
@@ -465,7 +514,7 @@ export default function ProfilePage() {
                   <button
                     onClick={leaveCouple}
                     disabled={isSaving}
-                    className="mt-5 rounded-full bg-white/75 px-5 py-3 font-black text-[#92400e] shadow-lg transition hover:bg-white disabled:opacity-55 dark:bg-white/10 dark:text-white"
+                    className="mt-5 rounded-full bg-white/75 px-5 py-3 font-black text-[#92400e] shadow-lg transition hover:bg-amber-50 disabled:opacity-55 dark:bg-white/10 dark:text-white dark:hover:bg-amber-500/15"
                   >
                     Покинуть пару
                   </button>

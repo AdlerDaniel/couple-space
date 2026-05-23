@@ -41,11 +41,22 @@ type TrackerEvent = {
 };
 
 const fallbackCategories = [
-  { name: "Поели", slug: "food", icon: "🍽️", color: "#f97316", sort_order: 10, is_default: true },
-  { name: "Секс", slug: "sex", icon: "❤️", color: "#f59e0b", sort_order: 20, is_default: true },
-  { name: "Спорт", slug: "sport", icon: "🏃", color: "#ca8a04", sort_order: 30, is_default: true },
-  { name: "Игры", slug: "games", icon: "🎮", color: "#eab308", sort_order: 40, is_default: true },
+  { name: "Поели", slug: "food", icon: "🍽️", color: "#facc15", sort_order: 10, is_default: true },
+  { name: "Секс", slug: "sex", icon: "❤️", color: "#fde047", sort_order: 20, is_default: true },
+  { name: "Спорт", slug: "sport", icon: "🏃", color: "#bef264", sort_order: 30, is_default: true },
+  { name: "Игры", slug: "games", icon: "🎮", color: "#ca8a04", sort_order: 40, is_default: true },
 ];
+
+const trackerCategoryColors: Record<string, string> = {
+  food: "#facc15",
+  sex: "#fde047",
+  sport: "#bef264",
+  games: "#ca8a04",
+};
+
+function getCategoryColor(category: TrackerCategory) {
+  return trackerCategoryColors[category.slug] || category.color || "#ca8a04";
+}
 
 const periodTabs: { key: Period; label: string }[] = [
   { key: "day", label: "День" },
@@ -496,7 +507,7 @@ export default function TrackerPage() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#fffbeb] via-[#fff7ed] to-[#fef3c7] px-6 pt-28 text-[#78350f] dark:from-[#1c1205] dark:via-[#120b03] dark:to-black dark:text-white">
+      <main className="tracker-theme flex min-h-screen items-center justify-center bg-gradient-to-br from-[#fffbeb] via-[#fefce8] to-[#fef9c3] px-6 pt-28 text-[#713f12] dark:from-[#171204] dark:via-[#111006] dark:to-black dark:text-white">
         <div className="rounded-[2rem] bg-white/65 p-8 font-black shadow-2xl backdrop-blur dark:bg-white/10">
           Загружаем трекер...
         </div>
@@ -506,7 +517,7 @@ export default function TrackerPage() {
 
   if (!currentUserId || !couple) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#fffbeb] via-[#fff7ed] to-[#fef3c7] px-6 pt-28 text-[#78350f] dark:from-[#1c1205] dark:via-[#120b03] dark:to-black dark:text-white">
+      <main className="tracker-theme flex min-h-screen items-center justify-center bg-gradient-to-br from-[#fffbeb] via-[#fefce8] to-[#fef9c3] px-6 pt-28 text-[#713f12] dark:from-[#171204] dark:via-[#111006] dark:to-black dark:text-white">
         <div className="max-w-md rounded-[2rem] bg-white/70 p-8 text-center shadow-2xl backdrop-blur dark:bg-white/10">
           <p className="text-2xl font-black">Нужна пара</p>
           <p className="mt-3 font-semibold opacity-70">
@@ -514,7 +525,7 @@ export default function TrackerPage() {
           </p>
           <Link
             href="/profile"
-            className="mt-6 inline-flex rounded-2xl bg-[#d97706] px-5 py-3 font-black text-white shadow-lg"
+            className="mt-6 inline-flex rounded-2xl bg-[#ca8a04] px-5 py-3 font-black text-white shadow-lg"
           >
             Открыть профиль
           </Link>
@@ -542,11 +553,11 @@ export default function TrackerPage() {
   ];
 
   return (
-    <main className="min-h-screen overflow-hidden bg-gradient-to-br from-[#fffbeb] via-[#fff7ed] to-[#fef3c7] px-4 pb-28 pt-24 text-[#78350f] dark:from-[#1c1205] dark:via-[#120b03] dark:to-black dark:text-white md:px-6 md:pt-28">
+    <main className="tracker-theme min-h-screen overflow-hidden bg-gradient-to-br from-[#fffbeb] via-[#fefce8] to-[#fef9c3] px-4 pb-28 pt-24 text-[#713f12] dark:from-[#171204] dark:via-[#111006] dark:to-black dark:text-white md:px-6 md:pt-28">
       <div className="pointer-events-none fixed inset-0 opacity-70">
         <div className="absolute left-[-8%] top-20 h-72 w-72 rounded-full bg-[#facc15]/20 blur-3xl" />
-        <div className="absolute right-[-6%] top-48 h-80 w-80 rounded-full bg-[#f97316]/16 blur-3xl" />
-        <div className="absolute bottom-20 left-1/3 h-72 w-72 rounded-full bg-[#eab308]/14 blur-3xl" />
+        <div className="absolute right-[-6%] top-48 h-80 w-80 rounded-full bg-[#fde047]/18 blur-3xl" />
+        <div className="absolute bottom-20 left-1/3 h-72 w-72 rounded-full bg-[#ca8a04]/14 blur-3xl" />
       </div>
 
       <div className="relative mx-auto max-w-7xl space-y-6">
@@ -625,7 +636,7 @@ export default function TrackerPage() {
 
           <div className="space-y-6">
             {showSpark && (
-              <div className="animate-fadeIn rounded-[1.5rem] border border-amber-200 bg-amber-50/90 p-4 text-center font-black text-amber-800 shadow-[0_18px_60px_rgba(234,179,8,0.18)] dark:border-white/10 dark:bg-white/10 dark:text-white">
+              <div className="animate-fadeIn rounded-[1.5rem] border border-amber-200 bg-amber-50/90 p-4 text-center font-black text-amber-800 shadow-[0_18px_60px_rgba(202,138,4,0.18)] dark:border-white/10 dark:bg-white/10 dark:text-white">
                 ✨ Первый след дня добавлен
               </div>
             )}
@@ -664,7 +675,7 @@ export default function TrackerPage() {
                       </div>
                       <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/70 shadow-inner dark:bg-white/10">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-[#facc15] to-[#f97316] transition-all"
+                          className="h-full rounded-full bg-gradient-to-r from-[#ca8a04] to-[#facc15] transition-all"
                           style={{ width: `${percent}%` }}
                         />
                       </div>
@@ -749,8 +760,8 @@ function PeriodTabs({ period, onChange }: { period: Period; onChange: (period: P
           onClick={() => onChange(tab.key)}
           className={`rounded-2xl px-3 py-3 text-sm font-black transition ${
             period === tab.key
-              ? "bg-[#d97706] text-white shadow-[0_14px_40px_rgba(217,119,6,0.28)]"
-              : "bg-white/55 text-[#78350f]/72 hover:bg-white dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10"
+              ? "bg-[#ca8a04] text-white shadow-[0_14px_40px_rgba(202,138,4,0.3)]"
+              : "bg-white/55 text-[#713f12]/72 hover:bg-amber-50 dark:bg-white/5 dark:text-white/70 dark:hover:bg-amber-500/15"
           }`}
         >
           {tab.label}
@@ -833,16 +844,16 @@ function MonthCalendar({
             <button
               key={dateKey}
               onClick={() => onSelectDate(dateKey)}
-              className={`group min-h-24 rounded-2xl border p-2 text-left shadow-inner transition hover:-translate-y-0.5 hover:shadow-[0_16px_45px_rgba(217,119,6,0.16)] ${
+              className={`group min-h-24 rounded-2xl border p-2 text-left shadow-inner transition hover:-translate-y-0.5 hover:shadow-[0_16px_45px_rgba(202,138,4,0.16)] ${
                 isSelected
-                  ? "border-[#d97706] bg-amber-50 ring-2 ring-[#d97706]/20 dark:bg-white/12"
+                  ? "border-[#ca8a04] bg-amber-50 ring-2 ring-[#ca8a04]/20 dark:bg-white/12"
                   : "border-white/50 bg-white/48 dark:border-white/10 dark:bg-white/5"
               } ${isCurrentMonth ? "" : "opacity-38"}`}
             >
               <div className="flex items-center justify-between">
-                <span className={`text-sm font-black ${isToday ? "text-[#d97706]" : ""}`}>{date.getDate()}</span>
+                <span className={`text-sm font-black ${isToday ? "text-[#ca8a04]" : ""}`}>{date.getDate()}</span>
                 {dayEvents.length > 0 && (
-                  <span className="rounded-full bg-[#d97706] px-1.5 py-0.5 text-[10px] font-black text-white">
+                  <span className="rounded-full bg-[#ca8a04] px-1.5 py-0.5 text-[10px] font-black text-white">
                     {sumEvents(dayEvents)}
                   </span>
                 )}
@@ -855,7 +866,7 @@ function MonthCalendar({
                     <span
                       key={category.id}
                       className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-black text-white"
-                      style={{ backgroundColor: category.color }}
+                      style={{ backgroundColor: getCategoryColor(category) }}
                     >
                       {category.icon}
                       {value > 1 ? value : ""}
@@ -901,7 +912,7 @@ function WeekTracker({
               </p>
               <p className="mt-1 text-lg font-black">{date.getDate()}</p>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-white dark:bg-white/10">
-                <div className="h-full rounded-full bg-[#d97706]" style={{ width: `${Math.min(100, total * 18)}%` }} />
+                <div className="h-full rounded-full bg-[#ca8a04]" style={{ width: `${Math.min(100, total * 18)}%` }} />
               </div>
               <div className="mt-3 flex flex-wrap gap-1">
                 {categories.map((category) => {
@@ -969,7 +980,7 @@ function ActivityCategoryCard({
       <div className="flex items-center gap-3">
         <span
           className="grid h-12 w-12 place-items-center rounded-2xl text-2xl text-white shadow-lg"
-          style={{ backgroundColor: category.color }}
+          style={{ backgroundColor: getCategoryColor(category) }}
         >
           {category.icon}
         </span>
@@ -978,7 +989,7 @@ function ActivityCategoryCard({
           <p className="text-sm font-semibold opacity-55">{value} отметок</p>
         </div>
       </div>
-      <ActivityCounter value={value} onMinus={onMinus} onPlus={onPlus} color={category.color} />
+      <ActivityCounter value={value} onMinus={onMinus} onPlus={onPlus} color={getCategoryColor(category)} />
     </div>
   );
 }
@@ -1057,7 +1068,7 @@ function DayDetailsPanel({
               <div className="flex items-center gap-3">
                 <span
                   className="grid h-12 w-12 place-items-center rounded-2xl text-2xl text-white shadow-lg"
-                  style={{ backgroundColor: category.color }}
+                  style={{ backgroundColor: getCategoryColor(category) }}
                 >
                   {category.icon}
                 </span>
@@ -1066,7 +1077,7 @@ function DayDetailsPanel({
                     value={editingNames[category.id] || ""}
                     onChange={(event) => onEditingNameChange(category.id, event.target.value)}
                     onBlur={() => onSaveCategoryName(category)}
-                    className="w-full rounded-xl bg-white/60 px-3 py-2 font-black outline-none transition focus:shadow-[0_0_0_4px_rgba(217,119,6,0.12)] dark:bg-white/10"
+                    className="w-full rounded-xl bg-white/60 px-3 py-2 font-black outline-none transition focus:shadow-[0_0_0_4px_rgba(202,138,4,0.12)] dark:bg-white/10"
                   />
                 </div>
               </div>
@@ -1074,7 +1085,7 @@ function DayDetailsPanel({
                 value={event?.count || 0}
                 onMinus={() => onAdjust(category, -1)}
                 onPlus={() => onAdjust(category, 1)}
-                color={category.color}
+                color={getCategoryColor(category)}
               />
               {event && (
                 <div className="mt-4 space-y-3">
@@ -1102,7 +1113,7 @@ function DayDetailsPanel({
                     onChange={(input) => onUpdate(event.id, { note: input.target.value })}
                     rows={3}
                     placeholder="Заметка к дню"
-                    className="w-full resize-none rounded-2xl border border-white/45 bg-white/70 p-3 font-semibold outline-none transition focus:shadow-[0_0_0_4px_rgba(217,119,6,0.12)] dark:border-white/10 dark:bg-white/10"
+                    className="w-full resize-none rounded-2xl border border-white/45 bg-white/70 p-3 font-semibold outline-none transition focus:shadow-[0_0_0_4px_rgba(202,138,4,0.12)] dark:border-white/10 dark:bg-white/10"
                   />
                 </div>
               )}
@@ -1147,7 +1158,7 @@ function MoodSelector({ value, onChange }: { value: Mood; onChange: (mood: Mood)
             key={mood.key}
             onClick={() => onChange(mood.key)}
             className={`rounded-2xl px-2 py-2 text-sm font-black transition ${
-              value === mood.key ? "bg-[#d97706] text-white shadow-lg" : "bg-white/60 hover:bg-white dark:bg-white/10"
+              value === mood.key ? "bg-[#ca8a04] text-white shadow-lg" : "bg-white/60 hover:bg-amber-50 dark:bg-white/10 dark:hover:bg-amber-500/15"
             }`}
             title={mood.label}
           >
@@ -1182,7 +1193,7 @@ function YearHeatmap({
               key={item.id}
               onClick={() => onFilter(item.id)}
               className={`rounded-full px-3 py-2 text-xs font-black transition ${
-                filter === item.id ? "bg-[#d97706] text-white" : "bg-white/60 dark:bg-white/10"
+                filter === item.id ? "bg-[#ca8a04] text-white" : "bg-white/60 dark:bg-white/10"
               }`}
             >
               {item.icon} {item.name}
@@ -1200,7 +1211,7 @@ function YearHeatmap({
               title={title}
               className="aspect-square rounded-[0.25rem] transition hover:scale-150 hover:ring-2 hover:ring-white"
               style={{
-                backgroundColor: day.score ? `rgba(217,119,6,${opacity})` : "rgba(255,255,255,0.55)",
+                backgroundColor: day.score ? `rgba(202,138,4,${opacity})` : "rgba(255,255,255,0.55)",
               }}
             />
           );
@@ -1251,7 +1262,7 @@ function TrackerCharts({ categories, events }: { categories: TrackerCategory[]; 
                   <span>{value}</span>
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-white dark:bg-white/10">
-                  <div className="h-full rounded-full" style={{ width: `${(value / max) * 100}%`, backgroundColor: category.color }} />
+                  <div className="h-full rounded-full" style={{ width: `${(value / max) * 100}%`, backgroundColor: getCategoryColor(category) }} />
                 </div>
               </div>
             ))}
@@ -1281,7 +1292,7 @@ function BarChart({
         {items.map((item) => (
           <div key={item.label} className="flex h-full flex-1 flex-col justify-end gap-2 text-center">
             <div
-              className="mx-auto w-full rounded-t-xl bg-gradient-to-t from-[#d97706] to-[#facc15] transition-all"
+              className="mx-auto w-full rounded-t-xl bg-gradient-to-t from-[#ca8a04] to-[#facc15] transition-all"
               style={{ height: `${Math.max(6, (item.value / max) * 100)}%` }}
               title={`${item.label}: ${item.value}`}
             />

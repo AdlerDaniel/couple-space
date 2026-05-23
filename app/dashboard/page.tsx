@@ -1388,7 +1388,7 @@ export default function DashboardPage() {
 
           <div className="relative flex min-h-[300px] flex-col justify-between gap-8">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-              <label className="cursor-pointer rounded-full bg-white/55 px-5 py-2 text-sm font-semibold shadow-lg backdrop-blur transition hover:bg-white/75 dark:bg-black/25 dark:hover:bg-black/35">
+              <label className="cursor-pointer rounded-full bg-white/55 px-5 py-2 text-sm font-semibold shadow-lg backdrop-blur transition hover:bg-red-50/90 dark:bg-black/25 dark:hover:bg-red-500/15">
                 <input
                   type="file"
                   accept="image/*"
@@ -1408,7 +1408,7 @@ export default function DashboardPage() {
 
               <Link
                 href="/profile"
-                className="rounded-full bg-white/55 px-5 py-2 text-sm font-semibold shadow-lg backdrop-blur transition hover:bg-white/75 dark:bg-black/25 dark:hover:bg-black/35"
+                className="rounded-full bg-white/55 px-5 py-2 text-sm font-semibold shadow-lg backdrop-blur transition hover:bg-red-50/90 dark:bg-black/25 dark:hover:bg-red-500/15"
               >
                 Профиль
               </Link>
@@ -1489,7 +1489,7 @@ export default function DashboardPage() {
                     className={`h-11 w-11 rounded-full text-xl shadow-inner transition ${
                       statusEmoji === emoji
                         ? "bg-white shadow-lg ring-2 ring-[#dc2626]/40"
-                        : "bg-white/40 hover:bg-white/65"
+                        : "bg-white/40 hover:bg-red-50/80"
                     }`}
                   >
                     {emoji}
@@ -1553,7 +1553,7 @@ export default function DashboardPage() {
           <div className="relative grid gap-3 sm:grid-cols-3">
             <button
               onClick={() => setIsActivityOpen(true)}
-              className="group flex items-center gap-3 rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-white/50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+              className="group flex items-center gap-3 rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-red-50/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-red-500/12"
             >
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/55 text-2xl shadow-inner transition group-hover:scale-105 dark:bg-white/10">
                 🕊️
@@ -1568,7 +1568,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setIsTimelineOpen(true)}
-              className="group flex items-center gap-3 rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-white/50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+              className="group flex items-center gap-3 rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-red-50/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-red-500/12"
             >
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/55 text-2xl shadow-inner transition group-hover:scale-105 dark:bg-white/10">
                 🕰️
@@ -1586,7 +1586,7 @@ export default function DashboardPage() {
                 setAchievementView(unlockedAchievements > 0 ? "unlocked" : "locked");
                 setIsAchievementsOpen(true);
               }}
-              className="group flex items-center gap-3 rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-white/50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+              className="group flex items-center gap-3 rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-red-50/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-red-500/12"
             >
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/55 text-2xl shadow-inner transition group-hover:scale-105 dark:bg-white/10">
                 🏆
@@ -1622,7 +1622,7 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setIsActivityOpen(false)}
-                className="rounded-full bg-white/70 px-5 py-2 text-sm font-black text-[#dc2626] shadow-lg transition hover:bg-white dark:bg-white/10 dark:text-white"
+                className="rounded-full bg-white/70 px-5 py-2 text-sm font-black text-[#dc2626] shadow-lg transition hover:bg-red-50 dark:bg-white/10 dark:text-white dark:hover:bg-red-500/15"
               >
                 Закрыть
               </button>
@@ -1678,7 +1678,7 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setIsTimelineOpen(false)}
-                className="rounded-full bg-white/70 px-5 py-2 text-sm font-black text-[#dc2626] shadow-lg transition hover:bg-white dark:bg-white/10 dark:text-white"
+                className="rounded-full bg-white/70 px-5 py-2 text-sm font-black text-[#dc2626] shadow-lg transition hover:bg-red-50 dark:bg-white/10 dark:text-white dark:hover:bg-red-500/15"
               >
                 Закрыть
               </button>
@@ -1793,7 +1793,7 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setIsAchievementsOpen(false)}
-                className="rounded-full bg-white/70 px-5 py-2 text-sm font-black text-[#dc2626] shadow-lg transition hover:bg-white dark:bg-white/10 dark:text-white"
+                className="rounded-full bg-white/70 px-5 py-2 text-sm font-black text-[#dc2626] shadow-lg transition hover:bg-red-50 dark:bg-white/10 dark:text-white dark:hover:bg-red-500/15"
               >
                 Закрыть
               </button>
@@ -1820,7 +1820,7 @@ export default function DashboardPage() {
                   className={`rounded-[1.35rem] px-4 py-3 text-sm font-black transition ${
                     achievementView === key
                       ? "bg-white text-[#dc2626] shadow-lg dark:bg-white/15 dark:text-white"
-                      : "text-[#dc2626]/65 hover:bg-white/35 dark:text-white/60 dark:hover:bg-white/10"
+                      : "text-[#dc2626]/65 hover:bg-red-50/70 dark:text-white/60 dark:hover:bg-red-500/12"
                   }`}
                 >
                   {label}
@@ -1962,7 +1962,7 @@ export default function DashboardPage() {
                 </div>
                 <button
                   onClick={() => setSelectedAchievement(null)}
-                  className="rounded-full bg-white/70 px-4 py-2 text-sm font-black text-[#dc2626] shadow-lg transition hover:bg-white dark:bg-white/10 dark:text-white"
+                  className="rounded-full bg-white/70 px-4 py-2 text-sm font-black text-[#dc2626] shadow-lg transition hover:bg-red-50 dark:bg-white/10 dark:text-white dark:hover:bg-red-500/15"
                 >
                   Закрыть
                 </button>

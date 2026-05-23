@@ -491,29 +491,29 @@ export default function MemoriesPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#eef6ff] px-6 pb-24 pt-28 text-[#0f3b66] transition-colors dark:bg-[#02101d] dark:text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(26,115,232,0.2),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(20,184,166,0.14),transparent_30%),linear-gradient(135deg,#eef6ff_0%,#f8fbff_48%,#e9f5ff_100%)] dark:bg-[radial-gradient(circle_at_18%_12%,rgba(26,115,232,0.16),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(20,184,166,0.12),transparent_30%),linear-gradient(135deg,#02101d_0%,#071f35_48%,#02101d_100%)]" />
+    <main className="relative min-h-screen overflow-hidden bg-[#eff6ff] px-6 pb-24 pt-28 text-[#172554] transition-colors dark:bg-[#020617] dark:text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(37,99,235,0.2),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(29,78,216,0.14),transparent_30%),linear-gradient(135deg,#eff6ff_0%,#f8fbff_48%,#dbeafe_100%)] dark:bg-[radial-gradient(circle_at_18%_12%,rgba(37,99,235,0.16),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(29,78,216,0.12),transparent_30%),linear-gradient(135deg,#020617_0%,#0f172a_48%,#020617_100%)]" />
       <div className="memories-grain pointer-events-none absolute inset-0 opacity-[0.16]" />
 
       <section className="relative mx-auto max-w-7xl">
         <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-sm font-black uppercase tracking-wide text-[#1a73e8]/70 dark:text-blue-200/70">
+            <p className="text-sm font-black uppercase tracking-wide text-[#2563eb]/70 dark:text-blue-200/70">
               Воспоминания
             </p>
-            <h1 className="mt-3 text-5xl font-black text-[#1a73e8] dark:text-white md:text-7xl">
+            <h1 className="mt-3 text-5xl font-black text-[#2563eb] dark:text-white md:text-7xl">
               Моменты пары
             </h1>
           </div>
           <button
             onClick={openRandomMemory}
-            className="rounded-full bg-gradient-to-r from-[#1a73e8] to-[#14b8a6] px-6 py-3 font-black text-white shadow-[0_18px_55px_rgba(26,115,232,0.28)] transition hover:-translate-y-0.5"
+            className="rounded-full bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] px-6 py-3 font-black text-white shadow-[0_18px_55px_rgba(37,99,235,0.28)] transition hover:-translate-y-0.5"
           >
             Случайное воспоминание
           </button>
         </div>
 
-        <div className="mb-10 rounded-[2rem] border border-white/70 bg-white/50 p-5 shadow-[0_28px_90px_rgba(26,115,232,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8">
+        <div className="mb-10 rounded-[2rem] border border-white/70 bg-white/50 p-5 shadow-[0_28px_90px_rgba(37,99,235,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8">
           <div className="grid gap-4 md:grid-cols-2">
             <input
               value={title}
@@ -533,18 +533,18 @@ export default function MemoriesPage() {
               value={caption}
               onChange={(event) => setCaption(event.target.value)}
               placeholder="Описание или подпись к воспоминанию..."
-              className="min-h-28 w-full resize-none rounded-2xl border border-blue-200/70 bg-white/75 px-5 py-4 pr-14 font-semibold leading-7 text-blue-950 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_4px_rgba(26,115,232,0.12)] dark:border-white/10 dark:bg-white/8 dark:text-white"
+              className="min-h-28 w-full resize-none rounded-2xl border border-blue-200/70 bg-white/75 px-5 py-4 pr-14 font-semibold leading-7 text-blue-950 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_4px_rgba(37,99,235,0.12)] dark:border-white/10 dark:bg-white/8 dark:text-white"
             />
             <button
               type="button"
               onClick={() => setIsEmojiPickerOpen((current) => !current)}
-              className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-white/85 text-xl shadow-[0_10px_30px_rgba(26,115,232,0.16)] transition hover:-translate-y-0.5 hover:bg-white dark:bg-white/10 dark:hover:bg-white/15"
+              className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-blue-50 text-xl shadow-[0_10px_30px_rgba(37,99,235,0.16)] transition hover:-translate-y-0.5 hover:bg-blue-100 dark:bg-white/10 dark:hover:bg-blue-500/18"
               aria-label="Добавить эмодзи"
             >
               😊
             </button>
             {isEmojiPickerOpen && (
-              <div className="absolute right-0 top-14 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-3xl border border-white/70 bg-white/95 p-3 shadow-[0_24px_80px_rgba(26,115,232,0.22)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#061624]/95">
+              <div className="absolute right-0 top-14 z-20 w-[min(18rem,calc(100vw-2rem))] rounded-3xl border border-white/70 bg-white/95 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.22)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#061624]/95">
                 <div className="grid grid-cols-6 gap-2">
                   {memoryEmojis.map((emoji) => (
                     <button
@@ -561,7 +561,7 @@ export default function MemoriesPage() {
             )}
           </div>
           <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <label className="cursor-pointer rounded-2xl border border-blue-200/70 bg-white/70 px-5 py-4 font-black text-[#1a73e8] shadow-lg transition hover:bg-white/90 dark:border-white/10 dark:bg-white/8 dark:text-blue-100">
+            <label className="cursor-pointer rounded-2xl border border-blue-200/70 bg-white/70 px-5 py-4 font-black text-[#2563eb] shadow-lg transition hover:bg-blue-50 dark:border-white/10 dark:bg-white/8 dark:text-blue-100 dark:hover:bg-blue-500/15">
               <input
                 type="file"
                 accept="image/*"
@@ -578,7 +578,7 @@ export default function MemoriesPage() {
             <button
               onClick={addMemory}
               disabled={isSubmitting}
-              className="rounded-full bg-[#1a73e8] px-7 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50"
+              className="rounded-full bg-[#2563eb] px-7 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50"
             >
               {isSubmitting ? "Сохраняем..." : "Добавить воспоминание"}
             </button>
@@ -595,7 +595,7 @@ export default function MemoriesPage() {
             />
           )}
           {message && (
-            <p className="mt-4 rounded-2xl bg-white/70 px-5 py-3 font-black text-[#1a73e8] shadow-inner dark:bg-white/10 dark:text-blue-100">
+            <p className="mt-4 rounded-2xl bg-white/70 px-5 py-3 font-black text-[#2563eb] shadow-inner dark:bg-white/10 dark:text-blue-100">
               {message}
             </p>
           )}
@@ -611,8 +611,8 @@ export default function MemoriesPage() {
               onClick={() => setActiveTab(key as "all" | "pinned")}
               className={`rounded-full px-5 py-3 font-black shadow-lg transition ${
                 activeTab === key
-                  ? "bg-[#1a73e8] text-white"
-                  : "border border-white/70 bg-white/55 text-[#1a73e8] dark:border-white/10 dark:bg-white/8 dark:text-blue-100"
+                  ? "bg-[#2563eb] text-white"
+                  : "border border-white/70 bg-white/55 text-[#2563eb] dark:border-white/10 dark:bg-white/8 dark:text-blue-100"
               }`}
             >
               {label}
@@ -642,7 +642,7 @@ export default function MemoriesPage() {
               return (
                 <article
                   key={memory.id}
-                  className="group mb-5 break-inside-avoid overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(26,115,232,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(26,115,232,0.28)] dark:border-white/10 dark:bg-white/8"
+                  className="group mb-5 break-inside-avoid overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] dark:border-white/10 dark:bg-white/8"
                 >
                   <div className="relative overflow-hidden rounded-[1.35rem] bg-blue-100 dark:bg-white/8">
                     {memory.image && (
@@ -674,7 +674,7 @@ export default function MemoriesPage() {
                   <div className="p-3">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       {memory.is_pinned ? (
-                        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-[#1a73e8] dark:bg-white/10 dark:text-blue-100">
+                        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-[#2563eb] dark:bg-white/10 dark:text-blue-100">
                           Закреплено
                         </span>
                       ) : (
@@ -685,8 +685,8 @@ export default function MemoriesPage() {
                           onClick={() => togglePinned(memory)}
                           className={`rounded-full px-3 py-1 text-xs font-black shadow transition hover:-translate-y-0.5 ${
                             memory.is_pinned
-                              ? "bg-[#1a73e8] text-white shadow-[0_10px_28px_rgba(26,115,232,0.28)]"
-                              : "bg-white/70 text-[#1a73e8] dark:bg-white/10 dark:text-blue-100"
+                              ? "bg-[#2563eb] text-white shadow-[0_10px_28px_rgba(37,99,235,0.28)]"
+                              : "bg-white/70 text-[#2563eb] dark:bg-white/10 dark:text-blue-100"
                           }`}
                         >
                           {memory.is_pinned ? "Закреплено" : "Закрепить"}
@@ -699,13 +699,13 @@ export default function MemoriesPage() {
                         </button>
                       </div>
                     </div>
-                    <h2 className="text-2xl font-black text-[#0f3b66] dark:text-white">
+                    <h2 className="text-2xl font-black text-[#172554] dark:text-white">
                       {memory.title || "Без названия"}
                     </h2>
-                    <p className="mt-2 font-semibold leading-7 text-[#0f3b66]/70 dark:text-white/62">
+                    <p className="mt-2 font-semibold leading-7 text-[#172554]/70 dark:text-white/62">
                       {memory.caption || memory.text || "Без описания"}
                     </p>
-                    <div className="mt-4 grid gap-2 text-sm font-bold text-[#0f3b66]/58 dark:text-white/45">
+                    <div className="mt-4 grid gap-2 text-sm font-bold text-[#172554]/58 dark:text-white/45">
                       <span>Дата события: {formatDate(memory.event_date)}</span>
                       <span>Загрузил: {author}</span>
                       <span>Время загрузки: {formatTime(memory.created_at)}</span>
@@ -735,11 +735,11 @@ export default function MemoriesPage() {
                           >
                             <span>{reaction}</span>
                             {userIds.length > 1 ? (
-                              <span className="text-xs font-black text-[#1a73e8] dark:text-blue-100">{userIds.length}</span>
+                              <span className="text-xs font-black text-[#2563eb] dark:text-blue-100">{userIds.length}</span>
                             ) : singleUser?.avatar ? (
                               <Image src={singleUser.avatar} alt={singleUser.name} width={18} height={18} sizes="18px" className="h-[18px] w-[18px] rounded-full object-cover ring-1 ring-white/80" />
                             ) : singleUser ? (
-                              <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-white text-[9px] font-black text-[#1a73e8] ring-1 ring-white/80 dark:bg-black/25 dark:text-white">{singleUser.initial}</span>
+                              <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-white text-[9px] font-black text-[#2563eb] ring-1 ring-white/80 dark:bg-black/25 dark:text-white">{singleUser.initial}</span>
                             ) : null}
                           </button>
                         );
@@ -747,7 +747,7 @@ export default function MemoriesPage() {
                     </div>
 
                     <div className="mt-4 rounded-2xl bg-blue-50/70 p-3 dark:bg-white/8">
-                      <p className="mb-2 text-sm font-black text-[#1a73e8] dark:text-blue-100">
+                      <p className="mb-2 text-sm font-black text-[#2563eb] dark:text-blue-100">
                         Комментарии
                       </p>
                       <div className="space-y-2">
@@ -774,7 +774,7 @@ export default function MemoriesPage() {
                         />
                         <button
                           onClick={() => addComment(memory)}
-                          className="rounded-full bg-[#1a73e8] px-4 py-2 text-sm font-black text-white"
+                          className="rounded-full bg-[#2563eb] px-4 py-2 text-sm font-black text-white"
                         >
                           Отправить
                         </button>

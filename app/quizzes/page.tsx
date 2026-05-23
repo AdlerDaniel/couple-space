@@ -194,7 +194,7 @@ export default function QuizzesPage() {
                   className={`rounded-3xl border p-4 text-left shadow-lg transition hover:-translate-y-0.5 ${
                     isActive
                       ? "border-[#7c3aed]/35 bg-[#7c3aed] text-white shadow-[0_20px_60px_rgba(124,58,237,0.28)]"
-                      : "border-white/55 bg-white/45 text-[#6d28d9] hover:bg-white/65 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-white/10"
+                      : "border-white/55 bg-white/45 text-[#6d28d9] hover:bg-violet-50 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
                   }`}
                 >
                   <span className="block text-lg font-black">{category}</span>
@@ -258,7 +258,7 @@ export default function QuizzesPage() {
                 type="button"
                 onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                 disabled={currentPage === 1}
-                className="rounded-full bg-white/70 px-4 py-2 text-sm font-black text-[#6d28d9] shadow transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45 dark:bg-white/10 dark:text-[#d8b4fe]"
+                className="rounded-full bg-white/70 px-4 py-2 text-sm font-black text-[#6d28d9] shadow transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-white/10 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
               >
                 Назад
               </button>
@@ -280,7 +280,7 @@ export default function QuizzesPage() {
                     className={`h-10 w-10 rounded-full text-sm font-black shadow transition ${
                       currentPage === page
                         ? "bg-[#7c3aed] text-white"
-                        : "bg-white/70 text-[#6d28d9] hover:bg-white dark:bg-white/10 dark:text-[#d8b4fe]"
+                        : "bg-white/70 text-[#6d28d9] hover:bg-violet-50 dark:bg-white/10 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
                     }`}
                   >
                     {page}
@@ -291,7 +291,7 @@ export default function QuizzesPage() {
                 type="button"
                 onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                 disabled={currentPage === totalPages}
-                className="rounded-full bg-white/70 px-4 py-2 text-sm font-black text-[#6d28d9] shadow transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45 dark:bg-white/10 dark:text-[#d8b4fe]"
+                className="rounded-full bg-white/70 px-4 py-2 text-sm font-black text-[#6d28d9] shadow transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-white/10 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
               >
                 Вперёд
               </button>
@@ -310,7 +310,7 @@ export default function QuizzesPage() {
                   className={`relative flex min-h-64 flex-col rounded-3xl p-6 shadow-inner backdrop-blur transition hover:-translate-y-1 ${
                     isMineCompleted
                       ? "bg-slate-300/70 text-slate-700 hover:bg-slate-300/80 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-700/80"
-                      : "bg-white/35 hover:bg-white/50 dark:bg-white/5 dark:hover:bg-white/10"
+                      : "bg-white/35 hover:bg-violet-50/70 dark:bg-white/5 dark:hover:bg-violet-500/15"
                   }`}
                 >
                   {isMineCompleted && (

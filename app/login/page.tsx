@@ -310,7 +310,7 @@ export default function LoginPage() {
                     className={`rounded-full px-5 py-3 text-sm font-black transition ${
                       mode === item
                         ? "bg-white text-[#be123c] shadow-lg dark:bg-white/15 dark:text-white"
-                        : "text-[#be123c]/55 hover:bg-white/45 dark:text-white/55 dark:hover:bg-white/10"
+                        : "text-[#be123c]/55 hover:bg-rose-50/80 dark:text-white/55 dark:hover:bg-rose-500/15"
                     }`}
                   >
                     {item === "login" ? "Login" : "Register"}
@@ -321,7 +321,7 @@ export default function LoginPage() {
               <button
                 onClick={signInWithGoogle}
                 disabled={isLoading}
-                className="group mb-4 flex h-14 w-full items-center justify-center gap-3 rounded-[1.25rem] border border-white/60 bg-white/75 font-black text-[#3b0710] shadow-lg transition hover:-translate-y-0.5 hover:scale-[1.01] hover:bg-white disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+                className="group mb-4 flex h-14 w-full items-center justify-center gap-3 rounded-[1.25rem] border border-white/60 bg-white/75 font-black text-[#3b0710] shadow-lg transition hover:-translate-y-0.5 hover:scale-[1.01] hover:bg-rose-50 disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-rose-500/15"
               >
                 <span className="text-xl">G</span>
                 Google
@@ -339,7 +339,7 @@ export default function LoginPage() {
                     className={`rounded-[1.2rem] border px-4 py-3 text-left transition hover:-translate-y-0.5 ${
                       method === item.key
                         ? "border-[#fb7185]/60 bg-[#fff1f4] shadow-[0_12px_34px_rgba(190,18,60,0.12)] dark:border-white/20 dark:bg-white/15"
-                        : "border-white/40 bg-white/35 hover:bg-white/55 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+                        : "border-white/40 bg-white/35 hover:bg-rose-50/80 dark:border-white/10 dark:bg-white/5 dark:hover:bg-rose-500/15"
                     }`}
                   >
                     <span className="block font-black">{item.label}</span>
@@ -382,7 +382,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((current) => !current)}
-                      className="rounded-full bg-[#fff1f4] px-3 py-2 text-xs font-black text-[#be123c] shadow-inner transition hover:bg-white dark:bg-white/10 dark:text-white"
+                      className="rounded-full bg-[#fff1f4] px-3 py-2 text-xs font-black text-[#be123c] shadow-inner transition hover:bg-rose-100 dark:bg-white/10 dark:text-white dark:hover:bg-rose-500/15"
                     >
                       {showPassword ? "Скрыть" : "Показать"}
                     </button>

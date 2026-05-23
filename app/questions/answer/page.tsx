@@ -490,7 +490,7 @@ export default function QuestionAnswerPage() {
       <section className="questions-reveal relative mx-auto max-w-4xl">
         <button
           onClick={() => router.push("/questions")}
-          className="mb-6 rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-bold text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-white/70 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200"
+          className="mb-6 rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-bold text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200 dark:hover:bg-emerald-500/15"
         >
           Назад к вопросу
         </button>
@@ -551,7 +551,7 @@ export default function QuestionAnswerPage() {
                   </span>
                 </button>
 
-                <label className="cursor-pointer rounded-[1.2rem] border border-emerald-200/70 bg-white/70 px-5 py-4 text-left font-black text-emerald-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-white/85 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100">
+                <label className="cursor-pointer rounded-[1.2rem] border border-emerald-200/70 bg-white/70 px-5 py-4 text-left font-black text-emerald-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100 dark:hover:bg-emerald-500/15">
                   <input
                     type="file"
                     accept="image/*"
@@ -601,7 +601,7 @@ export default function QuestionAnswerPage() {
                     <button type="button" onClick={cancelVoiceRecording} className="rounded-full bg-white/18 px-4 py-2 text-sm font-black transition hover:bg-white/25">
                       Отмена
                     </button>
-                    <button type="button" onClick={toggleVoiceRecording} className="rounded-full bg-white px-4 py-2 text-sm font-black text-emerald-700 transition hover:bg-white/90">
+                    <button type="button" onClick={toggleVoiceRecording} className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 transition hover:bg-emerald-100 dark:bg-white/12 dark:text-emerald-100 dark:hover:bg-emerald-500/20">
                       Готово
                     </button>
                   </div>

@@ -107,7 +107,7 @@ export default function QuestionArchiveDetailPage() {
       <section className="questions-reveal relative mx-auto max-w-5xl">
         <button
           onClick={() => router.push("/questions/archive")}
-          className="mb-6 rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-bold text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-white/70 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200"
+          className="mb-6 rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-bold text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200 dark:hover:bg-emerald-500/15"
         >
           Назад в архив
         </button>

@@ -135,7 +135,7 @@ export default function QuestionsArchivePage() {
           <div>
             <button
               onClick={() => router.push("/questions")}
-              className="mb-5 rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-bold text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-white/70 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200"
+              className="mb-5 rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-bold text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200 dark:hover:bg-emerald-500/15"
             >
               Назад к вопросу дня
             </button>
@@ -167,7 +167,7 @@ export default function QuestionsArchivePage() {
                 className={`rounded-full px-4 py-3 text-sm font-black shadow-lg transition ${
                   category === item
                     ? "bg-gradient-to-r from-[#15803d] to-[#14b8a6] text-white"
-                    : "border border-white/70 bg-white/55 text-emerald-700 hover:bg-white/75 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100"
+                    : "border border-white/70 bg-white/55 text-emerald-700 hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100 dark:hover:bg-emerald-500/15"
                 }`}
               >
                 {item}
@@ -206,7 +206,7 @@ export default function QuestionsArchivePage() {
                       <button
                         key={row.id}
                         onClick={() => router.push(`/questions/archive/${row.id}`)}
-                        className="group rounded-[2rem] border border-white/70 bg-white/58 p-5 text-left shadow-[0_22px_70px_rgba(21,128,61,0.14)] backdrop-blur-xl transition hover:-translate-y-1 hover:bg-white/75 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/12"
+                        className="group rounded-[2rem] border border-white/70 bg-white/58 p-5 text-left shadow-[0_22px_70px_rgba(21,128,61,0.14)] backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700 dark:bg-white/10 dark:text-emerald-100">

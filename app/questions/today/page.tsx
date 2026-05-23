@@ -211,7 +211,7 @@ export default function TodayQuestionPage() {
             </p>
             <button
               onClick={() => router.push("/questions/archive")}
-              className="rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-black text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-white/70 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200"
+              className="rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-black text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200 dark:hover:bg-emerald-500/15"
             >
               Архив
             </button>
@@ -220,7 +220,7 @@ export default function TodayQuestionPage() {
             {questionOfTheDay}
           </h1>
           <div className="mx-auto mt-6 grid max-w-3xl gap-3 md:grid-cols-2">
-            <div className="answer-reveal rounded-[1.4rem] border border-emerald-200/70 bg-white/55 p-4 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-white/72 dark:border-white/10 dark:bg-white/8">
+            <div className="answer-reveal rounded-[1.4rem] border border-emerald-200/70 bg-white/55 p-4 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12">
               <p className="text-sm font-black uppercase text-emerald-600/70 dark:text-emerald-200/70">
                 Серия дней ответов
               </p>
@@ -228,7 +228,7 @@ export default function TodayQuestionPage() {
                 {answerStreak} дней
               </p>
             </div>
-            <div className="answer-reveal rounded-[1.4rem] border border-emerald-200/70 bg-white/55 p-4 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-white/72 dark:border-white/10 dark:bg-white/8">
+            <div className="answer-reveal rounded-[1.4rem] border border-emerald-200/70 bg-white/55 p-4 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12">
               <p className="text-sm font-black uppercase text-emerald-600/70 dark:text-emerald-200/70">
                 Напоминание
               </p>
@@ -240,7 +240,7 @@ export default function TodayQuestionPage() {
         </div>
 
         <div className="mb-6 grid gap-4 md:grid-cols-2">
-          <div className={`answer-reveal rounded-[1.6rem] border border-white/70 bg-white/58 p-5 shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-white/72 dark:border-white/10 dark:bg-white/8 ${hasMyAnswer ? "answered-glow" : ""}`}>
+          <div className={`answer-reveal rounded-[1.6rem] border border-white/70 bg-white/58 p-5 shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12 ${hasMyAnswer ? "answered-glow" : ""}`}>
             <p className="text-sm font-black uppercase text-emerald-600/70 dark:text-emerald-200/70">
               Ваш статус
             </p>
@@ -248,7 +248,7 @@ export default function TodayQuestionPage() {
               {hasMyAnswer ? "Вы ответили" : "Вы ещё не ответили"}
             </p>
           </div>
-          <div className={`answer-reveal rounded-[1.6rem] border border-white/70 bg-white/58 p-5 shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-white/72 dark:border-white/10 dark:bg-white/8 ${hasPartnerAnswer ? "answered-glow" : ""}`}>
+          <div className={`answer-reveal rounded-[1.6rem] border border-white/70 bg-white/58 p-5 shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12 ${hasPartnerAnswer ? "answered-glow" : ""}`}>
             <p className="text-sm font-black uppercase text-emerald-600/70 dark:text-emerald-200/70">
               Статус партнёра
             </p>

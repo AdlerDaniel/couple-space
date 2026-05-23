@@ -203,7 +203,7 @@ export default function AnswerSocialControls<TRecord extends object>({
               className={`inline-flex h-10 min-w-10 items-center justify-center gap-1 rounded-full border px-2 text-lg shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
                 userReaction === reaction
                   ? "border-emerald-300 bg-emerald-100 shadow-[0_10px_30px_rgba(21,128,61,0.18)] dark:border-emerald-300/30 dark:bg-emerald-300/18"
-                  : "border-white/70 bg-white/62 hover:bg-white/82 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/14"
+                  : "border-white/70 bg-white/62 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/15"
               }`}
             >
               <span>{reaction}</span>

@@ -56,14 +56,14 @@ const links = [
 ];
 
 function getRouteAccent(pathname: string, dashboardAccent: string) {
-  if (pathname === "/") return "#9f1239";
+  if (pathname === "/") return "#ea580c";
   if (pathname.startsWith("/dashboard")) return dashboardAccent;
   if (pathname.startsWith("/profile")) return "#92400e";
-  if (pathname.startsWith("/memories")) return "#1a73e8";
+  if (pathname.startsWith("/memories")) return "#2563eb";
   if (pathname.startsWith("/questions")) return "#27ae60";
   if (pathname.startsWith("/quizzes")) return "#7c3aed";
-  if (pathname.startsWith("/tracker")) return "#d97706";
-  if (pathname.startsWith("/chat")) return "#be123c";
+  if (pathname.startsWith("/tracker")) return "#ca8a04";
+  if (pathname.startsWith("/chat")) return "#0284c7";
   if (pathname.startsWith("/login")) return "#be123c";
   return "#1c8b59";
 }
@@ -261,7 +261,7 @@ export default function MobileNav() {
                   key={notification.id}
                   href={notification.href || "/dashboard"}
                   onClick={() => setIsNotificationsOpen(false)}
-                  className="mb-2 block rounded-2xl bg-white/72 px-4 py-3 shadow-inner transition hover:bg-white dark:bg-white/10 dark:hover:bg-white/15"
+                  className="mb-2 block rounded-2xl bg-white/72 px-4 py-3 shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
                 >
                   <div className="flex items-start gap-3">
                     <span
@@ -296,30 +296,30 @@ export default function MobileNav() {
 
       <nav
         style={{
-          background: `linear-gradient(135deg, ${accent}30, ${accent}1f 52%, ${accent}14)`,
-          borderColor: `${accent}66`,
-          boxShadow: `0 18px 48px ${accent}2e`,
+          background: `linear-gradient(135deg, ${accent}48, ${accent}36 52%, ${accent}2b)`,
+          borderColor: `${accent}85`,
+          boxShadow: `0 18px 48px ${accent}3f`,
         }}
         className="fixed bottom-3 left-3 right-3 z-40 rounded-[1.35rem] border px-1.5 py-1.5 shadow-2xl backdrop-blur-2xl md:hidden"
       >
-        <div className="grid grid-cols-4 items-start gap-y-1 text-center text-[7px] font-bold leading-tight min-[420px]:grid-cols-8">
+        <div className="grid grid-cols-4 items-start gap-x-1 gap-y-1 text-center text-[10px] font-black leading-tight min-[380px]:text-[11px]">
           <button
             type="button"
             onClick={openNotifications}
             style={
               isNotificationsOpen
-                ? { color: accent, backgroundColor: `${accent}18` }
-                : { color: `${accent}cc` }
+                ? { color: "#ffffff", backgroundColor: accent }
+                : { color: accent }
             }
             className={
               isNotificationsOpen
-                ? "relative flex min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1 shadow-inner"
-                : "relative flex min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1 opacity-80"
+                ? "relative flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 shadow-lg"
+                : "relative flex min-w-0 flex-col items-center gap-1 rounded-2xl bg-white/72 px-1 py-1.5 opacity-100 shadow-inner dark:bg-black/30"
             }
             aria-label="Уведомления"
           >
-            <span className="text-base leading-none">🔔</span>
-            <span className="max-w-full whitespace-nowrap">Увед.</span>
+            <span className="text-xl leading-none min-[380px]:text-[1.35rem]">🔔</span>
+            <span className="max-w-full truncate whitespace-nowrap">Увед.</span>
             {unreadNotifications > 0 && (
               <span className="absolute -right-0.5 -top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#ef4444] px-1 text-[9px] font-black leading-none text-white shadow-[0_0_14px_rgba(239,68,68,0.8)] ring-2 ring-white">
                 {unreadNotifications > 9 ? "9+" : unreadNotifications}
@@ -336,17 +336,17 @@ export default function MobileNav() {
                 href={link.href}
                 style={
                   isActive
-                    ? { color: accent, backgroundColor: `${accent}18` }
-                    : { color: `${accent}cc` }
+                    ? { color: "#ffffff", backgroundColor: accent }
+                    : { color: accent }
                 }
                 className={
                   isActive
-                    ? "flex min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1 shadow-inner"
-                    : "flex min-w-0 flex-col items-center gap-0.5 rounded-2xl px-0.5 py-1 opacity-80"
+                    ? "flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 shadow-lg"
+                    : "flex min-w-0 flex-col items-center gap-1 rounded-2xl bg-white/72 px-1 py-1.5 opacity-100 shadow-inner dark:bg-black/30"
                 }
               >
-                <span className="text-base leading-none">{link.icon}</span>
-                <span className="max-w-full whitespace-nowrap">{link.label}</span>
+                <span className="text-xl leading-none min-[380px]:text-[1.35rem]">{link.icon}</span>
+                <span className="max-w-full truncate whitespace-nowrap">{link.label}</span>
               </Link>
             );
           })}

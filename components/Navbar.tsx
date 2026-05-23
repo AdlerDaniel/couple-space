@@ -243,7 +243,7 @@ export default function Navbar() {
   const isChat = pathname.startsWith("/chat");
   const isDashboard = pathname.startsWith("/dashboard");
   const isProfilePage = pathname.startsWith("/profile");
-  const homeAccent = "#9f1239";
+  const homeAccent = "#ea580c";
   const profileAccent = "#92400e";
 
   const accent = isLogin
@@ -251,15 +251,15 @@ export default function Navbar() {
     : isHome
       ? homeAccent
       : isMemories
-        ? "#1a73e8"
+        ? "#2563eb"
         : isQuestions
           ? "#27ae60"
           : isQuizzes
             ? "#7c3aed"
             : isTracker
-              ? "#d97706"
+              ? "#ca8a04"
               : isChat
-                ? "#be123c"
+                ? "#0284c7"
                 : isDashboard
                   ? dashboardAccent
                   : isProfilePage
@@ -269,9 +269,9 @@ export default function Navbar() {
   const navStyle = isHome
     ? {
         background:
-          "linear-gradient(135deg, rgba(159, 18, 57, 0.2), rgba(192, 38, 211, 0.16))",
-        borderColor: "rgba(159, 18, 57, 0.24)",
-        boxShadow: "0 18px 58px rgba(159, 18, 57, 0.2)",
+          "linear-gradient(135deg, rgba(234, 88, 12, 0.22), rgba(245, 158, 11, 0.16))",
+        borderColor: "rgba(234, 88, 12, 0.3)",
+        boxShadow: "0 18px 58px rgba(234, 88, 12, 0.2)",
       }
     : isProfilePage && !isLogin
       ? {
@@ -279,6 +279,13 @@ export default function Navbar() {
             "linear-gradient(135deg, rgba(146, 64, 14, 0.22), rgba(180, 83, 9, 0.16))",
           borderColor: "rgba(146, 64, 14, 0.3)",
           boxShadow: "0 16px 48px rgba(146, 64, 14, 0.18)",
+        }
+      : isTracker && !isLogin
+      ? {
+          background:
+            "linear-gradient(135deg, rgba(202, 138, 4, 0.22), rgba(250, 204, 21, 0.16))",
+          borderColor: "rgba(202, 138, 4, 0.3)",
+          boxShadow: "0 16px 48px rgba(202, 138, 4, 0.18)",
         }
       : isDashboard && !isLogin
       ? {
@@ -376,17 +383,17 @@ export default function Navbar() {
               backgroundColor: isLogin
                 ? "#f3f4f6"
                 : isHome
-                  ? "#dc2626"
+                  ? homeAccent
                   : isMemories
-                    ? "#1a73e8"
+                    ? "#2563eb"
                     : isQuestions
                       ? "#27ae60"
                     : isQuizzes
                       ? "#7c3aed"
                       : isTracker
-                        ? "#d97706"
+                        ? "#ca8a04"
                         : isChat
-                          ? "#be123c"
+                          ? "#0284c7"
                           : isDashboard
                             ? dashboardAccent
                             : isProfilePage
@@ -444,7 +451,7 @@ export default function Navbar() {
                           key={notification.id}
                           href={notification.href || "/dashboard"}
                           onClick={() => setIsNotificationsOpen(false)}
-                          className="mb-2 block rounded-2xl bg-white/72 px-4 py-3 shadow-inner transition hover:bg-white dark:bg-white/10 dark:hover:bg-white/15"
+                          className="mb-2 block rounded-2xl bg-white/72 px-4 py-3 shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
                         >
                           <div className="flex items-start gap-3">
                             <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-rose-100 text-lg dark:bg-white/10">
@@ -526,7 +533,7 @@ export default function Navbar() {
                 <Link
                   href="/profile"
                   onClick={() => setIsProfileOpen(false)}
-                  className="mb-2 block rounded-2xl bg-white/70 px-4 py-3 font-black shadow-inner transition hover:bg-white dark:bg-white/10 dark:hover:bg-white/15"
+                  className="mb-2 block rounded-2xl bg-white/70 px-4 py-3 font-black shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
                 >
                   Открыть профиль
                 </Link>

@@ -354,7 +354,7 @@ function LinkPreviewCard({
       className={`mt-2 block overflow-hidden rounded-xl border-l-4 text-left shadow-inner transition hover:scale-[1.01] ${
         isMine
           ? "border-white/70 bg-white/14"
-          : "border-rose-400 bg-white/8"
+          : "border-sky-400 bg-white/8"
       }`}
     >
       {preview.image && (
@@ -1467,7 +1467,7 @@ export default function ChatPage() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#fff1f5] via-[#fff7fb] to-[#fce7f3] px-6 pt-28 text-[#be123c] dark:from-[#19050d] dark:via-[#12040b] dark:to-black dark:text-white">
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] px-6 pt-28 text-[#0284c7] dark:from-[#031b2e] dark:via-[#021526] dark:to-black dark:text-white">
         <div className="w-full max-w-xl space-y-4 rounded-[2rem] bg-white/55 p-6 shadow-2xl backdrop-blur-xl dark:bg-white/10">
           {[0, 1, 2, 3].map((item) => (
             <div
@@ -1484,18 +1484,18 @@ export default function ChatPage() {
 
   if (!couple) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-[#fff1f5] via-[#fff7fb] to-[#fce7f3] px-6 pb-24 pt-28 text-[#9f1239] dark:from-[#19050d] dark:via-[#12040b] dark:to-black dark:text-white">
-        <section className="mx-auto max-w-2xl rounded-[2rem] border border-white/60 bg-white/55 p-8 text-center shadow-[0_32px_110px_rgba(190,18,60,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8">
-          <p className="text-sm font-black uppercase tracking-[0.22em] text-rose-500/70">
+      <main className="min-h-screen bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] px-6 pb-24 pt-28 text-[#075985] dark:from-[#031b2e] dark:via-[#021526] dark:to-black dark:text-white">
+        <section className="mx-auto max-w-2xl rounded-[2rem] border border-white/60 bg-white/55 p-8 text-center shadow-[0_32px_110px_rgba(2,132,199,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8">
+          <p className="text-sm font-black uppercase tracking-[0.22em] text-sky-500/70">
             Чат
           </p>
           <h1 className="mt-3 text-4xl font-black">Сначала создайте пару</h1>
-          <p className="mt-4 font-semibold text-[#9f1239]/68 dark:text-white/60">
+          <p className="mt-4 font-semibold text-[#075985]/68 dark:text-white/60">
             Чат работает только для двух пользователей, которые уже находятся в одной паре.
           </p>
           <button
             onClick={() => router.push("/profile")}
-            className="mt-7 rounded-full bg-[#be123c] px-7 py-4 font-black text-white shadow-xl transition hover:-translate-y-0.5 hover:bg-[#e11d48]"
+            className="mt-7 rounded-full bg-[#0284c7] px-7 py-4 font-black text-white shadow-xl transition hover:-translate-y-0.5 hover:bg-[#0ea5e9]"
           >
             Перейти в профиль
           </button>
@@ -1518,51 +1518,51 @@ export default function ChatPage() {
         setIsDraggingFile(false);
         addPendingFiles(Array.from(event.dataTransfer.files));
       }}
-      className="relative h-dvh overflow-hidden bg-gradient-to-br from-[#fff1f5] via-[#fff7fb] to-[#fce7f3] px-0 pb-0 pt-0 text-[#831843] dark:from-[#19050d] dark:via-[#12040b] dark:to-black dark:text-white md:min-h-screen md:px-6 md:pb-8 md:pt-28"
+      className="mobile-fullscreen relative h-[100svh] overflow-hidden bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] px-0 pb-0 pt-0 text-[#075985] dark:from-[#031b2e] dark:via-[#021526] dark:to-black dark:text-white md:min-h-screen md:px-6 md:pb-8 md:pt-28"
     >
       <div className="pointer-events-none absolute inset-0">
-        <div className="chat-blob absolute left-[-8rem] top-24 h-80 w-80 rounded-full bg-rose-300/35 blur-3xl dark:bg-rose-500/12" />
-        <div className="chat-blob chat-blob-delay absolute right-[-9rem] top-48 h-96 w-96 rounded-full bg-fuchsia-300/30 blur-3xl dark:bg-fuchsia-500/12" />
+        <div className="chat-blob absolute left-[-8rem] top-24 h-80 w-80 rounded-full bg-sky-300/35 blur-3xl dark:bg-sky-500/12" />
+        <div className="chat-blob chat-blob-delay absolute right-[-9rem] top-48 h-96 w-96 rounded-full bg-cyan-300/30 blur-3xl dark:bg-cyan-500/12" />
       </div>
 
-      <section className="relative mx-auto flex h-dvh max-w-5xl flex-col overflow-hidden border-y border-white/60 bg-white/44 shadow-[0_32px_110px_rgba(190,18,60,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:h-[calc(100vh-9rem)] md:rounded-[2rem] md:border">
+      <section className="relative mx-auto flex h-[100svh] min-h-0 max-w-5xl flex-col overflow-hidden border-y border-white/60 bg-white/44 shadow-[0_32px_110px_rgba(2,132,199,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:h-[calc(100vh-9rem)] md:rounded-[2rem] md:border">
         {isDraggingFile && (
-          <div className="pointer-events-none absolute inset-3 z-50 grid place-items-center rounded-[1.5rem] border-2 border-dashed border-[#be123c]/55 bg-white/55 text-center text-xl font-black text-[#be123c] shadow-inner backdrop-blur-xl dark:bg-black/45 dark:text-white">
+          <div className="pointer-events-none absolute inset-3 z-50 grid place-items-center rounded-[1.5rem] border-2 border-dashed border-[#0284c7]/55 bg-white/55 text-center text-xl font-black text-[#0284c7] shadow-inner backdrop-blur-xl dark:bg-black/45 dark:text-white">
             Отпустите файл, чтобы добавить вложение
           </div>
         )}
-        <header className="sticky top-0 z-20 border-b border-white/50 bg-white/70 px-4 py-3 backdrop-blur-2xl dark:border-white/10 dark:bg-black/35 md:px-6">
+        <header className="sticky top-0 z-20 shrink-0 overflow-hidden border-b border-white/50 bg-white/70 px-14 py-2.5 backdrop-blur-2xl dark:border-white/10 dark:bg-black/35 md:px-6 md:py-3">
           <Link
             href="/dashboard"
-            className="absolute left-3 top-3 grid h-11 w-11 place-items-center rounded-full bg-white/72 text-xl font-black text-[#be123c] shadow-inner backdrop-blur transition hover:bg-white dark:bg-white/10 dark:text-white md:hidden"
+            className="absolute left-3 top-2.5 grid h-10 w-10 place-items-center rounded-full bg-white/72 text-xl font-black text-[#0284c7] shadow-inner backdrop-blur transition hover:bg-sky-50 dark:bg-white/10 dark:text-white md:hidden"
             aria-label="В кабинет"
           >
             ‹
           </Link>
-          <div className="flex items-center justify-center gap-4 md:justify-between">
+          <div className="flex min-w-0 items-center justify-center gap-2 md:justify-between">
             <button
               type="button"
               onClick={() => setIsProfilePanelOpen(true)}
-              className="flex min-w-0 items-center gap-3 rounded-full bg-white/68 px-4 py-2 text-left shadow-inner transition hover:bg-white/80 dark:bg-white/10 dark:hover:bg-white/14 md:rounded-2xl md:bg-transparent md:px-0 md:py-0 md:shadow-none"
+              className="flex min-w-0 max-w-full items-center gap-2 rounded-full bg-white/68 px-3 py-1.5 text-left shadow-inner transition hover:bg-sky-50 dark:bg-white/10 dark:hover:bg-white/14 md:gap-3 md:rounded-2xl md:bg-transparent md:px-0 md:py-0 md:shadow-none"
             >
               <div className="relative flex">
                 {partnerProfile.avatar ? (
-                  <Image src={partnerProfile.avatar} alt={partnerProfile.name} width={44} height={44} sizes="44px" className="h-11 w-11 rounded-full object-cover ring-2 ring-white/80" />
+                  <Image src={partnerProfile.avatar} alt={partnerProfile.name} width={44} height={44} sizes="44px" className="h-10 w-10 rounded-full object-cover ring-2 ring-white/80 md:h-11 md:w-11" />
                 ) : (
-                  <span className="grid h-11 w-11 place-items-center rounded-full bg-fuchsia-100 font-black shadow-inner ring-2 ring-white/80 dark:bg-white/10">{getInitial(partnerProfile.name)}</span>
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-sky-100 font-black shadow-inner ring-2 ring-white/80 dark:bg-white/10 md:h-11 md:w-11">{getInitial(partnerProfile.name)}</span>
                 )}
               </div>
-              <div className="min-w-0 pr-2">
-                <h1 className="truncate text-lg font-black md:text-2xl">
+              <div className="min-w-0 pr-1">
+                <h1 className="max-w-[9.5rem] truncate text-base font-black min-[380px]:max-w-[11rem] md:max-w-none md:text-2xl">
                   {partnerProfile.name}
                 </h1>
-                <p className="text-xs font-black text-rose-500/70">
+                <p className="max-w-[9.5rem] truncate text-[11px] font-black text-sky-500/70 min-[380px]:max-w-[11rem] md:max-w-none md:text-xs">
                   {isPartnerTyping ? (
                     <span className="inline-flex items-center gap-1">
                       печатает
-                      <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-rose-500/70" />
-                      <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-rose-500/70" />
-                      <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-rose-500/70" />
+                      <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-sky-500/70" />
+                      <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-sky-500/70" />
+                      <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-sky-500/70" />
                     </span>
                   ) : partnerLastSeen
                       ? `последний раз в сети ${formatMessageTime(partnerLastSeen)}`
@@ -1575,17 +1575,17 @@ export default function ChatPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Поиск"
-              className="hidden h-10 w-48 rounded-full border border-rose-200/70 bg-white/72 px-4 text-sm font-bold outline-none transition focus:border-rose-500 dark:border-white/10 dark:bg-white/10 md:block"
+              className="hidden h-10 w-48 rounded-full border border-sky-200/70 bg-white/72 px-4 text-sm font-bold outline-none transition focus:border-sky-500 dark:border-white/10 dark:bg-white/10 md:block"
             />
           </div>
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Поиск по чату"
-            className="mt-3 hidden h-10 w-full rounded-full border border-rose-200/70 bg-white/72 px-4 text-sm font-bold outline-none transition focus:border-rose-500 dark:border-white/10 dark:bg-white/10"
+            className="mt-3 hidden h-10 w-full rounded-full border border-sky-200/70 bg-white/72 px-4 text-sm font-bold outline-none transition focus:border-sky-500 dark:border-white/10 dark:bg-white/10"
           />
           {activePinnedMessage && (
-            <div className="relative mt-3 rounded-2xl bg-rose-100/80 px-3 py-2 text-sm font-black text-rose-700 shadow-inner dark:bg-white/10 dark:text-rose-100">
+            <div className="relative mt-3 rounded-2xl bg-sky-100/80 px-3 py-2 text-sm font-black text-sky-700 shadow-inner dark:bg-white/10 dark:text-sky-100">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
@@ -1622,7 +1622,7 @@ export default function ChatPage() {
                   {pinnedMessages.map((message, index) => (
                     <div
                       key={message.id}
-                      className="mb-1 flex items-center gap-2 rounded-xl px-3 py-2 transition hover:bg-rose-50 dark:hover:bg-white/10"
+                      className="mb-1 flex items-center gap-2 rounded-xl px-3 py-2 transition hover:bg-sky-50 dark:hover:bg-white/10"
                     >
                       <button
                         onClick={() => {
@@ -1645,7 +1645,7 @@ export default function ChatPage() {
                           setIsPinnedListOpen(false);
                           jumpToMessage(message.id);
                         }}
-                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-700 shadow-inner dark:bg-white/10 dark:text-white"
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-700 shadow-inner dark:bg-white/10 dark:text-white"
                         aria-label="Показать сообщение в чате"
                       >
                         ↗
@@ -1659,18 +1659,18 @@ export default function ChatPage() {
         </header>
 
         {errorMessage && (
-          <div className="mx-4 mt-4 rounded-2xl bg-red-100/85 px-4 py-3 text-sm font-black text-red-700 shadow-inner dark:bg-red-500/15 dark:text-red-100 md:mx-6">
+          <div className="mx-4 mt-4 rounded-2xl bg-sky-100/85 px-4 py-3 text-sm font-black text-sky-700 shadow-inner dark:bg-sky-500/15 dark:text-sky-100 md:mx-6">
             {errorMessage}
           </div>
         )}
 
-        <div ref={scrollRef} onScroll={handleScroll} className="relative flex-1 overflow-y-auto px-3 py-4 md:px-6">
+        <div ref={scrollRef} onScroll={handleScroll} className="relative min-h-0 flex-1 overflow-y-auto px-2 py-3 pb-28 md:px-6 md:py-4 md:pb-4">
           {visibleMessages.length === 0 ? (
             <div className="grid h-full place-items-center text-center">
               <div className="max-w-sm rounded-[2rem] bg-white/55 p-7 shadow-inner backdrop-blur dark:bg-white/8">
                 <p className="text-5xl">💬</p>
                 <h2 className="mt-4 text-2xl font-black">Начните ваш чат</h2>
-                <p className="mt-3 font-semibold text-[#9f1239]/60 dark:text-white/55">
+                <p className="mt-3 font-semibold text-[#075985]/60 dark:text-white/55">
                   Сообщения, фото и голосовые появятся здесь.
                 </p>
               </div>
@@ -1737,7 +1737,7 @@ export default function ChatPage() {
                 return (
                   <div key={message.id} id={`message-${message.id}`}>
                     {!sameDay && (
-                      <div className="sticky top-2 z-10 mx-auto my-3 w-fit rounded-full bg-white/72 px-4 py-1 text-xs font-black text-rose-600 shadow-lg backdrop-blur dark:bg-black/45 dark:text-rose-100">
+                      <div className="sticky top-2 z-10 mx-auto my-3 w-fit rounded-full bg-white/72 px-4 py-1 text-xs font-black text-sky-600 shadow-lg backdrop-blur dark:bg-black/45 dark:text-sky-100">
                         {formatDay(message.created_at)}
                       </div>
                     )}
@@ -1749,13 +1749,13 @@ export default function ChatPage() {
                           event.preventDefault();
                           setMenuMessageId(message.id);
                         }}
-                        className={`relative w-fit max-w-[78%] rounded-[14px] shadow-[0_4px_14px_rgba(0,0,0,0.1)] transition hover:-translate-y-0.5 md:max-w-[62%] ${
+                        className={`relative w-fit max-w-[84%] break-words rounded-[14px] shadow-[0_4px_14px_rgba(0,0,0,0.1)] transition hover:-translate-y-0.5 sm:max-w-[78%] md:max-w-[62%] ${
                           isStickerMessage || isBigEmojiMessage ? "px-0 py-0 shadow-none" : isVoiceMessage ? "px-3 py-2" : "px-3 py-1.5"
                         } ${
                           isStickerMessage || isBigEmojiMessage
                             ? "bg-transparent text-white"
                             : isVoiceMessage
-                            ? `bg-gradient-to-br from-[#be123c] to-[#db2777] text-white shadow-rose-500/18 ${
+                            ? `bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white shadow-sky-500/18 ${
                                 isLastInGroup
                                   ? isMine
                                     ? "rounded-br-[4px]"
@@ -1763,16 +1763,16 @@ export default function ChatPage() {
                                   : ""
                               }`
                             : isMine
-                            ? `bg-gradient-to-br from-[#be123c] to-[#db2777] text-white shadow-rose-500/18 ${isLastInGroup ? "rounded-br-[4px]" : ""}`
-                            : `bg-[#242426] text-white shadow-black/10 ${isLastInGroup ? "rounded-bl-[4px]" : ""}`
+                            ? `bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white shadow-sky-500/18 ${isLastInGroup ? "rounded-br-[4px]" : ""}`
+                            : `bg-[#0f2638] text-white shadow-black/10 ${isLastInGroup ? "rounded-bl-[4px]" : ""}`
                         }`}
                       >
                         {isLastInGroup && !isStickerMessage && !isBigEmojiMessage && (
                           <span
                             className={`pointer-events-none absolute bottom-0 h-3 w-3 ${
                               isMine
-                                ? "-right-1 bg-[#db2777] [clip-path:polygon(0_0,100%_100%,0_100%)]"
-                                : `-left-1 ${isVoiceMessage ? "bg-[#be123c]" : "bg-[#242426]"} [clip-path:polygon(100%_0,100%_100%,0_100%)]`
+                                ? "-right-1 bg-[#0369a1] [clip-path:polygon(0_0,100%_100%,0_100%)]"
+                                : `-left-1 ${isVoiceMessage ? "bg-[#0284c7]" : "bg-[#0f2638]"} [clip-path:polygon(100%_0,100%_100%,0_100%)]`
                             }`}
                           />
                         )}
@@ -1782,7 +1782,7 @@ export default function ChatPage() {
                             className={`mb-1.5 block w-full rounded-[10px] border-l-4 px-2.5 py-1.5 text-left text-[11px] font-black ${
                               isMine
                                 ? "border-white/70 bg-white/14 text-white/82"
-                                : "border-rose-400 bg-white/8 text-white/72"
+                                : "border-sky-400 bg-white/8 text-white/72"
                             }`}
                           >
                             {sourceReply.body || sourceReply.attachment_name || "Вложение"}
@@ -1878,7 +1878,7 @@ export default function ChatPage() {
                                     rel="noreferrer"
                                     className="flex min-w-60 items-center gap-3 rounded-[12px] bg-white/12 p-2.5 shadow-inner transition hover:bg-white/18"
                                   >
-                                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-[10px] font-black text-[#be123c]">
+                                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-[10px] font-black text-[#0284c7]">
                                       {getFileIcon(attachment.name, attachment.mime_type)}
                                     </span>
                                     <span className="min-w-0 flex-1">
@@ -1901,8 +1901,8 @@ export default function ChatPage() {
                                   onClick={() => toggleAudio(message.id)}
                                   className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-[13px] font-black shadow-lg transition hover:scale-105 ${
                                     isMine
-                                      ? "bg-white text-[#be123c]"
-                                      : "bg-white text-[#be123c]"
+                                      ? "bg-white text-[#0284c7]"
+                                      : "bg-white text-[#0284c7]"
                                   }`}
                                   aria-label={
                                     playingAudioId === message.id
@@ -2027,14 +2027,14 @@ export default function ChatPage() {
                               );
                               const singleUser = userIds.length === 1 ? getChatUserMeta(userIds[0]) : null;
                               return (
-                              <button key={emoji} onClick={() => toggleReaction(message, emoji)} className={`chat-reaction-pill inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-black shadow-inner ${isMyReaction ? "bg-rose-100 text-rose-700 ring-2 ring-white/70 dark:bg-rose-500/30 dark:text-white" : "bg-white/72 text-rose-700 dark:bg-black/25 dark:text-white"}`}>
+                              <button key={emoji} onClick={() => toggleReaction(message, emoji)} className={`chat-reaction-pill inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-black shadow-inner ${isMyReaction ? "bg-sky-100 text-sky-700 ring-2 ring-white/70 dark:bg-sky-500/30 dark:text-white" : "bg-white/72 text-sky-700 dark:bg-black/25 dark:text-white"}`}>
                                 <span>{emoji}</span>
                                 {userIds.length > 1 ? (
                                   <span className="text-[11px]">{userIds.length}</span>
                                 ) : singleUser?.avatar ? (
                                   <Image src={singleUser.avatar} alt={singleUser.name} width={18} height={18} sizes="18px" className="h-[18px] w-[18px] rounded-full object-cover ring-1 ring-white/80" />
                                 ) : (
-                                  <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-white/70 text-[9px] text-[#be123c] ring-1 ring-white/80 dark:bg-black/30 dark:text-white">{singleUser?.initial || "?"}</span>
+                                  <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-white/70 text-[9px] text-[#0284c7] ring-1 ring-white/80 dark:bg-black/30 dark:text-white">{singleUser?.initial || "?"}</span>
                                 )}
                               </button>
                               );
@@ -2043,7 +2043,7 @@ export default function ChatPage() {
                         )}
                         <button
                           onClick={() => setMenuMessageId(message.id)}
-                          className={`absolute top-1/2 hidden -translate-y-1/2 rounded-full bg-white/90 px-2 py-1 text-xs font-black text-rose-600 shadow-lg group-hover:block dark:bg-black/70 dark:text-white ${isMine ? "-left-9" : "-right-9"}`}
+                          className={`absolute top-1/2 hidden -translate-y-1/2 rounded-full bg-white/90 px-2 py-1 text-xs font-black text-sky-600 shadow-lg group-hover:block dark:bg-black/70 dark:text-white ${isMine ? "-left-9" : "-right-9"}`}
                         >
                           ⋯
                         </button>
@@ -2060,15 +2060,15 @@ export default function ChatPage() {
         {showScrollButton && (
           <button
             onClick={scrollToBottom}
-            className="absolute bottom-28 right-5 z-20 grid h-11 w-11 place-items-center rounded-full bg-white/88 text-xl font-black text-rose-600 shadow-xl backdrop-blur transition hover:-translate-y-0.5 dark:bg-black/70 dark:text-white"
+            className="absolute bottom-28 right-5 z-20 grid h-11 w-11 place-items-center rounded-full bg-white/88 text-xl font-black text-sky-600 shadow-xl backdrop-blur transition hover:-translate-y-0.5 dark:bg-black/70 dark:text-white"
           >
             ↓
           </button>
         )}
 
-        <form onSubmit={sendMessage} className="relative sticky bottom-0 z-20 border-t border-white/50 bg-white/72 p-3 backdrop-blur-2xl dark:border-white/10 dark:bg-black/35 md:p-4">
+        <form onSubmit={sendMessage} className="fixed inset-x-0 bottom-0 z-40 shrink-0 border-t border-white/50 bg-white/86 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-2xl dark:border-white/10 dark:bg-black/72 md:relative md:inset-auto md:bottom-auto md:z-20 md:bg-white/72 md:p-4 md:pb-4 md:dark:bg-black/35">
           {(replyMessage || editingMessage) && (
-            <div className="chat-reply-preview mb-3 flex items-center justify-between gap-3 rounded-2xl bg-rose-100/80 px-4 py-3 text-sm font-black text-rose-700 shadow-inner dark:bg-white/10 dark:text-rose-100">
+            <div className="chat-reply-preview mb-3 flex items-center justify-between gap-3 rounded-2xl bg-sky-100/80 px-4 py-3 text-sm font-black text-sky-700 shadow-inner dark:bg-white/10 dark:text-sky-100">
               <div className="min-w-0">
                 <p>{editingMessage ? "Редактирование" : "Ответ"}</p>
                 <p className="truncate opacity-70">
@@ -2081,7 +2081,7 @@ export default function ChatPage() {
             </div>
           )}
           {!partnerId && (
-            <div className="mb-3 rounded-2xl bg-amber-100/85 px-4 py-3 text-sm font-black text-amber-800 shadow-inner dark:bg-amber-500/15 dark:text-amber-100">
+            <div className="mb-3 rounded-2xl bg-sky-100/85 px-4 py-3 text-sm font-black text-sky-800 shadow-inner dark:bg-sky-500/15 dark:text-sky-100">
               У пары пока нет второго участника. Партнёр увидит сообщения после присоединения.
             </div>
           )}
@@ -2114,7 +2114,7 @@ export default function ChatPage() {
                       />
                     )
                   ) : (
-                    <div className="grid h-20 place-items-center bg-rose-100 text-xs font-black text-[#be123c] dark:bg-white/10 dark:text-white">
+                    <div className="grid h-20 place-items-center bg-sky-100 text-xs font-black text-[#0284c7] dark:bg-white/10 dark:text-white">
                       {attachment.type === "audio"
                         ? "VOICE"
                         : getFileIcon(attachment.file.name, attachment.file.type)}
@@ -2128,9 +2128,9 @@ export default function ChatPage() {
                       {formatFileSize(attachment.file.size)}
                     </p>
                     {uploadProgress[attachment.id] > 0 && (
-                      <div className="mt-1 h-1 overflow-hidden rounded-full bg-rose-100">
+                      <div className="mt-1 h-1 overflow-hidden rounded-full bg-sky-100">
                         <div
-                          className="h-full rounded-full bg-[#be123c] transition-all"
+                          className="h-full rounded-full bg-[#0284c7] transition-all"
                           style={{ width: `${uploadProgress[attachment.id]}%` }}
                         />
                       </div>
@@ -2141,8 +2141,8 @@ export default function ChatPage() {
             </div>
           )}
           {stickerSuggestions.length > 0 && (
-            <div className="chat-reply-preview mb-3 flex items-center gap-2 rounded-2xl border border-rose-100 bg-white/82 p-2 shadow-[0_16px_45px_rgba(190,18,60,0.14)] backdrop-blur-xl dark:border-white/10 dark:bg-black/35">
-              <span className="px-2 text-xs font-black text-rose-600/70 dark:text-rose-100/60">
+            <div className="chat-reply-preview mb-3 flex items-center gap-2 rounded-2xl border border-sky-100 bg-white/82 p-2 shadow-[0_16px_45px_rgba(2,132,199,0.14)] backdrop-blur-xl dark:border-white/10 dark:bg-black/35">
+              <span className="px-2 text-xs font-black text-sky-600/70 dark:text-sky-100/60">
                 Стикер?
               </span>
               <div className="flex gap-1">
@@ -2151,7 +2151,7 @@ export default function ChatPage() {
                     key={sticker.id}
                     type="button"
                     onClick={() => sendSticker(sticker)}
-                    className="chat-sticker-hover h-12 w-12 rounded-xl bg-contain bg-center bg-no-repeat transition hover:bg-rose-50 dark:hover:bg-white/10"
+                    className="chat-sticker-hover h-12 w-12 rounded-xl bg-contain bg-center bg-no-repeat transition hover:bg-sky-50 dark:hover:bg-white/10"
                     style={{ backgroundImage: `url("${sticker.url}")` }}
                     aria-label={sticker.name}
                   />
@@ -2160,18 +2160,18 @@ export default function ChatPage() {
             </div>
           )}
           {isRecording && (
-            <div className="chat-reply-preview mb-3 flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-red-700 shadow-[0_16px_45px_rgba(220,38,38,0.16)] dark:border-red-400/20 dark:bg-red-500/12 dark:text-red-100">
+            <div className="chat-reply-preview mb-3 flex flex-col gap-3 rounded-2xl border border-sky-200 bg-sky-50/90 px-3 py-3 text-sky-700 shadow-[0_16px_45px_rgba(14,165,233,0.16)] dark:border-sky-400/20 dark:bg-sky-500/12 dark:text-sky-100 sm:flex-row sm:items-center sm:justify-between sm:px-4">
               <div className="flex min-w-0 items-center gap-3">
-                <span className={`grid h-3 w-3 shrink-0 place-items-center rounded-full bg-red-500 ${isRecordingPaused ? "" : "animate-pulse"}`} />
+                <span className={`grid h-3 w-3 shrink-0 place-items-center rounded-full bg-sky-500 ${isRecordingPaused ? "" : "animate-pulse"}`} />
                 <div className="min-w-0">
                   <p className="text-sm font-black">
-                    {isRecordingPaused ? "Запись на паузе" : "Идёт запись"}
+                    {isRecordingPaused ? "Р—Р°РїРёСЃСЊ РЅР° РїР°СѓР·Рµ" : "РРґС‘С‚ Р·Р°РїРёСЃСЊ"}
                   </p>
                   <div className="mt-1 flex h-5 items-center gap-[2px]">
                     {Array.from({ length: 24 }).map((_, index) => (
                       <span
                         key={index}
-                        className={`w-1 rounded-full bg-red-500/70 ${isRecordingPaused ? "" : "chat-voice-wave"}`}
+                        className={`w-1 rounded-full bg-sky-500/70 ${isRecordingPaused ? "" : "chat-voice-wave"}`}
                         style={{
                           height: Math.max(5, 9 + Math.sin(index * 0.9) * 7),
                           animationDelay: `${index * 0.04}s`,
@@ -2181,17 +2181,17 @@ export default function ChatPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <span className="rounded-full bg-white/80 px-3 py-1 text-sm font-black shadow-inner dark:bg-black/25">
                   {formatAudioTime(recordingSeconds)}
                 </span>
                 <button type="button" onClick={toggleRecordingPause} className="rounded-full bg-white px-3 py-1.5 text-sm font-black shadow transition hover:-translate-y-0.5 dark:bg-black/25">
                   {isRecordingPaused ? "Продолжить" : "Пауза"}
                 </button>
-                <button type="button" onClick={cancelRecording} className="rounded-full bg-white/80 px-3 py-1.5 text-sm font-black text-red-700 shadow transition hover:-translate-y-0.5 dark:bg-black/25 dark:text-red-100">
+                <button type="button" onClick={cancelRecording} className="rounded-full bg-white/80 px-3 py-1.5 text-sm font-black text-sky-700 shadow transition hover:-translate-y-0.5 dark:bg-black/25 dark:text-sky-100">
                   Отмена
                 </button>
-                <button type="button" onClick={stopRecording} className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-black text-white shadow transition hover:-translate-y-0.5">
+                <button type="button" onClick={stopRecording} className="rounded-full bg-sky-600 px-3 py-1.5 text-sm font-black text-white shadow transition hover:-translate-y-0.5">
                   Готово
                 </button>
               </div>
@@ -2200,29 +2200,29 @@ export default function ChatPage() {
           {pickerMode && (
             <div
               ref={pickerRef}
-              className="chat-picker-in fixed bottom-0 left-0 right-0 z-50 max-h-[76vh] overflow-hidden rounded-t-[1.75rem] border border-white/55 bg-white/96 p-3 text-[#831843] shadow-[0_-20px_80px_rgba(0,0,0,0.25)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#140811]/96 dark:text-white md:absolute md:bottom-[5.25rem] md:left-4 md:right-auto md:w-[25rem] md:rounded-[1.75rem]"
+              className="chat-picker-in fixed bottom-0 left-0 right-0 z-50 max-h-[76vh] overflow-hidden rounded-t-[1.75rem] border border-white/55 bg-white/96 p-3 text-[#075985] shadow-[0_-20px_80px_rgba(0,0,0,0.25)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#031b2e]/96 dark:text-white md:absolute md:bottom-[5.25rem] md:left-4 md:right-auto md:w-[25rem] md:rounded-[1.75rem]"
               onPointerDown={(event) => event.stopPropagation()}
             >
-              <div className="mb-3 flex rounded-2xl bg-rose-50 p-1 text-sm font-black shadow-inner dark:bg-white/8">
+              <div className="mb-3 flex rounded-2xl bg-sky-50 p-1 text-sm font-black shadow-inner dark:bg-white/8">
                 <button
                   type="button"
                   onClick={() => setPickerMode("emoji")}
                   className={`relative flex-1 rounded-xl px-3 py-2 transition ${
-                    pickerMode === "emoji" ? "bg-white text-[#be123c] shadow dark:bg-white/12 dark:text-white" : "opacity-60"
+                    pickerMode === "emoji" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"
                   }`}
                 >
                   Emoji
-                  {pickerMode === "emoji" && <span className="chat-tab-underline absolute bottom-0 left-8 right-8 h-0.5 rounded-full bg-[#be123c]" />}
+                  {pickerMode === "emoji" && <span className="chat-tab-underline absolute bottom-0 left-8 right-8 h-0.5 rounded-full bg-[#0284c7]" />}
                 </button>
                 <button
                   type="button"
                   onClick={() => setPickerMode("stickers")}
                   className={`relative flex-1 rounded-xl px-3 py-2 transition ${
-                    pickerMode === "stickers" ? "bg-white text-[#be123c] shadow dark:bg-white/12 dark:text-white" : "opacity-60"
+                    pickerMode === "stickers" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"
                   }`}
                 >
                   Стикеры
-                  {pickerMode === "stickers" && <span className="chat-tab-underline absolute bottom-0 left-8 right-8 h-0.5 rounded-full bg-[#be123c]" />}
+                  {pickerMode === "stickers" && <span className="chat-tab-underline absolute bottom-0 left-8 right-8 h-0.5 rounded-full bg-[#0284c7]" />}
                 </button>
               </div>
 
@@ -2232,7 +2232,7 @@ export default function ChatPage() {
                     value={emojiSearch}
                     onChange={(event) => setEmojiSearch(event.target.value)}
                     placeholder="Поиск emoji"
-                    className="mb-3 h-11 w-full rounded-2xl border border-rose-100 bg-white/85 px-4 text-sm font-bold outline-none shadow-inner transition focus:border-[#e11d48] focus:shadow-[0_0_0_4px_rgba(225,29,72,0.12)] dark:border-white/10 dark:bg-white/8"
+                    className="mb-3 h-11 w-full rounded-2xl border border-sky-100 bg-white/85 px-4 text-sm font-bold outline-none shadow-inner transition focus:border-[#0ea5e9] focus:shadow-[0_0_0_4px_rgba(14,165,233,0.12)] dark:border-white/10 dark:bg-white/8"
                   />
                   <div className="mb-3 flex gap-1 overflow-x-auto pb-1">
                     {emojiCategoryOptions.map((category) => (
@@ -2242,8 +2242,8 @@ export default function ChatPage() {
                         onClick={() => setActiveEmojiCategory(category.id)}
                         className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg transition hover:scale-105 ${
                           activeEmojiCategory === category.id
-                            ? "bg-[#be123c] text-white shadow-lg"
-                            : "bg-rose-50 dark:bg-white/8"
+                            ? "bg-[#0284c7] text-white shadow-lg"
+                            : "bg-sky-50 dark:bg-white/8"
                         }`}
                         title={category.label}
                       >
@@ -2253,7 +2253,7 @@ export default function ChatPage() {
                   </div>
                   <div className="max-h-[42vh] overflow-y-auto pr-1 md:max-h-72">
                     {(emojiSearch ? visibleEmojiCategories : visibleEmojiCategories.filter((category) => category.id === activeEmojiCategory)).length === 0 ? (
-                      <div className="grid h-36 place-items-center rounded-2xl bg-rose-50 text-sm font-black opacity-70 dark:bg-white/8">
+                      <div className="grid h-36 place-items-center rounded-2xl bg-sky-50 text-sm font-black opacity-70 dark:bg-white/8">
                         Нет результатов
                       </div>
                     ) : (
@@ -2266,7 +2266,7 @@ export default function ChatPage() {
                                 key={`${category.id}-${emoji}`}
                                 type="button"
                                 onClick={() => handleEmojiSelect(emoji)}
-                                className="chat-emoji-button grid h-10 place-items-center rounded-xl text-2xl transition hover:scale-110 hover:bg-rose-50 active:scale-95 dark:hover:bg-white/10"
+                                className="chat-emoji-button grid h-10 place-items-center rounded-xl text-2xl transition hover:scale-110 hover:bg-sky-50 active:scale-95 dark:hover:bg-white/10"
                               >
                                 {emoji}
                               </button>
@@ -2283,11 +2283,11 @@ export default function ChatPage() {
                     value={stickerSearch}
                     onChange={(event) => setStickerSearch(event.target.value)}
                     placeholder="Поиск стикеров"
-                    className="mb-3 h-11 w-full rounded-2xl border border-rose-100 bg-white/85 px-4 text-sm font-bold outline-none shadow-inner transition focus:border-[#e11d48] focus:shadow-[0_0_0_4px_rgba(225,29,72,0.12)] dark:border-white/10 dark:bg-white/8"
+                    className="mb-3 h-11 w-full rounded-2xl border border-sky-100 bg-white/85 px-4 text-sm font-bold outline-none shadow-inner transition focus:border-[#0ea5e9] focus:shadow-[0_0_0_4px_rgba(14,165,233,0.12)] dark:border-white/10 dark:bg-white/8"
                   />
                   <div className="max-h-[42vh] overflow-y-auto pr-1 md:max-h-72">
                     {visibleStickers.length === 0 ? (
-                      <div className="grid h-36 place-items-center rounded-2xl bg-rose-50 text-sm font-black opacity-70 dark:bg-white/8">
+                      <div className="grid h-36 place-items-center rounded-2xl bg-sky-50 text-sm font-black opacity-70 dark:bg-white/8">
                         {stickerSearch ? "Нет результатов" : "Стикеров пока нет"}
                       </div>
                     ) : (
@@ -2297,7 +2297,7 @@ export default function ChatPage() {
                             <button
                               type="button"
                               onClick={() => sendSticker(sticker)}
-                              className="chat-sticker-hover chat-sticker-send h-20 w-full rounded-2xl bg-contain bg-center bg-no-repeat transition hover:bg-rose-50 dark:hover:bg-white/8"
+                              className="chat-sticker-hover chat-sticker-send h-20 w-full rounded-2xl bg-contain bg-center bg-no-repeat transition hover:bg-sky-50 dark:hover:bg-white/8"
                               style={{ backgroundImage: `url("${sticker.url}")` }}
                               aria-label={sticker.name}
                             />
@@ -2306,8 +2306,8 @@ export default function ChatPage() {
                               onClick={() => toggleFavoriteSticker(sticker.id)}
                               className={`absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full text-xs opacity-0 shadow transition group-hover:opacity-100 ${
                                 favoriteStickerIds.includes(sticker.id)
-                                  ? "bg-[#be123c] text-white"
-                                  : "bg-white/90 text-[#be123c] dark:bg-black/70 dark:text-white"
+                                  ? "bg-[#0284c7] text-white"
+                                  : "bg-white/90 text-[#0284c7] dark:bg-black/70 dark:text-white"
                               }`}
                               aria-label="Избранное"
                             >
@@ -2326,11 +2326,11 @@ export default function ChatPage() {
                       </div>
                     )}
                   </div>
-                  <div className="mt-3 flex items-center gap-1 overflow-x-auto rounded-2xl bg-rose-50 p-1 dark:bg-white/8">
-                    <button type="button" onClick={() => setActiveStickerPack("recent")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "recent" ? "bg-white text-[#be123c] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="Недавние">🕘</button>
-                    <button type="button" onClick={() => setActiveStickerPack("favorites")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "favorites" ? "bg-white text-[#be123c] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="Избранные">★</button>
+                  <div className="mt-3 flex items-center gap-1 overflow-x-auto rounded-2xl bg-sky-50 p-1 dark:bg-white/8">
+                    <button type="button" onClick={() => setActiveStickerPack("recent")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "recent" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="????????">??</button>
+                    <button type="button" onClick={() => setActiveStickerPack("favorites")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "favorites" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="?????????">?</button>
                     {stickerPacks.map((pack) => (
-                      <button key={pack.id} type="button" onClick={() => setActiveStickerPack(pack.id)} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg transition ${activeStickerPack === pack.id ? "bg-white text-[#be123c] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title={pack.name}>
+                      <button key={pack.id} type="button" onClick={() => setActiveStickerPack(pack.id)} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg transition ${activeStickerPack === pack.id ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title={pack.name}>
                         {pack.icon}
                       </button>
                     ))}
@@ -2339,7 +2339,7 @@ export default function ChatPage() {
               )}
             </div>
           )}
-          <div className="flex items-end gap-2">
+          <div className="flex min-w-0 items-end gap-1.5 md:gap-2">
             <input
               ref={mediaInputRef}
               type="file"
@@ -2369,8 +2369,8 @@ export default function ChatPage() {
                 setPickerMode((current) => (current === "emoji" ? null : "emoji"));
                 window.requestAnimationFrame(() => textareaRef.current?.focus());
               }}
-              className={`order-1 grid h-12 w-12 shrink-0 place-items-center rounded-[1rem] text-xl shadow-inner transition hover:-translate-y-0.5 ${
-                pickerMode === "emoji" ? "bg-[#be123c] text-white" : "bg-white/85 dark:bg-white/10"
+              className={`order-1 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg shadow-inner transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${
+                pickerMode === "emoji" ? "bg-[#0284c7] text-white" : "bg-white/85 dark:bg-white/10"
               }`}
               aria-label="Emoji"
             >
@@ -2383,26 +2383,26 @@ export default function ChatPage() {
                 setReactionTargetId(null);
                 setPickerMode((current) => (current === "stickers" ? null : "stickers"));
               }}
-              className={`order-2 grid h-12 w-12 shrink-0 place-items-center rounded-[1rem] text-xl shadow-inner transition hover:-translate-y-0.5 ${
-                pickerMode === "stickers" ? "bg-[#be123c] text-white" : "bg-white/85 dark:bg-white/10"
+              className={`order-2 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg shadow-inner transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${
+                pickerMode === "stickers" ? "bg-[#0284c7] text-white" : "bg-white/85 dark:bg-white/10"
               }`}
               aria-label="Стикеры"
             >
               🧸
             </button>
             <div className="relative order-4">
-              <button type="button" onClick={() => setIsAttachMenuOpen((current) => !current)} className="grid h-12 w-12 shrink-0 place-items-center rounded-[1rem] bg-white/85 text-xl shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10">
+              <button type="button" onClick={() => setIsAttachMenuOpen((current) => !current)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-white/85 text-lg shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl">
               📎
               </button>
               {isAttachMenuOpen && (
-                <div className="chat-menu-in absolute bottom-14 left-0 z-30 w-52 overflow-hidden rounded-2xl bg-white/95 p-2 text-[#831843] shadow-[0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl dark:bg-black/90 dark:text-white">
-                  <button type="button" onClick={() => { mediaInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-rose-50 dark:hover:bg-white/10">
+                <div className="chat-menu-in absolute bottom-14 left-0 z-30 w-52 overflow-hidden rounded-2xl bg-white/95 p-2 text-[#075985] shadow-[0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl dark:bg-black/90 dark:text-white">
+                  <button type="button" onClick={() => { mediaInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
                     🖼 Фото/Видео
                   </button>
-                  <button type="button" onClick={() => { fileInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-rose-50 dark:hover:bg-white/10">
+                  <button type="button" onClick={() => { fileInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
                     📄 Файл
                   </button>
-                  <button type="button" onClick={() => { if (isRecording) { stopRecording(); } else { startRecording(); } setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-rose-50 dark:hover:bg-white/10">
+                  <button type="button" onClick={() => { if (isRecording) { stopRecording(); } else { startRecording(); } setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
                     🎙 Голосовое
                   </button>
                 </div>
@@ -2428,14 +2428,14 @@ export default function ChatPage() {
               placeholder="Напишите сообщение..."
               rows={1}
               maxLength={1000}
-              className="order-3 max-h-36 min-h-12 flex-1 resize-none rounded-[1.25rem] border border-rose-200/70 bg-white/86 px-4 py-3 font-semibold text-[#831843] outline-none shadow-inner transition placeholder:text-rose-400/70 focus:border-[#e11d48] focus:shadow-[0_0_0_5px_rgba(225,29,72,0.14)] dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/38"
+              className="order-3 max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-[1rem] border border-sky-200/70 bg-white/86 px-3 py-2.5 text-sm font-semibold text-[#075985] outline-none shadow-inner transition placeholder:text-sky-400/70 focus:border-[#0ea5e9] focus:shadow-[0_0_0_5px_rgba(14,165,233,0.14)] dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/38 md:max-h-36 md:min-h-12 md:rounded-[1.25rem] md:px-4 md:py-3 md:text-base"
             />
             {draft.trim() || editingId || pendingAttachments.length > 0 ? (
-              <button type="submit" disabled={isSending} className={`order-5 grid h-12 w-12 shrink-0 place-items-center rounded-[1rem] bg-gradient-to-br from-[#be123c] to-[#db2777] text-2xl font-black text-white shadow-[0_16px_42px_rgba(190,18,60,0.34)] transition hover:-translate-y-0.5 disabled:opacity-45 ${isSending ? "chat-send-pulse" : ""}`}>
+              <button type="submit" disabled={isSending} className={`order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-xl font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.34)] transition hover:-translate-y-0.5 disabled:opacity-45 md:h-12 md:w-12 md:rounded-[1rem] md:text-2xl ${isSending ? "chat-send-pulse" : ""}`}>
                 ↑
               </button>
             ) : (
-              <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`order-5 grid h-12 w-12 shrink-0 place-items-center rounded-[1rem] text-xl font-black text-white shadow-[0_16px_42px_rgba(190,18,60,0.28)] transition hover:-translate-y-0.5 ${isRecording ? "bg-red-600 animate-pulse" : "bg-[#be123c]"}`}>
+              <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.28)] transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${isRecording ? "bg-sky-600 animate-pulse" : "bg-[#0284c7]"}`}>
                 {isRecording ? "■" : "🎙"}
               </button>
             )}
@@ -2444,10 +2444,10 @@ export default function ChatPage() {
 
         {menuMessage && (
           <div className="absolute inset-0 z-40 bg-black/12 backdrop-blur-[2px]" onClick={() => setMenuMessageId(null)}>
-            <div className="chat-menu-in absolute bottom-24 left-4 right-4 mx-auto max-w-md overflow-hidden rounded-[1.5rem] bg-white/94 p-2 text-[#831843] shadow-[0_24px_80px_rgba(0,0,0,0.22)] dark:bg-black/88 dark:text-white" onClick={(event) => event.stopPropagation()}>
-              <div className="grid grid-cols-4 gap-1 border-b border-rose-100 p-2 dark:border-white/10">
+            <div className="chat-menu-in absolute bottom-24 left-4 right-4 mx-auto max-w-md overflow-hidden rounded-[1.5rem] bg-white/94 p-2 text-[#075985] shadow-[0_24px_80px_rgba(0,0,0,0.22)] dark:bg-black/88 dark:text-white" onClick={(event) => event.stopPropagation()}>
+              <div className="grid grid-cols-4 gap-1 border-b border-sky-100 p-2 dark:border-white/10">
                 {reactions.map((emoji) => (
-                  <button key={emoji} onClick={() => toggleReaction(menuMessage, emoji)} className="rounded-2xl p-2 text-2xl transition hover:bg-rose-50 dark:hover:bg-white/10">
+                  <button key={emoji} onClick={() => toggleReaction(menuMessage, emoji)} className="rounded-2xl p-2 text-2xl transition hover:bg-sky-50 dark:hover:bg-white/10">
                     {emoji}
                   </button>
                 ))}
@@ -2458,21 +2458,21 @@ export default function ChatPage() {
                     setPickerMode("emoji");
                     setMenuMessageId(null);
                   }}
-                  className="rounded-2xl p-2 text-2xl font-black transition hover:bg-rose-50 dark:hover:bg-white/10"
+                  className="rounded-2xl p-2 text-2xl font-black transition hover:bg-sky-50 dark:hover:bg-white/10"
                 >
                   +
                 </button>
               </div>
-              <button onClick={() => startReply(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black hover:bg-rose-50 dark:hover:bg-white/10">Ответить</button>
+              <button onClick={() => startReply(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">Ответить</button>
               {menuMessage.sender_id === currentUserId && !menuMessage.deleted_for_everyone && (
-                <button onClick={() => startEdit(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black hover:bg-rose-50 dark:hover:bg-white/10">Редактировать</button>
+                <button onClick={() => startEdit(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">Редактировать</button>
               )}
-              <button onClick={() => updateMessage(menuMessage.id, { pinned_at: menuMessage.pinned_at ? null : new Date().toISOString() }).then(() => setMenuMessageId(null))} className="w-full rounded-2xl px-4 py-3 text-left font-black hover:bg-rose-50 dark:hover:bg-white/10">
+              <button onClick={() => updateMessage(menuMessage.id, { pinned_at: menuMessage.pinned_at ? null : new Date().toISOString() }).then(() => setMenuMessageId(null))} className="w-full rounded-2xl px-4 py-3 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
                 {menuMessage.pinned_at ? "Открепить" : "Закрепить"}
               </button>
-              <button onClick={() => deleteForMe(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black hover:bg-rose-50 dark:hover:bg-white/10">Удалить у себя</button>
+              <button onClick={() => deleteForMe(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">Удалить у себя</button>
               {menuMessage.sender_id === currentUserId && (
-                <button onClick={() => deleteForEveryone(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10">Удалить у всех</button>
+                <button onClick={() => deleteForEveryone(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-500/10">Удалить у всех</button>
               )}
             </div>
           </div>
@@ -2485,11 +2485,11 @@ export default function ChatPage() {
           onClick={() => setIsProfilePanelOpen(false)}
         >
           <aside
-            className="chat-profile-panel ml-auto flex h-full w-full flex-col overflow-hidden bg-[#fff7fb] text-[#831843] shadow-[0_0_80px_rgba(0,0,0,0.22)] dark:bg-[#13070d] dark:text-white md:w-[28rem]"
+            className="chat-profile-panel ml-auto flex h-full w-full flex-col overflow-hidden bg-[#e0f2fe] text-[#075985] shadow-[0_0_80px_rgba(0,0,0,0.22)] dark:bg-[#041725] dark:text-white md:w-[28rem]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="relative overflow-hidden px-5 pb-6 pt-5">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,rgba(244,63,94,0.36),transparent_35%),linear-gradient(135deg,rgba(190,18,60,0.16),rgba(219,39,119,0.08))]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,rgba(14,165,233,0.36),transparent_35%),linear-gradient(135deg,rgba(2,132,199,0.16),rgba(3,105,161,0.08))]" />
               <div className="relative flex items-center justify-between">
                 <button
                   onClick={() => setIsProfilePanelOpen(false)}
@@ -2507,7 +2507,7 @@ export default function ChatPage() {
 
               <div className="relative mt-5 flex flex-col items-center text-center">
                 <div className="chat-avatar-in relative">
-                  <div className="absolute inset-[-18px] rounded-full bg-rose-400/30 blur-2xl" />
+                  <div className="absolute inset-[-18px] rounded-full bg-sky-400/30 blur-2xl" />
                   {partnerProfile.avatar ? (
                     <Image
                       src={partnerProfile.avatar}
@@ -2524,7 +2524,7 @@ export default function ChatPage() {
                   )}
                 </div>
                 <h2 className="mt-4 text-3xl font-black">{partnerProfile.name}</h2>
-                <p className="mt-1 text-sm font-black text-rose-600/70 dark:text-rose-100/65">
+                <p className="mt-1 text-sm font-black text-sky-600/70 dark:text-sky-100/65">
                   {isPartnerTyping
                     ? "печатает..."
                     : partnerLastSeen
@@ -2534,7 +2534,7 @@ export default function ChatPage() {
               </div>
             </div>
 
-            <div className="border-b border-rose-100/80 px-3 dark:border-white/10">
+            <div className="border-b border-sky-100/80 px-3 dark:border-white/10">
               <div className="flex gap-1 overflow-x-auto">
                 {[
                   ["media", "Медиа"],
@@ -2551,13 +2551,13 @@ export default function ChatPage() {
                     }}
                     className={`relative shrink-0 px-3 py-3 text-sm font-black transition ${
                       activeProfileTab === tab
-                        ? "text-[#be123c] dark:text-rose-100"
+                        ? "text-[#0284c7] dark:text-sky-100"
                         : "opacity-55 hover:opacity-90"
                     }`}
                   >
                     {label}
                     {activeProfileTab === tab && (
-                      <span className="chat-tab-underline absolute bottom-0 left-3 right-3 h-1 rounded-full bg-[#be123c]" />
+                      <span className="chat-tab-underline absolute bottom-0 left-3 right-3 h-1 rounded-full bg-[#0284c7]" />
                     )}
                   </button>
                 ))}
@@ -2614,13 +2614,13 @@ export default function ChatPage() {
                     if (!attachment) return null;
                     return (
                       <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-white/65 p-3 shadow-inner dark:bg-white/8">
-                        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#be123c] text-[10px] font-black text-white">{getFileIcon(attachment.name, attachment.mime_type)}</span>
+                        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#0284c7] text-[10px] font-black text-white">{getFileIcon(attachment.name, attachment.mime_type)}</span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-black">{attachment.name}</p>
                           <p className="text-xs font-semibold opacity-55">{formatFileSize(attachment.size)} · {formatDay(item.createdAt)}</p>
                         </div>
-                        <a href={attachment.url} target="_blank" rel="noreferrer" className="rounded-full bg-white px-3 py-2 text-sm font-black text-[#be123c] shadow dark:bg-black/30">↗</a>
-                        <button onClick={() => scrollToMessage(item.messageId)} className="rounded-full bg-rose-100 px-3 py-2 text-sm font-black text-[#be123c] shadow-inner dark:bg-white/10 dark:text-white">↓</button>
+                        <a href={attachment.url} target="_blank" rel="noreferrer" className="rounded-full bg-white px-3 py-2 text-sm font-black text-[#0284c7] shadow dark:bg-black/30">↗</a>
+                        <button onClick={() => scrollToMessage(item.messageId)} className="rounded-full bg-sky-100 px-3 py-2 text-sm font-black text-[#0284c7] shadow-inner dark:bg-white/10 dark:text-white">↓</button>
                       </div>
                     );
                   })}
@@ -2636,7 +2636,7 @@ export default function ChatPage() {
                       {item.url && <LinkPreviewCard url={item.url} isMine={false} />}
                       <div className="mt-2 flex items-center justify-between text-xs font-black opacity-60">
                         <span>{formatDay(item.createdAt)}</span>
-                        <button onClick={() => scrollToMessage(item.messageId)} className="rounded-full bg-rose-100 px-3 py-1.5 text-[#be123c] dark:bg-white/10 dark:text-white">Перейти к сообщению</button>
+                        <button onClick={() => scrollToMessage(item.messageId)} className="rounded-full bg-sky-100 px-3 py-1.5 text-[#0284c7] dark:bg-white/10 dark:text-white">Перейти к сообщению</button>
                       </div>
                     </div>
                   ))}
@@ -2652,17 +2652,17 @@ export default function ChatPage() {
                     if (!attachment) return null;
                     return (
                       <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-white/65 p-3 shadow-inner dark:bg-white/8">
-                        <button onClick={() => toggleAudio(item.id)} className="grid h-11 w-11 place-items-center rounded-full bg-[#be123c] text-white shadow">{playingAudioId === item.id ? "Ⅱ" : "▶"}</button>
+                        <button onClick={() => toggleAudio(item.id)} className="grid h-11 w-11 place-items-center rounded-full bg-[#0284c7] text-white shadow">{playingAudioId === item.id ? "Ⅱ" : "▶"}</button>
                         <div className="min-w-0 flex-1">
                           <div className="flex h-7 items-center gap-[2px]">
                             {Array.from({ length: 32 }).map((_, index) => (
-                              <span key={index} className="w-1 rounded-full bg-[#be123c]/55" style={{ height: Math.max(5, 10 + Math.sin(index * 0.8) * 8) }} />
+                              <span key={index} className="w-1 rounded-full bg-[#0284c7]/55" style={{ height: Math.max(5, 10 + Math.sin(index * 0.8) * 8) }} />
                             ))}
                           </div>
                           <p className="text-xs font-semibold opacity-55">{formatDay(item.createdAt)}</p>
                         </div>
                         <audio ref={(node) => { audioRefs.current[item.id] = node; }} src={attachment.url} className="hidden" onEnded={() => setPlayingAudioId(null)} />
-                        <button onClick={() => scrollToMessage(item.messageId)} className="rounded-full bg-rose-100 px-3 py-2 text-sm font-black text-[#be123c] shadow-inner dark:bg-white/10 dark:text-white">↓</button>
+                        <button onClick={() => scrollToMessage(item.messageId)} className="rounded-full bg-sky-100 px-3 py-2 text-sm font-black text-[#0284c7] shadow-inner dark:bg-white/10 dark:text-white">↓</button>
                       </div>
                     );
                   })}
@@ -2672,7 +2672,7 @@ export default function ChatPage() {
               {profileItems[activeProfileTab].length > profileTabLimit && (
                 <button
                   onClick={() => setProfileTabLimit((current) => current + 24)}
-                  className="mt-4 w-full rounded-2xl bg-[#be123c] px-4 py-3 font-black text-white shadow-lg"
+                  className="mt-4 w-full rounded-2xl bg-[#0284c7] px-4 py-3 font-black text-white shadow-lg"
                 >
                   Показать ещё
                 </button>

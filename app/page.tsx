@@ -49,6 +49,14 @@ type TrackerEvent = {
   date: string;
 };
 
+type TrackerGoal = {
+  id: string;
+  title: string;
+  period: string;
+  target_count: number;
+  created_at: string;
+};
+
 type HomeState = {
   isLoading: boolean;
   userId: string | null;
@@ -58,6 +66,7 @@ type HomeState = {
   chats: ChatPreview[];
   todayAnswer: QuestionAnswer | null;
   todayTrackerEvents: TrackerEvent[];
+  latestGoal: TrackerGoal | null;
   stats: {
     memories: number;
     answers: number;
@@ -76,6 +85,7 @@ const emptyState: HomeState = {
   chats: [],
   todayAnswer: null,
   todayTrackerEvents: [],
+  latestGoal: null,
   stats: {
     memories: 0,
     answers: 0,
@@ -157,6 +167,13 @@ function getMessagePreview(message: ChatPreview) {
   return "Вложение";
 }
 
+function getGoalPeriodLabel(period: string) {
+  if (period === "day") return "на день";
+  if (period === "month") return "на месяц";
+  if (period === "year") return "на год";
+  return "на неделю";
+}
+
 export default function Home() {
   const [state, setState] = useState<HomeState>(emptyState);
   const todayQuestion = getDailyQuestion();
@@ -172,6 +189,9 @@ export default function Home() {
   const isPartnerOne = state.userId && state.couple?.partner_one_id === state.userId;
   const myAnswer = isPartnerOne ? state.todayAnswer?.answer_one : state.todayAnswer?.answer_two;
   const partnerAnswer = isPartnerOne ? state.todayAnswer?.answer_two : state.todayAnswer?.answer_one;
+  const isWaitingForPartnerAnswer = Boolean(myAnswer && !partnerAnswer);
+  const isPartnerAnswerReady = Boolean(partnerAnswer);
+  const lastChat = state.chats[0];
   const totalStats =
     state.stats.memories +
     state.stats.answers +
@@ -212,6 +232,7 @@ export default function Home() {
         quizCountResult,
         trackerCountResult,
         todayTrackerResult,
+        latestGoalResult,
         chatCountResult,
         chatResult,
       ] = await Promise.all([
@@ -258,6 +279,13 @@ export default function Home() {
           .eq("date", todayKey)
           .limit(8),
         supabase
+          .from("tracker_goals")
+          .select("id, title, period, target_count, created_at")
+          .eq("couple_id", couple.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle<TrackerGoal>(),
+        supabase
           .from("couple_chat_messages")
           .select("id", { count: "exact", head: true })
           .eq("couple_id", couple.id),
@@ -279,6 +307,7 @@ export default function Home() {
         chats: (chatResult.data || []) as ChatPreview[],
         todayAnswer: todayAnswerResult.data || null,
         todayTrackerEvents: (todayTrackerResult.data || []) as TrackerEvent[],
+        latestGoal: latestGoalResult.data || null,
         stats: {
           memories: memoryCountResult.count || 0,
           answers: answersCountResult.count || 0,
@@ -302,7 +331,7 @@ export default function Home() {
         <div className="flex flex-col gap-3 rounded-[1.35rem] border border-white/60 bg-white/66 p-4 shadow-[0_18px_58px_rgba(194,65,12,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 sm:flex-row sm:items-center sm:justify-between md:rounded-[1.8rem] md:p-5">
           <div className="min-w-0">
             <p className="truncate text-xl font-black leading-tight text-[#c2410c] dark:text-white md:text-2xl">
-              {state.isLoading ? "Загрузка..." : state.couple ? coupleName : "Couple Space"}
+              {state.isLoading ? "Загружаем центр активности..." : state.couple ? coupleName : "Couple Space"}
             </p>
             <p className="mt-1 text-sm font-bold text-[#7c2d12]/58 dark:text-white/52">
               {daysTogether ? `${daysTogether} дней вместе` : state.couple ? "Дата начала пока не указана" : "Создайте пару в профиле"}
@@ -328,6 +357,99 @@ export default function Home() {
               <p className="text-[0.68rem] font-black uppercase tracking-[0.08em] text-[#c2410c]/52 dark:text-white/45">{label}</p>
               <p className="mt-1 text-2xl font-black leading-none text-[#c2410c] dark:text-white md:text-3xl">{value}</p>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto mt-3 max-w-7xl rounded-[1.35rem] border border-white/60 bg-white/66 p-4 shadow-[0_20px_64px_rgba(194,65,12,0.10)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:mt-5 md:rounded-[2rem] md:p-6">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.16em] text-[#ea580c]/65 dark:text-orange-100/65">
+              Центр активности
+            </p>
+            <h2 className="mt-1 !text-2xl font-black text-[#c2410c] dark:text-white md:!text-3xl">
+              Что сегодня сделать вдвоём
+            </h2>
+          </div>
+          <Link
+            href="/notifications"
+            className="rounded-full bg-[#ea580c] px-4 py-2 text-center text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#f97316]"
+          >
+            Все события
+          </Link>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {[
+            {
+              label: "Вопрос дня",
+              title: myAnswer
+                ? isPartnerAnswerReady
+                  ? "Ответ партнёра открыт"
+                  : "Ждём ответ партнёра"
+                : "Ответьте на вопрос",
+              text: myAnswer
+                ? isPartnerAnswerReady
+                  ? "Можно прочитать и оставить реакцию."
+                  : "Ваш ответ сохранён, партнёр ещё думает."
+                : "Начните с короткого ответа на сегодняшний вопрос.",
+              href: myAnswer ? "/questions/today" : "/questions/answer",
+              icon: isWaitingForPartnerAnswer ? "⌛" : "✉",
+              accentClass: "text-emerald-700 dark:text-emerald-100",
+              bgClass: "bg-emerald-50/90 dark:bg-emerald-500/12",
+            },
+            {
+              label: "Цель пары",
+              title: state.latestGoal ? state.latestGoal.title : "Поставьте новую цель",
+              text: state.latestGoal
+                ? `${state.latestGoal.target_count} ${getGoalPeriodLabel(state.latestGoal.period)}`
+                : "Например: тренировки, свидания или вечер без телефона.",
+              href: "/tracker",
+              icon: "◫",
+              accentClass: "text-amber-800 dark:text-amber-100",
+              bgClass: "bg-amber-50/90 dark:bg-amber-500/12",
+            },
+            {
+              label: "Последнее сообщение",
+              title: lastChat ? getMessagePreview(lastChat) : "Напишите в чат",
+              text: lastChat ? formatTime(lastChat.created_at) : "Оставьте короткое сообщение партнёру.",
+              href: "/chat",
+              icon: "◌",
+              accentClass: "text-sky-800 dark:text-sky-100",
+              bgClass: "bg-sky-50/90 dark:bg-sky-500/12",
+            },
+            {
+              label: "Викторина",
+              title: recommendedQuiz?.title || "Выберите тест",
+              text: state.stats.quizzes > 0
+                ? `Уже есть ${state.stats.quizzes} ответов`
+                : "Пройдите один короткий тест отдельно.",
+              href: recommendedQuiz ? `/quizzes/play?quiz=${recommendedQuiz.id}` : "/quizzes",
+              icon: "✦",
+              accentClass: "text-violet-800 dark:text-violet-100",
+              bgClass: "bg-violet-50/90 dark:bg-violet-500/12",
+            },
+          ].map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className={`rounded-2xl p-4 shadow-inner transition hover:-translate-y-0.5 ${item.bgClass}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className={`text-xs font-black uppercase tracking-[0.12em] opacity-60 ${item.accentClass}`}>
+                    {item.label}
+                  </p>
+                  <h3 className={`mt-2 line-clamp-2 !text-lg font-black ${item.accentClass}`}>
+                    {item.title}
+                  </h3>
+                </div>
+                <span className={`text-2xl ${item.accentClass}`}>{item.icon}</span>
+              </div>
+              <p className={`mt-3 line-clamp-2 text-sm font-semibold opacity-68 ${item.accentClass}`}>
+                {item.text}
+              </p>
+            </Link>
           ))}
         </div>
       </section>

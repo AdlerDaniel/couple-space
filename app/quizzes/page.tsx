@@ -7,6 +7,19 @@ import { supabase } from "@/lib/supabaseClient";
 
 const QUIZZES_PER_PAGE = 9;
 
+type ProgressFilter = "all" | "not-started" | "both" | "waiting";
+
+const progressFilters: Array<{
+  key: ProgressFilter;
+  label: string;
+  description: string;
+}> = [
+  { key: "all", label: "Все", description: "Полный список" },
+  { key: "not-started", label: "Не проходили", description: "Ещё нет вашего ответа" },
+  { key: "both", label: "Прошли оба", description: "Можно сравнить" },
+  { key: "waiting", label: "Ждёт партнёра", description: "Вы прошли, партнёр нет" },
+];
+
 const categoryNotes: Record<string, string> = {
   Быт: "Дом, уют, привычки и маленькие договорённости.",
   Путешествия: "Маршруты, темп поездок и ваши общие приключения.",
@@ -42,6 +55,7 @@ export default function QuizzesPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
   const [activeCategory, setActiveCategory] = useState<QuizCategory>(quizCategories[0]);
+  const [progressFilter, setProgressFilter] = useState<ProgressFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [progress, setProgress] = useState<QuizProgress>({
     mine: new Set(),
@@ -52,11 +66,22 @@ export default function QuizzesPage() {
     () => quizzes.filter((quiz) => quiz.category === activeCategory),
     [activeCategory]
   );
+  const filteredCategoryQuizzes = useMemo(() => {
+    return activeCategoryQuizzes.filter((quiz) => {
+      const mine = progress.mine.has(quiz.id);
+      const partner = progress.partner.has(quiz.id);
+
+      if (progressFilter === "not-started") return !mine;
+      if (progressFilter === "both") return mine && partner;
+      if (progressFilter === "waiting") return mine && !partner;
+      return true;
+    });
+  }, [activeCategoryQuizzes, progress, progressFilter]);
   const totalPages = Math.max(
     1,
-    Math.ceil(activeCategoryQuizzes.length / QUIZZES_PER_PAGE)
+    Math.ceil(filteredCategoryQuizzes.length / QUIZZES_PER_PAGE)
   );
-  const visibleQuizzes = activeCategoryQuizzes.slice(
+  const visibleQuizzes = filteredCategoryQuizzes.slice(
     (currentPage - 1) * QUIZZES_PER_PAGE,
     currentPage * QUIZZES_PER_PAGE
   );
@@ -167,6 +192,11 @@ export default function QuizzesPage() {
     setCurrentPage(1);
   }
 
+  function changeProgressFilter(filter: ProgressFilter) {
+    setProgressFilter(filter);
+    setCurrentPage(1);
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#f1e7ff] to-[#fbf7ff] px-6 pb-28 pt-28 text-[#7c3aed] transition-colors dark:from-[#170525] dark:to-[#09020f] dark:text-[#c084fc]">
       <section className="mx-auto max-w-6xl">
@@ -258,8 +288,7 @@ export default function QuizzesPage() {
 
           <div className="mb-6 flex flex-col gap-3 rounded-3xl bg-white/35 p-3 shadow-inner dark:bg-white/5 sm:p-4 md:flex-row md:items-center md:justify-between">
             <p className="text-sm font-bold text-[#6d28d9]/70 dark:text-[#d8b4fe]/70">
-              Страница {currentPage} из {totalPages}. На странице до{" "}
-              {QUIZZES_PER_PAGE} викторин.
+              Показано {filteredCategoryQuizzes.length} из {activeCategoryQuizzes.length}. Страница {currentPage} из {totalPages}.
             </p>
             <div className="flex max-w-full flex-wrap gap-2 overflow-hidden">
               <button
@@ -306,6 +335,35 @@ export default function QuizzesPage() {
             </div>
           </div>
 
+          <div className="mb-6 grid gap-2 rounded-3xl bg-white/35 p-3 shadow-inner dark:bg-white/5 sm:grid-cols-2 lg:grid-cols-4">
+            {progressFilters.map((filter) => {
+              const isActive = progressFilter === filter.key;
+
+              return (
+                <button
+                  key={filter.key}
+                  type="button"
+                  onClick={() => changeProgressFilter(filter.key)}
+                  className={
+                    isActive
+                      ? "rounded-2xl bg-[#7c3aed] px-4 py-3 text-left text-white shadow-lg"
+                      : "rounded-2xl bg-white/60 px-4 py-3 text-left text-[#6d28d9] shadow-inner transition hover:bg-violet-50 dark:bg-white/8 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
+                  }
+                >
+                  <span className="block font-black">{filter.label}</span>
+                  <span className={isActive ? "text-xs font-bold text-white/70" : "text-xs font-bold opacity-60"}>
+                    {filter.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {visibleQuizzes.length === 0 ? (
+            <div className="rounded-[2rem] bg-white/45 p-8 text-center font-black text-[#6d28d9] shadow-inner dark:bg-white/8 dark:text-[#d8b4fe]">
+              В этом фильтре пока нет викторин.
+            </div>
+          ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {visibleQuizzes.map((quiz) => {
               const isMineCompleted = progress.mine.has(quiz.id);
@@ -398,6 +456,7 @@ export default function QuizzesPage() {
               );
             })}
           </div>
+          )}
         </section>
 
         {currentUserId && couple && (

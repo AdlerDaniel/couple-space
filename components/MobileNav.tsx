@@ -18,21 +18,11 @@ type CoupleNotification = {
   created_at: string;
 };
 
-const links = [
+const mainLinks = [
   {
     href: "/",
     label: "Главная",
     icon: "⌂",
-  },
-  {
-    href: "/dashboard",
-    label: "Кабинет",
-    icon: "♡",
-  },
-  {
-    href: "/memories",
-    label: "Воспоминания",
-    icon: "▣",
   },
   {
     href: "/questions",
@@ -45,14 +35,37 @@ const links = [
     icon: "✦",
   },
   {
+    href: "/chat",
+    label: "Чат",
+    icon: "◌",
+  },
+];
+
+const moreLinks = [
+  {
+    href: "/dashboard",
+    label: "Кабинет",
+    icon: "♡",
+  },
+  {
+    href: "/memories",
+    label: "Воспоминания",
+    icon: "▣",
+  },
+  {
     href: "/tracker",
     label: "Трекер",
     icon: "◫",
   },
   {
-    href: "/chat",
-    label: "Чат",
-    icon: "◌",
+    href: "/profile",
+    label: "Профиль",
+    icon: "◉",
+  },
+  {
+    href: "/settings",
+    label: "Настройки",
+    icon: "⚙",
   },
 ];
 
@@ -90,6 +103,7 @@ export default function MobileNav() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<CoupleNotification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -128,6 +142,7 @@ export default function MobileNav() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsNotificationsOpen(false);
+      setIsMoreOpen(false);
       window.setTimeout(() => {
         if (session?.user) {
           setCurrentUserId(session.user.id);
@@ -192,6 +207,7 @@ export default function MobileNav() {
   async function openNotifications() {
     const nextIsOpen = !isNotificationsOpen;
     setIsNotificationsOpen(nextIsOpen);
+    setIsMoreOpen(false);
 
     if (!nextIsOpen || !currentUserId) return;
 
@@ -288,6 +304,52 @@ export default function MobileNav() {
         </div>
       )}
 
+      {isMoreOpen && (
+        <div
+          className="fixed bottom-20 left-3 right-3 z-40 rounded-[1.4rem] border bg-white/94 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl dark:bg-black/86"
+          style={{
+            borderColor: `${accent}55`,
+            color: accent,
+          }}
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={openNotifications}
+              className="relative flex items-center gap-3 rounded-2xl bg-white/72 px-3 py-3 text-left font-black shadow-inner dark:bg-white/10"
+            >
+              <span className="text-xl">🔔</span>
+              <span>Уведомления</span>
+              {unreadNotifications > 0 && (
+                <span className="ml-auto rounded-full bg-[#ef4444] px-2 py-0.5 text-xs text-white">
+                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                </span>
+              )}
+            </button>
+            {moreLinks.map((link) => {
+              const isActive = isActivePath(pathname, link.href);
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsMoreOpen(false)}
+                  style={isActive ? { backgroundColor: accent } : undefined}
+                  className={
+                    isActive
+                      ? "flex min-w-0 items-center gap-3 rounded-2xl px-3 py-3 font-black text-white shadow-lg"
+                      : "flex min-w-0 items-center gap-3 rounded-2xl bg-white/72 px-3 py-3 font-black shadow-inner dark:bg-white/10"
+                  }
+                >
+                  <span className="text-xl">{link.icon}</span>
+                  <span className="truncate">{link.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <nav
         style={{
           background: `linear-gradient(135deg, ${accent}48, ${accent}36 52%, ${accent}2b)`,
@@ -296,32 +358,8 @@ export default function MobileNav() {
         }}
         className="fixed bottom-2 left-2 right-2 z-40 rounded-[1.1rem] border px-1 py-1 shadow-2xl backdrop-blur-2xl md:hidden"
       >
-        <div className="grid grid-cols-8 items-stretch gap-1 text-center text-[8px] font-black leading-tight min-[380px]:text-[9px]">
-          <button
-            type="button"
-            onClick={openNotifications}
-            style={
-              isNotificationsOpen
-                ? { color: "#ffffff", backgroundColor: accent }
-                : { color: accent }
-            }
-            className={
-              isNotificationsOpen
-                ? "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 shadow-lg"
-                : "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-white/72 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
-            }
-            aria-label="Уведомления"
-          >
-            <span className="text-base leading-none min-[380px]:text-lg">🔔</span>
-            <span className="max-w-full truncate whitespace-nowrap">Увед.</span>
-            {unreadNotifications > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#ef4444] px-1 text-[9px] font-black leading-none text-white shadow-[0_0_14px_rgba(239,68,68,0.8)] ring-2 ring-white">
-                {unreadNotifications > 9 ? "9+" : unreadNotifications}
-              </span>
-            )}
-          </button>
-
-          {links.map((link) => {
+        <div className="grid grid-cols-5 items-stretch gap-1 text-center text-[10px] font-black leading-tight min-[380px]:text-[11px]">
+          {mainLinks.map((link) => {
             const isActive = isActivePath(pathname, link.href);
 
             return (
@@ -344,6 +382,32 @@ export default function MobileNav() {
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={() => {
+              setIsMoreOpen((current) => !current);
+              setIsNotificationsOpen(false);
+            }}
+            style={
+              isMoreOpen
+                ? { color: "#ffffff", backgroundColor: accent }
+                : { color: accent }
+            }
+            className={
+              isMoreOpen
+                ? "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 shadow-lg"
+                : "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-white/72 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
+            }
+            aria-label="Открыть дополнительные разделы"
+          >
+            <span className="text-base leading-none min-[380px]:text-lg">☰</span>
+            <span className="max-w-full truncate whitespace-nowrap">Ещё</span>
+            {unreadNotifications > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#ef4444] px-1 text-[9px] font-black leading-none text-white shadow-[0_0_14px_rgba(239,68,68,0.8)] ring-2 ring-white">
+                {unreadNotifications > 9 ? "9+" : unreadNotifications}
+              </span>
+            )}
+          </button>
         </div>
       </nav>
     </>

@@ -239,6 +239,7 @@ export default function Navbar() {
   const isMemories = pathname.startsWith("/memories");
   const isQuestions = pathname.startsWith("/questions");
   const isQuizzes = pathname.startsWith("/quizzes");
+  const isTracker = pathname.startsWith("/tracker");
   const isChat = pathname.startsWith("/chat");
   const isDashboard = pathname.startsWith("/dashboard");
   const isProfilePage = pathname.startsWith("/profile");
@@ -255,13 +256,15 @@ export default function Navbar() {
           ? "#27ae60"
           : isQuizzes
             ? "#7c3aed"
-            : isChat
-              ? "#be123c"
-              : isDashboard
-                ? dashboardAccent
-                : isProfilePage
-                ? profileAccent
-                  : "#1c8b59";
+            : isTracker
+              ? "#d97706"
+              : isChat
+                ? "#be123c"
+                : isDashboard
+                  ? dashboardAccent
+                  : isProfilePage
+                  ? profileAccent
+                    : "#1c8b59";
 
   const navStyle = isHome
     ? {
@@ -351,6 +354,7 @@ export default function Navbar() {
             ["Вопросы", "/questions"],
             ["Викторины", "/quizzes"],
             ["Чат", "/chat"],
+            ["Трекер", "/tracker"],
           ].map(([label, href]) => (
             <Link
               key={href}
@@ -379,13 +383,15 @@ export default function Navbar() {
                       ? "#27ae60"
                     : isQuizzes
                       ? "#7c3aed"
-                      : isChat
-                        ? "#be123c"
-                        : isDashboard
-                          ? dashboardAccent
-                          : isProfilePage
-                            ? profileAccent
-                            : "#1c8b59",
+                      : isTracker
+                        ? "#d97706"
+                        : isChat
+                          ? "#be123c"
+                          : isDashboard
+                            ? dashboardAccent
+                            : isProfilePage
+                              ? profileAccent
+                              : "#1c8b59",
             }}
           />
         ) : profile ? (

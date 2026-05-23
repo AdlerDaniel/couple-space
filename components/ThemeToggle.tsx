@@ -11,6 +11,7 @@ function getRouteAccent(pathname: string, dashboardAccent: string) {
   if (pathname.startsWith("/memories")) return "#1a73e8";
   if (pathname.startsWith("/questions")) return "#27ae60";
   if (pathname.startsWith("/quizzes")) return "#7c3aed";
+  if (pathname.startsWith("/tracker")) return "#d97706";
   if (pathname.startsWith("/chat")) return "#be123c";
   if (pathname.startsWith("/login")) return "#be123c";
   return "#1c8b59";

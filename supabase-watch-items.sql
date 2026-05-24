@@ -10,6 +10,10 @@ create table if not exists public.watch_items (
   updated_at timestamptz not null default now()
 );
 
+alter table public.watch_items
+add column if not exists external_url text,
+add column if not exists poster_url text;
+
 create index if not exists watch_items_couple_id_idx
 on public.watch_items(couple_id);
 

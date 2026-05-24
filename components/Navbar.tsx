@@ -78,6 +78,35 @@ function formatNotificationTime(date: string) {
   return `${days} дн назад`;
 }
 
+function isActivePath(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function hexToRgb(hex: string) {
+  const value = hex.replace("#", "");
+  if (value.length !== 6) return "28, 139, 89";
+  const red = Number.parseInt(value.slice(0, 2), 16);
+  const green = Number.parseInt(value.slice(2, 4), 16);
+  const blue = Number.parseInt(value.slice(4, 6), 16);
+  return `${red}, ${green}, ${blue}`;
+}
+
+const primaryLinks = [
+  ["Сегодня", "/today"],
+  ["Вопросы", "/questions"],
+  ["Викторины", "/quizzes"],
+  ["Смотреть", "/watch"],
+  ["Чат", "/chat"],
+] as const;
+
+const secondaryLinks = [
+  ["Главная", "/"],
+  ["Кабинет", "/dashboard"],
+  ["Воспоминания", "/memories"],
+  ["Трекер", "/tracker"],
+] as const;
+
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -88,6 +117,7 @@ export default function Navbar() {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   const dashboardAccent = useDashboardAccent();
 
@@ -253,21 +283,24 @@ export default function Navbar() {
   const isProfilePage = pathname.startsWith("/profile");
   const theme = getPageTheme(pathname, dashboardAccent);
   const accent = isLogin ? "#f3f4f6" : theme.accent;
+  const accentRgb = hexToRgb(accent);
   const profileAccent = getPageTheme("/profile").accent;
   const navStyle =
     !isLogin && theme.nav
       ? theme.nav
-      : isDashboard && !isLogin
+      : !isLogin
         ? {
-            backgroundColor: `${dashboardAccent}24`,
-            borderColor: `${dashboardAccent}55`,
-            boxShadow: `0 12px 40px ${dashboardAccent}33`,
+            background: `linear-gradient(135deg, rgba(${accentRgb}, 0.24), rgba(${accentRgb}, 0.12))`,
+            borderColor: `rgba(${accentRgb}, 0.34)`,
+            boxShadow: `0 16px 52px rgba(${accentRgb}, 0.2)`,
           }
         : undefined;
+  const isSecondaryActive = secondaryLinks.some(([, href]) => isActivePath(pathname, href));
 
   async function logout() {
     setIsProfileOpen(false);
     setIsNotificationsOpen(false);
+    setIsMoreOpen(false);
     await supabase.auth.signOut();
     setProfile(null);
     setNotifications([]);
@@ -278,6 +311,7 @@ export default function Navbar() {
     const nextIsOpen = !isNotificationsOpen;
     setIsNotificationsOpen(nextIsOpen);
     setIsProfileOpen(false);
+    setIsMoreOpen(false);
 
     if (!nextIsOpen || !currentUserId) return;
 
@@ -308,44 +342,93 @@ export default function Navbar() {
   ).length;
 
   return (
-    <header className="fixed left-0 top-0 z-30 hidden w-full px-6 py-4 md:block">
+    <header className="fixed left-0 top-0 z-30 hidden w-full px-6 py-3 md:block">
       <nav
         style={navStyle}
-        className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/30 bg-white/35 px-6 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-black/25 dark:shadow-black/40"
+        className="mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-[1.35rem] border border-white/30 bg-white/35 px-3.5 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-black/25 dark:shadow-black/40"
       >
         <Link
           href="/"
           style={!isLogin ? { color: accent } : undefined}
-          className={`text-xl font-bold opacity-90 transition hover:opacity-100 ${
+          className={`flex shrink-0 items-center gap-2 rounded-full bg-white/42 px-3 py-2 text-sm font-black opacity-95 shadow-inner transition hover:opacity-100 dark:bg-white/8 ${
             isLogin ? "text-gray-800 dark:text-gray-100" : ""
           }`}
         >
-          ❤️ Couple Space
+          <span className="text-base">♡</span>
+          <span>Couple Space</span>
         </Link>
 
-        <div className="hidden gap-6 md:flex">
-          {[
-            ["Сегодня", "/today"],
-            ["Главная", "/"],
-            ["Кабинет", "/dashboard"],
-            ["Воспоминания", "/memories"],
-            ["Вопросы", "/questions"],
-            ["Викторины", "/quizzes"],
-            ["Что посмотрим", "/watch"],
-            ["Чат", "/chat"],
-            ["Трекер", "/tracker"],
-          ].map(([label, href]) => (
+        <div className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex">
+          {primaryLinks.map(([label, href]) => {
+            const isActive = isActivePath(pathname, href);
+            return (
             <Link
               key={href}
               href={href}
-              style={!isLogin ? { color: accent } : undefined}
-              className={`opacity-80 transition hover:opacity-100 ${
+              title={href === "/watch" ? "Что посмотрим?" : label}
+              style={
+                !isLogin
+                  ? {
+                      color: isActive ? "#fff" : accent,
+                      backgroundColor: isActive ? accent : `rgba(${accentRgb}, 0.1)`,
+                    }
+                  : undefined
+              }
+              className={`rounded-full px-3.5 py-2 text-sm font-black transition hover:-translate-y-0.5 hover:opacity-100 ${
                 isLogin ? "text-gray-700 dark:text-gray-200" : ""
               }`}
             >
               {label}
             </Link>
-          ))}
+          );
+          })}
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setIsMoreOpen((current) => !current);
+                setIsProfileOpen(false);
+                setIsNotificationsOpen(false);
+              }}
+              style={
+                !isLogin
+                  ? {
+                      color: isSecondaryActive ? "#fff" : accent,
+                      backgroundColor: isSecondaryActive ? accent : `rgba(${accentRgb}, 0.1)`,
+                    }
+                  : undefined
+              }
+              className={`rounded-full px-3.5 py-2 text-sm font-black transition hover:-translate-y-0.5 ${
+                isLogin ? "text-gray-700 dark:text-gray-200" : ""
+              }`}
+            >
+              Ещё
+            </button>
+
+            {isMoreOpen && (
+              <div className="absolute left-1/2 top-12 w-56 -translate-x-1/2 overflow-hidden rounded-3xl border border-white/45 bg-white/92 p-2 text-[#7f1d1d] shadow-[0_24px_80px_rgba(0,0,0,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-black/84 dark:text-white">
+                {secondaryLinks.map(([label, href]) => {
+                  const isActive = isActivePath(pathname, href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setIsMoreOpen(false)}
+                      style={
+                        !isLogin && isActive
+                          ? { backgroundColor: `${accent}18`, color: accent }
+                          : undefined
+                      }
+                      className="mb-1 block rounded-2xl px-4 py-3 text-sm font-black transition hover:bg-black/5 dark:hover:bg-white/10"
+                    >
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {isLoadingUser ? (
@@ -469,6 +552,7 @@ export default function Navbar() {
               onClick={() => {
                 setIsProfileOpen((current) => !current);
                 setIsNotificationsOpen(false);
+                setIsMoreOpen(false);
               }}
               style={!isLogin ? { backgroundColor: `${accent}22`, color: accent } : undefined}
               className={`flex items-center gap-3 rounded-full border border-white/35 px-2 py-1.5 pr-4 font-bold shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl ${

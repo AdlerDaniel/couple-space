@@ -2,11 +2,13 @@ import { dashboardThemeAccents } from "@/lib/dashboardTheme";
 
 export type PageThemeKey =
   | "home"
+  | "today"
   | "dashboard"
   | "profile"
   | "memories"
   | "questions"
   | "quizzes"
+  | "watch"
   | "tracker"
   | "chat"
   | "login"
@@ -54,6 +56,11 @@ export const pageThemes: Record<PageThemeKey, PageTheme> = {
     accent: "#2563eb",
     soft: "#dbeafe",
   },
+  today: {
+    key: "today",
+    accent: "#ea580c",
+    soft: "#ffedd5",
+  },
   questions: {
     key: "questions",
     accent: "#27ae60",
@@ -63,6 +70,11 @@ export const pageThemes: Record<PageThemeKey, PageTheme> = {
     key: "quizzes",
     accent: "#7c3aed",
     soft: "#ede9fe",
+  },
+  watch: {
+    key: "watch",
+    accent: "#65a30d",
+    soft: "#ecfccb",
   },
   tracker: {
     key: "tracker",
@@ -93,11 +105,13 @@ export const pageThemes: Record<PageThemeKey, PageTheme> = {
 
 export function getPageThemeKey(pathname: string): PageThemeKey {
   if (pathname === "/") return "home";
+  if (pathname.startsWith("/today")) return "today";
   if (pathname.startsWith("/dashboard")) return "dashboard";
   if (pathname.startsWith("/profile")) return "profile";
   if (pathname.startsWith("/memories")) return "memories";
   if (pathname.startsWith("/questions")) return "questions";
   if (pathname.startsWith("/quizzes")) return "quizzes";
+  if (pathname.startsWith("/watch")) return "watch";
   if (pathname.startsWith("/tracker")) return "tracker";
   if (pathname.startsWith("/chat")) return "chat";
   if (pathname.startsWith("/login")) return "login";

@@ -8,6 +8,13 @@ export function normalizeWatchTitle(title: string) {
   return title.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
+export function normalizeOptionalUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export function findDuplicateWatchTitle<T extends WatchListItemBase>(
   items: T[],
   title: string,

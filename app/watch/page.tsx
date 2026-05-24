@@ -3,12 +3,13 @@
 import {
   findDuplicateWatchTitle,
   getRandomWatchItem,
+  normalizeOptionalUrl,
   normalizeWatchTitle,
 } from "@/lib/watchList";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type ContentType = "movie" | "series" | "cartoon" | "anime";
 
@@ -31,6 +32,8 @@ type WatchItem = {
   added_by: string;
   is_watched: boolean;
   watched_at: string | null;
+  external_url: string | null;
+  poster_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -64,6 +67,8 @@ export default function WatchPage() {
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
   const [items, setItems] = useState<WatchItem[]>([]);
   const [title, setTitle] = useState("");
+  const [externalUrl, setExternalUrl] = useState("");
+  const [posterUrl, setPosterUrl] = useState("");
   const [contentType, setContentType] = useState<ContentType>("movie");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -72,14 +77,21 @@ export default function WatchPage() {
   const [roulettePreview, setRoulettePreview] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<WatchItem | null>(null);
   const [savedPickId, setSavedPickId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<WatchItem | null>(null);
+  const [eveningModeItem, setEveningModeItem] = useState<WatchItem | null>(null);
+  const deleteTimerRef = useRef<number | null>(null);
 
+  const visibleItems = useMemo(
+    () => items.filter((item) => item.id !== pendingDelete?.id),
+    [items, pendingDelete],
+  );
   const wishItems = useMemo(
-    () => items.filter((item) => !item.is_watched),
-    [items],
+    () => visibleItems.filter((item) => !item.is_watched),
+    [visibleItems],
   );
   const watchedItems = useMemo(
-    () => items.filter((item) => item.is_watched),
-    [items],
+    () => visibleItems.filter((item) => item.is_watched),
+    [visibleItems],
   );
 
   useEffect(() => {
@@ -176,6 +188,7 @@ export default function WatchPage() {
     });
 
     return () => {
+      if (deleteTimerRef.current) window.clearTimeout(deleteTimerRef.current);
       cleanup?.();
     };
   }, [router]);
@@ -202,6 +215,8 @@ export default function WatchPage() {
     }
 
     setIsSaving(true);
+    const normalizedExternalUrl = normalizeOptionalUrl(externalUrl);
+    const normalizedPosterUrl = normalizeOptionalUrl(posterUrl);
     const { data, error } = await supabase
       .from("watch_items")
       .insert([
@@ -210,6 +225,8 @@ export default function WatchPage() {
           title: trimmedTitle,
           content_type: contentType,
           added_by: currentUserId,
+          external_url: normalizedExternalUrl || null,
+          poster_url: normalizedPosterUrl || null,
         },
       ])
       .select("*")
@@ -227,6 +244,8 @@ export default function WatchPage() {
 
     setItems((current) => [data as WatchItem, ...current]);
     setTitle("");
+    setExternalUrl("");
+    setPosterUrl("");
     setMessage("Добавлено в список на просмотр.");
     setIsSaving(false);
   }
@@ -253,15 +272,41 @@ export default function WatchPage() {
     }
   }
 
-  async function deleteItem(item: WatchItem) {
+  function restoreDeletedItem() {
+    if (deleteTimerRef.current) {
+      window.clearTimeout(deleteTimerRef.current);
+      deleteTimerRef.current = null;
+    }
+    setPendingDelete(null);
+    setMessage("Удаление отменено.");
+  }
+
+  async function finishDelete(item: WatchItem) {
     const previous = items;
     setItems((current) => current.filter((row) => row.id !== item.id));
+    setPendingDelete(null);
 
     const { error } = await supabase.from("watch_items").delete().eq("id", item.id);
     if (error) {
       setItems(previous);
       setMessage("Не удалось удалить элемент.");
     }
+  }
+
+  function deleteItem(item: WatchItem) {
+    if (deleteTimerRef.current && pendingDelete) {
+      window.clearTimeout(deleteTimerRef.current);
+      void finishDelete(pendingDelete);
+    }
+
+    setSelectedItem((current) => (current?.id === item.id ? null : current));
+    setEveningModeItem((current) => (current?.id === item.id ? null : current));
+    setPendingDelete(item);
+    setMessage("");
+    deleteTimerRef.current = window.setTimeout(() => {
+      void finishDelete(item);
+      deleteTimerRef.current = null;
+    }, 6000);
   }
 
   function spinRoulette() {
@@ -307,6 +352,10 @@ export default function WatchPage() {
     setMessage(`${selectedItem.title} сохранено в список на просмотр.`);
   }
 
+  function openEveningMode(item: WatchItem) {
+    setEveningModeItem(item);
+  }
+
   function renderCard(item: WatchItem) {
     const isSelected = selectedItem?.id === item.id;
 
@@ -319,6 +368,13 @@ export default function WatchPage() {
             : "border-white/65 bg-white/68 dark:border-white/10 dark:bg-white/8"
         } ${isSelected ? "ring-4 ring-lime-300/55" : ""}`}
       >
+        {item.poster_url && (
+          <div
+            className="mb-4 aspect-[16/10] rounded-[1rem] bg-lime-100 bg-cover bg-center shadow-inner dark:bg-white/8"
+            style={{ backgroundImage: `url("${item.poster_url}")` }}
+            aria-label={`Постер: ${item.title}`}
+          />
+        )}
         <div className="flex items-start justify-between gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-lime-100 text-xl text-lime-700 shadow-inner dark:bg-lime-400/12 dark:text-lime-100">
             {getContentTypeIcon(item.content_type)}
@@ -343,6 +399,13 @@ export default function WatchPage() {
         </div>
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => openEveningMode(item)}
+            className="rounded-full bg-white/75 px-4 py-2.5 text-sm font-black text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
+          >
+            Вечерний режим
+          </button>
           {!item.is_watched && (
             <button
               type="button"
@@ -360,6 +423,16 @@ export default function WatchPage() {
             Удалить
           </button>
         </div>
+        {item.external_url && (
+          <a
+            href={item.external_url}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex text-sm font-black text-lime-700 underline decoration-lime-300 underline-offset-4 dark:text-lime-100"
+          >
+            Открыть ссылку
+          </a>
+        )}
       </article>
     );
   }
@@ -393,7 +466,7 @@ export default function WatchPage() {
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
           {[
-            ["Всего в списке", items.length],
+            ["Всего в списке", visibleItems.length],
             ["Осталось посмотреть", wishItems.length],
             ["Уже посмотрели", watchedItems.length],
           ].map(([label, value]) => (
@@ -459,6 +532,15 @@ export default function WatchPage() {
                 {savedPickId === selectedItem.id ? "Сохранено" : "Сохранить"}
               </button>
             )}
+            {selectedItem && (
+              <button
+                type="button"
+                onClick={() => openEveningMode(selectedItem)}
+                className="rounded-full bg-lime-100 px-7 py-3.5 text-base font-black text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-lime-400/12 dark:text-lime-100"
+              >
+                Вечерний режим
+              </button>
+            )}
           </div>
         </section>
 
@@ -495,6 +577,20 @@ export default function WatchPage() {
             >
               Добавить
             </button>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <input
+              value={externalUrl}
+              onChange={(event) => setExternalUrl(event.target.value)}
+              placeholder="Ссылка на Кинопоиск, IMDb или трейлер"
+              className="h-12 rounded-2xl border border-lime-200/70 bg-white/82 px-4 font-semibold text-lime-950 outline-none transition placeholder:text-lime-900/35 focus:border-lime-500 dark:border-white/10 dark:bg-black/20 dark:text-white"
+            />
+            <input
+              value={posterUrl}
+              onChange={(event) => setPosterUrl(event.target.value)}
+              placeholder="Ссылка на постер"
+              className="h-12 rounded-2xl border border-lime-200/70 bg-white/82 px-4 font-semibold text-lime-950 outline-none transition placeholder:text-lime-900/35 focus:border-lime-500 dark:border-white/10 dark:bg-black/20 dark:text-white"
+            />
           </div>
           {message && (
             <p className="mt-3 text-sm font-black text-lime-800 dark:text-lime-100">
@@ -564,6 +660,88 @@ export default function WatchPage() {
           </Link>
         </div>
       </section>
+
+      {pendingDelete && (
+        <div className="fixed inset-x-4 bottom-24 z-40 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-2xl border border-white/70 bg-lime-950 px-4 py-3 text-white shadow-[0_22px_70px_rgba(0,0,0,0.28)] dark:border-white/10">
+          <p className="min-w-0 truncate text-sm font-black">
+            Удалено: {pendingDelete.title}
+          </p>
+          <button
+            type="button"
+            onClick={restoreDeletedItem}
+            className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-black text-lime-900"
+          >
+            Вернуть
+          </button>
+        </div>
+      )}
+
+      {eveningModeItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-lime-950/72 px-4 py-8 backdrop-blur-xl">
+          <section className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-white/50 bg-[#f7fee7] p-5 text-lime-950 shadow-[0_40px_120px_rgba(0,0,0,0.42)] dark:border-white/10 dark:bg-[#101906] dark:text-white md:p-7">
+            <button
+              type="button"
+              onClick={() => setEveningModeItem(null)}
+              className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/80 font-black text-lime-900 shadow-inner dark:bg-white/10 dark:text-white"
+            >
+              ×
+            </button>
+
+            {eveningModeItem.poster_url ? (
+              <div
+                className="aspect-[16/9] rounded-[1.4rem] bg-lime-100 bg-cover bg-center shadow-inner dark:bg-white/8"
+                style={{ backgroundImage: `url("${eveningModeItem.poster_url}")` }}
+              />
+            ) : (
+              <div className="grid aspect-[16/9] place-items-center rounded-[1.4rem] bg-lime-100 text-6xl shadow-inner dark:bg-white/8">
+                {getContentTypeIcon(eveningModeItem.content_type)}
+              </div>
+            )}
+
+            <p className="mt-5 text-sm font-black uppercase tracking-[0.2em] text-lime-700/60 dark:text-lime-100/60">
+              Вечерний режим
+            </p>
+            <h2 className="mt-2 break-words text-4xl font-black text-lime-900 dark:text-white">
+              {eveningModeItem.title}
+            </h2>
+            <p className="mt-3 font-black text-lime-800/70 dark:text-white/60">
+              {getContentTypeLabel(eveningModeItem.content_type)} · добавил {getAddedByName(eveningModeItem.added_by)}
+            </p>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              {!eveningModeItem.is_watched && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void markWatched(eveningModeItem);
+                    setEveningModeItem({ ...eveningModeItem, is_watched: true, watched_at: new Date().toISOString() });
+                  }}
+                  className="rounded-full bg-lime-600 px-6 py-3 font-black text-white shadow-lg transition hover:-translate-y-0.5"
+                >
+                  Отметить как просмотрено
+                </button>
+              )}
+              {eveningModeItem.external_url && (
+                <a
+                  href={eveningModeItem.external_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full bg-white/82 px-6 py-3 text-center font-black text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
+                >
+                  Открыть ссылку
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => setEveningModeItem(null)}
+                className="rounded-full bg-lime-100 px-6 py-3 font-black text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-lime-400/12 dark:text-lime-100"
+              >
+                Закрыть
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

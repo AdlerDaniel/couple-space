@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   findDuplicateWatchTitle,
   getRandomWatchItem,
+  normalizeOptionalUrl,
   normalizeWatchTitle,
 } from "../lib/watchList.ts";
 
@@ -33,4 +34,12 @@ test("getRandomWatchItem uses only unwatched items", () => {
   );
 
   assert.equal(selected?.id, "2");
+});
+
+test("normalizeOptionalUrl adds https for plain domains", () => {
+  assert.equal(normalizeOptionalUrl(" kinopoisk.ru/film/123 "), "https://kinopoisk.ru/film/123");
+});
+
+test("normalizeOptionalUrl keeps empty values empty", () => {
+  assert.equal(normalizeOptionalUrl("   "), "");
 });

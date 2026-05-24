@@ -11,6 +11,9 @@ create policy "Anyone can read memory images"
   to public
   using (bucket_id = 'memory-images');
 
+-- The app uploads with upsert: true, so this bucket must keep SELECT and UPDATE
+-- policies in addition to INSERT. Without SELECT, Storage can fail with an RLS
+-- error before the memory card is created.
 drop policy if exists "Authenticated users can upload memory images"
   on storage.objects;
 create policy "Authenticated users can upload memory images"

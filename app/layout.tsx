@@ -6,6 +6,8 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import MobileNav from "@/components/MobileNav";
 import ThemeToggle from "@/components/ThemeToggle";
+import AppBreadcrumbs from "@/components/AppBreadcrumbs";
+import AppToast from "@/components/AppToast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,8 +53,10 @@ export default function RootLayout({
         </Script>
         <ThemeToggle />
         <Navbar />
+        <AppBreadcrumbs />
         {children}
         <MobileNav />
+        <AppToast />
       </body>
     </html>
   );

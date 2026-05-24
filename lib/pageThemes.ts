@@ -55,26 +55,51 @@ export const pageThemes: Record<PageThemeKey, PageTheme> = {
     key: "memories",
     accent: "#2563eb",
     soft: "#dbeafe",
+    nav: {
+      background: "linear-gradient(135deg, rgba(37, 99, 235, 0.24), rgba(14, 165, 233, 0.14))",
+      borderColor: "rgba(37, 99, 235, 0.34)",
+      boxShadow: "0 16px 50px rgba(37, 99, 235, 0.2)",
+    },
   },
   today: {
     key: "today",
     accent: "#ea580c",
     soft: "#ffedd5",
+    nav: {
+      background: "linear-gradient(135deg, rgba(234, 88, 12, 0.24), rgba(251, 146, 60, 0.16))",
+      borderColor: "rgba(234, 88, 12, 0.34)",
+      boxShadow: "0 16px 50px rgba(234, 88, 12, 0.2)",
+    },
   },
   questions: {
     key: "questions",
     accent: "#27ae60",
     soft: "#dcfce7",
+    nav: {
+      background: "linear-gradient(135deg, rgba(39, 174, 96, 0.24), rgba(20, 184, 166, 0.14))",
+      borderColor: "rgba(39, 174, 96, 0.34)",
+      boxShadow: "0 16px 50px rgba(39, 174, 96, 0.2)",
+    },
   },
   quizzes: {
     key: "quizzes",
     accent: "#7c3aed",
     soft: "#ede9fe",
+    nav: {
+      background: "linear-gradient(135deg, rgba(124, 58, 237, 0.24), rgba(168, 85, 247, 0.14))",
+      borderColor: "rgba(124, 58, 237, 0.34)",
+      boxShadow: "0 16px 50px rgba(124, 58, 237, 0.2)",
+    },
   },
   watch: {
     key: "watch",
     accent: "#65a30d",
     soft: "#ecfccb",
+    nav: {
+      background: "linear-gradient(135deg, rgba(101, 163, 13, 0.25), rgba(132, 204, 22, 0.16))",
+      borderColor: "rgba(101, 163, 13, 0.36)",
+      boxShadow: "0 16px 50px rgba(101, 163, 13, 0.2)",
+    },
   },
   tracker: {
     key: "tracker",
@@ -90,6 +115,11 @@ export const pageThemes: Record<PageThemeKey, PageTheme> = {
     key: "chat",
     accent: "#0284c7",
     soft: "#e0f2fe",
+    nav: {
+      background: "linear-gradient(135deg, rgba(2, 132, 199, 0.24), rgba(14, 165, 233, 0.14))",
+      borderColor: "rgba(2, 132, 199, 0.34)",
+      boxShadow: "0 16px 50px rgba(2, 132, 199, 0.2)",
+    },
   },
   login: {
     key: "login",

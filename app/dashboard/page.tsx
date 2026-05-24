@@ -4,6 +4,10 @@ import { supabase } from "@/lib/supabaseClient";
 import { createOwnNotification, createPartnerNotification } from "@/lib/notifications";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
+  getNearestAchievements,
+  getWeeklyActivityCount,
+} from "@/lib/dashboardInsights";
+import {
   dashboardAccentEventName,
   dashboardAccentStorageKey,
   dashboardThemeAccents,
@@ -178,6 +182,14 @@ function getStatus(profile: CoupleProfile, slot: "one" | "two") {
     slot === "one" ? profile.status_one_emoji || "❤️" : profile.status_two_emoji || "❤️";
 
   return { text, emoji };
+}
+
+function getAchievementPercent(achievement: Achievement) {
+  if (achievement.target <= 0) {
+    return 0;
+  }
+
+  return Math.min(100, Math.round((achievement.value / achievement.target) * 100));
 }
 
 function AvatarBubble({
@@ -1056,6 +1068,13 @@ export default function DashboardPage() {
       : 0;
   const unlockedAchievementList = achievements.filter((item) => item.unlocked);
   const lockedAchievementList = achievements.filter((item) => !item.unlocked);
+  const nearestDashboardAchievements = getNearestAchievements(achievements, 3);
+  const dashboardAchievementPreview =
+    nearestDashboardAchievements.length > 0
+      ? nearestDashboardAchievements
+      : unlockedAchievementList.slice(0, 3);
+  const weeklyActivityCount = getWeeklyActivityCount(activity);
+  const latestImportantActivity = activity[0];
 
   useEffect(() => {
     if (!isDashboardLoaded || !couple || !currentUserId || achievements.length === 0) {
@@ -1438,7 +1457,7 @@ export default function DashboardPage() {
               </div>
 
               <p className="text-sm font-semibold uppercase tracking-wide text-white/80">
-                Вместе с {startDate ? formatDate(startDate) : "первого дня"}
+                Кабинет пары · аналитика и история
               </p>
               <h1 className="mt-2 text-5xl font-bold tracking-tight text-white md:text-6xl">
                 {coupleName}
@@ -1446,29 +1465,208 @@ export default function DashboardPage() {
               <p className="mt-4 text-3xl font-bold text-white">
                 {daysTogether} дней вместе ❤️
               </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <span className="rounded-full bg-white/60 px-4 py-2 text-sm font-black text-[#dc2626] shadow-lg backdrop-blur dark:bg-black/25 dark:text-white">
+                  Вместе с {startDate ? formatDate(startDate) : "первого дня"}
+                </span>
+                <Link
+                  href="/today"
+                  className="rounded-full bg-white px-4 py-2 text-sm font-black text-[#dc2626] shadow-lg transition hover:bg-red-50 dark:bg-white/15 dark:text-white dark:hover:bg-white/20"
+                >
+                  Рабочий экран на сегодня
+                </Link>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
-          {[
-            ["📸", "Воспоминаний", stats.memories],
-            ["💌", "Ответов", stats.questionAnswers],
-            ["✦", "Викторин", stats.quizzes],
-            ["🔥", "Серия дней", stats.streak],
-            ["🗓", "Вместе", daysTogether],
-          ].map(([icon, label, value]) => (
-            <div
-              key={label}
-              className={`rounded-[1.25rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-4 shadow-xl md:rounded-3xl md:p-6`}
-            >
-              <p className="text-2xl md:text-3xl">{icon}</p>
-              <p className={`mt-2 text-xs font-semibold ${theme.muted} dark:text-white/65 md:mt-4 md:text-sm`}>
-                {label}
+        <section
+          className={`rounded-[1.75rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-4 shadow-2xl md:p-6`}
+        >
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className={`text-sm font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
+                Сводка состояния
               </p>
-              <p className="mt-1 text-3xl font-bold md:text-4xl">{value}</p>
+              <h2 className="mt-1 text-3xl font-black">Что видно по паре сейчас</h2>
             </div>
-          ))}
+            <p className={`max-w-xl text-sm font-semibold ${theme.muted} dark:text-white/65`}>
+              Здесь собрана динамика и история. Ежедневные действия живут на странице
+              {" "}
+              <Link href="/today" className="font-black underline underline-offset-4">
+                Сегодня
+              </Link>
+              .
+            </p>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <article className="rounded-3xl border border-white/45 bg-white/45 p-5 shadow-inner dark:border-white/10 dark:bg-white/5">
+              <p className="text-sm font-black uppercase tracking-wide opacity-60">
+                Статус пары
+              </p>
+              <div className="mt-4 space-y-3">
+                {[
+                  { name: profile.partner_one, status: getStatus(profile, "one") },
+                  { name: profile.partner_two, status: getStatus(profile, "two") },
+                ].map(({ name, status }) => (
+                  <div key={name} className="flex items-center gap-3">
+                    <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/65 text-xl shadow-inner dark:bg-white/10">
+                      {status.emoji}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black">{name}</p>
+                      <p className={`truncate text-sm font-semibold ${theme.muted} dark:text-white/65`}>
+                        {status.text || "статус не задан"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-3xl border border-white/45 bg-white/45 p-5 shadow-inner dark:border-white/10 dark:bg-white/5">
+              <p className="text-sm font-black uppercase tracking-wide opacity-60">
+                Серия ответов
+              </p>
+              <p className="mt-4 text-5xl font-black">{stats.streak}</p>
+              <p className={`mt-2 text-sm font-semibold ${theme.muted} dark:text-white/65`}>
+                дней подряд с ответами на вопросы. Это главный показатель ритма общения.
+              </p>
+            </article>
+
+            <article className="rounded-3xl border border-white/45 bg-white/45 p-5 shadow-inner dark:border-white/10 dark:bg-white/5">
+              <p className="text-sm font-black uppercase tracking-wide opacity-60">
+                Активность недели
+              </p>
+              <p className="mt-4 text-5xl font-black">{weeklyActivityCount}</p>
+              <p className={`mt-2 text-sm font-semibold ${theme.muted} dark:text-white/65`}>
+                событий за последние 7 дней: ответы, викторины, воспоминания и реакции.
+              </p>
+            </article>
+
+            <article className="rounded-3xl border border-white/45 bg-white/45 p-5 shadow-inner dark:border-white/10 dark:bg-white/5">
+              <p className="text-sm font-black uppercase tracking-wide opacity-60">
+                Последнее важное
+              </p>
+              <div className="mt-4 flex gap-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/65 text-xl shadow-inner dark:bg-white/10">
+                  {latestImportantActivity?.icon || "✦"}
+                </span>
+                <div className="min-w-0">
+                  <p className="line-clamp-2 font-black">
+                    {latestImportantActivity?.text || "Пока нет событий"}
+                  </p>
+                  <p className={`mt-1 text-sm font-semibold ${theme.muted} dark:text-white/65`}>
+                    {latestImportantActivity?.time || "появится после первой активности"}
+                  </p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
+          <div
+            className={`rounded-[1.75rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-5 shadow-2xl md:p-6`}
+          >
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className={`text-sm font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
+                  Исторические метрики
+                </p>
+                <h2 className="mt-1 text-2xl font-black">Накопленный прогресс</h2>
+              </div>
+              <button
+                onClick={() => setIsTimelineOpen(true)}
+                className="rounded-full bg-white/60 px-4 py-2 text-sm font-black shadow-inner transition hover:bg-red-50/80 dark:bg-white/10 dark:hover:bg-red-500/12"
+              >
+                Открыть таймлайн
+              </button>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-5">
+              {[
+                ["📸", "Воспоминаний", stats.memories],
+                ["💌", "Ответов", stats.questionAnswers],
+                ["✦", "Викторин", stats.quizzes],
+                ["💬", "Статусов", stats.statusUpdates],
+                ["🗓", "Дней вместе", daysTogether],
+              ].map(([icon, label, value]) => (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-white/40 bg-white/38 p-4 shadow-inner dark:border-white/10 dark:bg-white/5"
+                >
+                  <p className="text-2xl">{icon}</p>
+                  <p className={`mt-3 text-xs font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
+                    {label}
+                  </p>
+                  <p className="mt-1 text-3xl font-black">{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            className={`rounded-[1.75rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-5 shadow-2xl md:p-6`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className={`text-sm font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
+                  Ближайшие достижения
+                </p>
+                <h2 className="mt-1 text-2xl font-black">
+                  {nearestDashboardAchievements.length > 0 ? "Почти открыто" : "Последние открытые"}
+                </h2>
+              </div>
+              <Link
+                href="/achievements"
+                className="rounded-full bg-white/60 px-4 py-2 text-sm font-black shadow-inner transition hover:bg-red-50/80 dark:bg-white/10 dark:hover:bg-red-500/12"
+              >
+                Все
+              </Link>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {dashboardAchievementPreview.length === 0 ? (
+                <div className="rounded-2xl bg-white/35 p-5 text-center font-bold shadow-inner dark:bg-white/5">
+                  Достижения появятся после первых действий.
+                </div>
+              ) : (
+                dashboardAchievementPreview.map((achievement) => (
+                  <button
+                    key={achievement.id}
+                    onClick={() => setSelectedAchievement(achievement)}
+                    className="w-full rounded-2xl border border-white/40 bg-white/42 p-4 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-red-50/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-red-500/12"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/65 text-2xl shadow-inner dark:bg-white/10">
+                        {achievement.unlocked ? achievement.icon : "🔒"}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-black">{achievement.name}</p>
+                            <p className={`truncate text-xs font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
+                              {achievement.title}
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-white/60 px-3 py-1 text-xs font-black shadow-inner dark:bg-white/10">
+                            {achievement.value}/{achievement.target}
+                          </span>
+                        </div>
+                        <div className="mt-3 rounded-full bg-white/35 p-1 shadow-inner dark:bg-black/20">
+                          <div
+                            className="h-2.5 rounded-full bg-gradient-to-r from-[#dc2626] to-[#fb7185] transition-all"
+                            style={{ width: `${getAchievementPercent(achievement)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">

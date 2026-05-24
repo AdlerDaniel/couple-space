@@ -6,6 +6,7 @@ import {
   getRandomWatchItem,
   normalizeOptionalUrl,
   normalizeWatchTitle,
+  shouldAutoSpinWatch,
 } from "../lib/watchList.ts";
 
 test("normalizeWatchTitle trims and collapses spaces", () => {
@@ -42,4 +43,12 @@ test("normalizeOptionalUrl adds https for plain domains", () => {
 
 test("normalizeOptionalUrl keeps empty values empty", () => {
   assert.equal(normalizeOptionalUrl("   "), "");
+});
+
+test("shouldAutoSpinWatch accepts spin=1", () => {
+  assert.equal(shouldAutoSpinWatch(new URLSearchParams("spin=1")), true);
+});
+
+test("shouldAutoSpinWatch rejects missing spin flag", () => {
+  assert.equal(shouldAutoSpinWatch(new URLSearchParams("")), false);
 });

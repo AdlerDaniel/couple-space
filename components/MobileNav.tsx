@@ -1,12 +1,21 @@
 "use client";
 
 import { notificationsUpdatedEventName } from "@/lib/notifications";
+import {
+  accountNavLinks,
+  isActivePath,
+  mobileMainLinks,
+  type NavIconName,
+  quickNavActions,
+  secondaryNavLinks,
+} from "@/lib/navigation";
 import { getPageTheme } from "@/lib/pageThemes";
 import { supabase } from "@/lib/supabaseClient";
 import { useDashboardAccent } from "@/lib/useDashboardAccent";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import NavIcon from "./NavIcon";
 
 type CoupleNotification = {
   id: string;
@@ -40,92 +49,13 @@ type QuickState = {
   latestGoal: TrackerGoal | null;
 };
 
-const mainLinks = [
-  {
-    href: "/today",
-    label: "Сегодня",
-    icon: "●",
-  },
-  {
-    href: "/questions",
-    label: "Вопросы",
-    icon: "✉",
-  },
-  {
-    href: "/quizzes",
-    label: "Викторины",
-    icon: "✦",
-  },
-  {
-    href: "/chat",
-    label: "Чат",
-    icon: "◌",
-  },
-];
-
-const moreLinks = [
-  {
-    href: "/",
-    label: "Главная",
-    icon: "⌂",
-  },
-  {
-    href: "/dashboard",
-    label: "Кабинет",
-    icon: "♡",
-  },
-  {
-    href: "/memories",
-    label: "Воспоминания",
-    icon: "▣",
-  },
-  {
-    href: "/watch",
-    label: "Что посмотрим",
-    icon: "▥",
-  },
-  {
-    href: "/tracker",
-    label: "Трекер",
-    icon: "◫",
-  },
-  {
-    href: "/achievements",
-    label: "Достижения",
-    icon: "🏆",
-  },
-];
-
-const accountLinks = [
-  {
-    href: "/profile",
-    label: "Профиль",
-    icon: "◉",
-  },
-  {
-    href: "/settings",
-    label: "Настройки",
-    icon: "⚙",
-  },
-  {
-    href: "/logout",
-    label: "Выйти",
-    icon: "↗",
-  },
-];
-
-function isActivePath(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function getNotificationIcon(type: string) {
-  if (type === "achievement_unlocked") return "🏆";
-  if (type.includes("question")) return "✉";
-  if (type.includes("quiz")) return "✦";
-  if (type.includes("chat")) return "◌";
-  if (type.includes("memory")) return "▣";
-  return "♡";
+function getNotificationIcon(type: string): NavIconName {
+  if (type === "achievement_unlocked") return "achievements";
+  if (type.includes("question")) return "questions";
+  if (type.includes("quiz")) return "quizzes";
+  if (type.includes("chat")) return "chat";
+  if (type.includes("memory")) return "memories";
+  return "notifications";
 }
 
 function formatNotificationTime(date: string) {
@@ -162,6 +92,8 @@ export default function MobileNav() {
   });
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isQuickOpen, setIsQuickOpen] = useState(false);
+  const [isHiddenByScroll, setIsHiddenByScroll] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -248,6 +180,7 @@ export default function MobileNav() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsNotificationsOpen(false);
       setIsMoreOpen(false);
+      setIsQuickOpen(false);
       window.setTimeout(() => {
         if (session?.user) {
           setCurrentUserId(session.user.id);
@@ -301,6 +234,21 @@ export default function MobileNav() {
     };
   }, [currentUserId]);
 
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    function handleScroll() {
+      const currentScrollY = window.scrollY;
+      const isGoingDown = currentScrollY > lastScrollY && currentScrollY > 120;
+      setIsHiddenByScroll(isGoingDown && !isMoreOpen && !isQuickOpen && !isNotificationsOpen);
+      lastScrollY = currentScrollY;
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isMoreOpen, isQuickOpen, isNotificationsOpen]);
+
   if (
     pathname.startsWith("/chat") ||
     pathname.startsWith("/login") ||
@@ -325,6 +273,7 @@ export default function MobileNav() {
     const nextIsOpen = !isNotificationsOpen;
     setIsNotificationsOpen(nextIsOpen);
     setIsMoreOpen(false);
+    setIsQuickOpen(false);
 
     if (!nextIsOpen || !currentUserId) return;
 
@@ -353,13 +302,23 @@ export default function MobileNav() {
   return (
     <>
       {isNotificationsOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[1px] md:hidden"
+          aria-label="Закрыть уведомления"
+          onClick={() => setIsNotificationsOpen(false)}
+        />
+      )}
+
+      {isNotificationsOpen && (
         <div
-          className="fixed bottom-24 left-3 right-3 z-40 overflow-hidden rounded-[1.4rem] border bg-white/92 p-2 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl dark:bg-black/84"
+          className="app-bottom-sheet app-glass fixed inset-x-0 bottom-0 z-40 max-h-[82dvh] overflow-hidden rounded-t-[1.75rem] p-3 pb-24"
           style={{
             borderColor: `${accent}55`,
             color: accent,
           }}
         >
+          <div className="mx-auto mb-2 h-1.5 w-12 rounded-full bg-current opacity-25" />
           <div className="flex items-center justify-between px-4 py-3">
             <div>
               <p className="text-xs font-black uppercase tracking-wide opacity-55">
@@ -392,10 +351,10 @@ export default function MobileNav() {
                 >
                   <div className="flex items-start gap-3">
                     <span
-                      className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full text-lg"
+                      className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full"
                       style={{ backgroundColor: `${accent}18` }}
                     >
-                      {getNotificationIcon(notification.type)}
+                      <NavIcon name={getNotificationIcon(notification.type)} className="h-7 w-7" />
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -421,17 +380,40 @@ export default function MobileNav() {
         </div>
       )}
 
-      {isMoreOpen && (
+      {(isMoreOpen || isQuickOpen) && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[1px] md:hidden"
+          aria-label="Закрыть меню"
+          onClick={() => {
+            setIsMoreOpen(false);
+            setIsQuickOpen(false);
+          }}
+        />
+      )}
+
+      {(isMoreOpen || isQuickOpen) && (
         <div
-          className="fixed bottom-20 left-3 right-3 z-40 max-h-[72vh] overflow-y-auto rounded-[1.4rem] border bg-white/94 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl dark:bg-black/86"
+          className="app-bottom-sheet app-glass fixed inset-x-0 bottom-0 z-40 max-h-[86dvh] overflow-y-auto rounded-t-[1.75rem] p-4 pb-24"
           style={{
             borderColor: `${accent}55`,
             color: accent,
           }}
         >
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-current opacity-25" />
           <div className="mb-3 rounded-2xl bg-white/72 p-3 shadow-inner dark:bg-white/10">
-            <p className="truncate text-base font-black">{coupleTitle}</p>
-            <p className="mt-1 text-xs font-bold opacity-58">{coupleSubtitle}</p>
+            <div className="flex items-center gap-3">
+              <div
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-xl font-black text-white shadow-lg"
+                style={{ backgroundColor: accent }}
+              >
+                <NavIcon name="dashboard" className="h-7 w-7 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-base font-black">{coupleTitle}</p>
+                <p className="mt-1 text-xs font-bold opacity-58">{coupleSubtitle}</p>
+              </div>
+            </div>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
                 <p className="text-lg font-black">{unreadNotifications}</p>
@@ -451,15 +433,32 @@ export default function MobileNav() {
           </div>
 
           <p className="mb-2 px-2 text-[10px] font-black uppercase tracking-wide opacity-45">
+            Быстро
+          </p>
+          <div className="mb-3 grid grid-cols-4 gap-2">
+            {quickNavActions.map((action) => (
+              <Link
+                key={action.href + action.label}
+                href={action.href}
+                onClick={() => setIsMoreOpen(false)}
+                className="ui-pressable flex min-w-0 flex-col items-center gap-1 rounded-2xl bg-white/72 px-2 py-3 text-center text-xs font-black shadow-inner dark:bg-white/10"
+              >
+                <NavIcon name={action.icon} className="h-9 w-9 text-white shadow" />
+                <span className="max-w-full truncate">{action.label}</span>
+              </Link>
+            ))}
+          </div>
+
+          <p className="mb-2 px-2 text-[10px] font-black uppercase tracking-wide opacity-45">
             Основные разделы
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={openNotifications}
-              className="relative flex items-center gap-3 rounded-2xl bg-white/72 px-3 py-3 text-left font-black shadow-inner dark:bg-white/10"
+              className="ui-pressable relative flex items-center gap-3 rounded-2xl bg-white/72 px-3 py-3 text-left font-black shadow-inner dark:bg-white/10"
             >
-              <span className="text-xl">🔔</span>
+              <NavIcon name="notifications" className="h-8 w-8" />
               <span>Уведомления</span>
               {unreadNotifications > 0 && (
                 <span className="ml-auto rounded-full bg-[#ef4444] px-2 py-0.5 text-xs text-white">
@@ -467,7 +466,7 @@ export default function MobileNav() {
                 </span>
               )}
             </button>
-            {moreLinks.map((link) => {
+            {secondaryNavLinks.map((link) => {
               const isActive = isActivePath(pathname, link.href);
 
               return (
@@ -479,10 +478,10 @@ export default function MobileNav() {
                   className={
                     isActive
                       ? "flex min-w-0 items-center gap-3 rounded-2xl px-3 py-3 font-black text-white shadow-lg"
-                      : "flex min-w-0 items-center gap-3 rounded-2xl bg-white/72 px-3 py-3 font-black shadow-inner dark:bg-white/10"
+                      : "ui-pressable flex min-w-0 items-center gap-3 rounded-2xl bg-white/72 px-3 py-3 font-black shadow-inner dark:bg-white/10"
                   }
                 >
-                  <span className="text-xl">{link.icon}</span>
+                  <NavIcon name={link.icon} className="h-8 w-8" />
                   <span className="truncate">{link.label}</span>
                 </Link>
               );
@@ -493,7 +492,7 @@ export default function MobileNav() {
             Аккаунт
           </p>
           <div className="grid grid-cols-3 gap-2">
-            {accountLinks.map((link) => {
+            {accountNavLinks.map((link) => {
               const isActive = isActivePath(pathname, link.href);
 
               return (
@@ -505,10 +504,10 @@ export default function MobileNav() {
                   className={
                     isActive
                       ? "flex min-w-0 items-center justify-center gap-2 rounded-2xl px-2 py-3 text-sm font-black text-white shadow-lg"
-                      : "flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-white/72 px-2 py-3 text-sm font-black shadow-inner dark:bg-white/10"
+                      : "ui-pressable flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-white/72 px-2 py-3 text-sm font-black shadow-inner dark:bg-white/10"
                   }
                 >
-                  <span>{link.icon}</span>
+                  <NavIcon name={link.icon} className="h-7 w-7" />
                   <span className="truncate">{link.label}</span>
                 </Link>
               );
@@ -523,10 +522,12 @@ export default function MobileNav() {
           borderColor: `${accent}85`,
           boxShadow: `0 18px 48px ${accent}3f`,
         }}
-        className="fixed bottom-2 left-2 right-2 z-40 rounded-[1.1rem] border px-1 py-1 shadow-2xl backdrop-blur-2xl md:hidden"
+        className={`app-glass fixed bottom-2 left-2 right-2 z-40 rounded-[1.1rem] px-1 py-1 transition-transform duration-300 md:hidden ${
+          isHiddenByScroll ? "translate-y-24" : "translate-y-0"
+        }`}
       >
-        <div className="grid grid-cols-5 items-stretch gap-1 text-center text-[10px] font-black leading-tight min-[380px]:text-[11px]">
-          {mainLinks.map((link) => {
+        <div className="grid grid-cols-6 items-stretch gap-1 text-center text-[9px] font-black leading-tight min-[380px]:text-[10px]">
+          {mobileMainLinks.map((link) => {
             const isActive = isActivePath(pathname, link.href);
 
             return (
@@ -541,10 +542,10 @@ export default function MobileNav() {
                 className={
                   isActive
                     ? "flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 shadow-lg"
-                    : "flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-white/72 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
+                    : "ui-pressable flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-white/72 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
                 }
               >
-                <span className="text-base leading-none min-[380px]:text-lg">{link.icon}</span>
+                <NavIcon name={link.icon} className="h-7 w-7" />
                 <span className="max-w-full truncate whitespace-nowrap">{link.label}</span>
               </Link>
             );
@@ -552,7 +553,26 @@ export default function MobileNav() {
           <button
             type="button"
             onClick={() => {
+              setIsQuickOpen((current) => !current);
+              setIsMoreOpen(false);
+              setIsNotificationsOpen(false);
+            }}
+            style={
+              isQuickOpen
+                ? { color: "#ffffff", backgroundColor: accent }
+                : { color: "#ffffff", backgroundColor: accent }
+            }
+            className="ui-pressable relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 shadow-lg"
+            aria-label="Открыть быстрые действия"
+          >
+            <NavIcon name="plus" className="h-8 w-8" />
+            <span className="max-w-full truncate whitespace-nowrap">Добавить</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
               setIsMoreOpen((current) => !current);
+              setIsQuickOpen(false);
               setIsNotificationsOpen(false);
             }}
             style={
@@ -563,11 +583,11 @@ export default function MobileNav() {
             className={
               isMoreOpen
                 ? "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 shadow-lg"
-                : "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-white/72 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
+                : "ui-pressable relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-white/72 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
             }
             aria-label="Открыть дополнительные разделы"
           >
-            <span className="text-base leading-none min-[380px]:text-lg">☰</span>
+            <NavIcon name="settings" className="h-7 w-7" />
             <span className="max-w-full truncate whitespace-nowrap">Ещё</span>
             {unreadNotifications > 0 && (
               <span className="absolute -right-0.5 -top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#ef4444] px-1 text-[9px] font-black leading-none text-white shadow-[0_0_14px_rgba(239,68,68,0.8)] ring-2 ring-white">

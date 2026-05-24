@@ -5,11 +5,13 @@ import {
   getRandomWatchItem,
   normalizeOptionalUrl,
   normalizeWatchTitle,
+  shouldAutoSpinWatch,
 } from "@/lib/watchList";
+import { compressImageFile } from "@/lib/imageCompression";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type ContentType = "movie" | "series" | "cartoon" | "anime";
 
@@ -60,8 +62,15 @@ function getContentTypeIcon(type: ContentType) {
   return contentTypes.find((item) => item.key === type)?.icon || "◉";
 }
 
+function getPosterPath(coupleId: string, file: File) {
+  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const fallbackExtension = file.type.split("/").pop()?.replace(/[^a-z0-9]/g, "") || "jpg";
+  return `${coupleId}/${crypto.randomUUID()}.${extension || fallbackExtension}`;
+}
+
 export default function WatchPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
@@ -69,6 +78,7 @@ export default function WatchPage() {
   const [title, setTitle] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
   const [posterUrl, setPosterUrl] = useState("");
+  const [posterFile, setPosterFile] = useState<File | null>(null);
   const [contentType, setContentType] = useState<ContentType>("movie");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -80,6 +90,7 @@ export default function WatchPage() {
   const [pendingDelete, setPendingDelete] = useState<WatchItem | null>(null);
   const [eveningModeItem, setEveningModeItem] = useState<WatchItem | null>(null);
   const deleteTimerRef = useRef<number | null>(null);
+  const autoSpinDoneRef = useRef(false);
 
   const visibleItems = useMemo(
     () => items.filter((item) => item.id !== pendingDelete?.id),
@@ -216,7 +227,30 @@ export default function WatchPage() {
 
     setIsSaving(true);
     const normalizedExternalUrl = normalizeOptionalUrl(externalUrl);
-    const normalizedPosterUrl = normalizeOptionalUrl(posterUrl);
+    let normalizedPosterUrl = normalizeOptionalUrl(posterUrl);
+
+    if (!normalizedPosterUrl && posterFile) {
+      const posterUpload = await compressImageFile(posterFile, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.78,
+      });
+      const filePath = getPosterPath(couple.id, posterUpload);
+      const { error: uploadError } = await supabase.storage
+        .from("watch-posters")
+        .upload(filePath, posterUpload, { upsert: true });
+
+      if (uploadError) {
+        setMessage("Не удалось загрузить постер. Попробуйте ссылку на изображение.");
+        setIsSaving(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("watch-posters")
+        .getPublicUrl(filePath);
+      normalizedPosterUrl = publicUrlData.publicUrl;
+    }
     const { data, error } = await supabase
       .from("watch_items")
       .insert([
@@ -246,6 +280,7 @@ export default function WatchPage() {
     setTitle("");
     setExternalUrl("");
     setPosterUrl("");
+    setPosterFile(null);
     setMessage("Добавлено в список на просмотр.");
     setIsSaving(false);
   }
@@ -309,7 +344,7 @@ export default function WatchPage() {
     }, 6000);
   }
 
-  function spinRoulette() {
+  const spinRoulette = useCallback(() => {
     if (wishItems.length === 0 || isSpinning) return;
 
     setIsSpinning(true);
@@ -331,7 +366,19 @@ export default function WatchPage() {
         setIsSpinning(false);
       }
     }, 90);
-  }
+  }, [isSpinning, wishItems]);
+
+  useEffect(() => {
+    if (autoSpinDoneRef.current || isLoading || isSpinning || wishItems.length === 0) return;
+    if (!shouldAutoSpinWatch(searchParams)) return;
+
+    autoSpinDoneRef.current = true;
+    const timerId = window.setTimeout(() => {
+      spinRoulette();
+    }, 250);
+
+    return () => window.clearTimeout(timerId);
+  }, [isLoading, isSpinning, searchParams, spinRoulette, wishItems.length]);
 
   async function saveRoulettePick() {
     if (!selectedItem) return;
@@ -588,9 +635,20 @@ export default function WatchPage() {
             <input
               value={posterUrl}
               onChange={(event) => setPosterUrl(event.target.value)}
-              placeholder="Ссылка на постер"
+              placeholder="Ссылка на постер или загрузите файл ниже"
               className="h-12 rounded-2xl border border-lime-200/70 bg-white/82 px-4 font-semibold text-lime-950 outline-none transition placeholder:text-lime-900/35 focus:border-lime-500 dark:border-white/10 dark:bg-black/20 dark:text-white"
             />
+          </div>
+          <div className="mt-3 rounded-2xl border border-lime-200/70 bg-white/58 p-3 shadow-inner dark:border-white/10 dark:bg-white/8">
+            <label className="flex flex-col gap-2 text-sm font-black text-lime-800 dark:text-lime-100 sm:flex-row sm:items-center sm:justify-between">
+              <span>{posterFile ? `Постер: ${posterFile.name}` : "Загрузить постер файлом"}</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => setPosterFile(event.target.files?.[0] || null)}
+                className="max-w-full text-sm font-semibold file:mr-3 file:rounded-full file:border-0 file:bg-lime-600 file:px-4 file:py-2 file:font-black file:text-white"
+              />
+            </label>
           </div>
           {message && (
             <p className="mt-3 text-sm font-black text-lime-800 dark:text-lime-100">

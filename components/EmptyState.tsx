@@ -19,7 +19,7 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className="rounded-3xl border p-5 text-center shadow-inner backdrop-blur-xl"
+      className="app-glass rounded-3xl border p-5 text-center shadow-inner backdrop-blur-xl"
       style={{
         borderColor: `${accent}33`,
         background: `linear-gradient(135deg, ${accent}18, rgba(255,255,255,0.46))`,
@@ -32,12 +32,12 @@ export default function EmptyState({
       >
         {icon}
       </div>
-      <p className="mt-4 text-lg font-black">{title}</p>
+      <p className="app-empty-title mt-4 text-lg font-black">{title}</p>
       <p className="mx-auto mt-2 max-w-sm text-sm font-bold opacity-70">{text}</p>
       {actionHref && actionLabel && (
         <Link
           href={actionHref}
-          className="mt-4 inline-flex rounded-full px-4 py-2 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5"
+          className="ui-pressable mt-4 inline-flex min-h-11 items-center justify-center rounded-full px-5 py-2 text-sm font-black text-white shadow-lg max-sm:w-full"
           style={{ backgroundColor: accent }}
         >
           {actionLabel}

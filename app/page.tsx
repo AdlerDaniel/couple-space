@@ -64,6 +64,13 @@ type TrackerGoal = {
   created_at: string;
 };
 
+type WatchPreview = {
+  title: string;
+  content_type: string;
+  is_watched: boolean;
+  updated_at: string;
+};
+
 type CoupleNotification = {
   id: string;
   type: string;
@@ -84,6 +91,7 @@ type HomeState = {
   todayAnswer: QuestionAnswer | null;
   todayTrackerEvents: TrackerEvent[];
   latestGoal: TrackerGoal | null;
+  latestWatchItem: WatchPreview | null;
   latestUnreadNotification: CoupleNotification | null;
   loadedAt: number;
   stats: {
@@ -92,6 +100,8 @@ type HomeState = {
     quizzes: number;
     tracker: number;
     chat: number;
+    watch: number;
+    watchRemaining: number;
   };
 };
 
@@ -105,6 +115,7 @@ const emptyState: HomeState = {
   todayAnswer: null,
   todayTrackerEvents: [],
   latestGoal: null,
+  latestWatchItem: null,
   latestUnreadNotification: null,
   loadedAt: 0,
   stats: {
@@ -113,6 +124,8 @@ const emptyState: HomeState = {
     quizzes: 0,
     tracker: 0,
     chat: 0,
+    watch: 0,
+    watchRemaining: 0,
   },
 };
 
@@ -202,6 +215,13 @@ function getGoalPeriodLabel(period: string) {
   return "на неделю";
 }
 
+function getWatchTypeLabel(type: string) {
+  if (type === "series") return "Сериал";
+  if (type === "cartoon") return "Мультфильм";
+  if (type === "anime") return "Аниме";
+  return "Фильм";
+}
+
 function getReadableName(value?: string | null, fallback = "Партнёр") {
   const name = value?.trim();
   if (!name) return fallback;
@@ -244,7 +264,8 @@ export default function Home() {
     state.stats.answers +
     state.stats.quizzes +
     state.stats.tracker +
-    state.stats.chat;
+    state.stats.chat +
+    state.stats.watch;
   const onboardingSteps = [
     {
       title: "Создайте пару",
@@ -363,6 +384,20 @@ export default function Home() {
       };
     }
 
+    if (state.stats.watchRemaining > 0) {
+      return {
+        label: "Вечерний выбор",
+        title: "Запустите рулетку просмотра",
+        text: state.latestWatchItem
+          ? `${state.stats.watchRemaining} вариантов ждут выбора. Последнее обновление: ${state.latestWatchItem.title}.`
+          : `${state.stats.watchRemaining} вариантов ждут выбора на вечер.`,
+        href: "/watch?spin=1",
+        button: "Крутить",
+        icon: "▥",
+        tone: "emerald",
+      };
+    }
+
     if (state.latestGoal) {
       return {
         label: "Цель пары",
@@ -453,6 +488,9 @@ export default function Home() {
         trackerCountResult,
         todayTrackerResult,
         latestGoalResult,
+        watchCountResult,
+        watchRemainingResult,
+        latestWatchResult,
         chatCountResult,
         chatResult,
         latestNotificationResult,
@@ -503,6 +541,22 @@ export default function Home() {
           .limit(1)
           .maybeSingle<TrackerGoal>(),
         supabase
+          .from("watch_items")
+          .select("id", { count: "exact", head: true })
+          .eq("couple_id", couple.id),
+        supabase
+          .from("watch_items")
+          .select("id", { count: "exact", head: true })
+          .eq("couple_id", couple.id)
+          .eq("is_watched", false),
+        supabase
+          .from("watch_items")
+          .select("title, content_type, is_watched, updated_at")
+          .eq("couple_id", couple.id)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle<WatchPreview>(),
+        supabase
           .from("couple_chat_messages")
           .select("id", { count: "exact", head: true })
           .eq("couple_id", couple.id),
@@ -533,6 +587,7 @@ export default function Home() {
         todayAnswer: todayAnswerResult.data || null,
         todayTrackerEvents: (todayTrackerResult.data || []) as TrackerEvent[],
         latestGoal: latestGoalResult.data || null,
+        latestWatchItem: latestWatchResult.data || null,
         latestUnreadNotification: latestNotificationResult.data || null,
         loadedAt: Date.now(),
         stats: {
@@ -541,6 +596,8 @@ export default function Home() {
           quizzes: quizCountResult.count || 0,
           tracker: trackerCountResult.count || 0,
           chat: chatCountResult.count || 0,
+          watch: watchCountResult.count || 0,
+          watchRemaining: watchRemainingResult.count || 0,
         },
       });
     }
@@ -558,7 +615,7 @@ export default function Home() {
         <div className="flex flex-col gap-3 rounded-[1.35rem] border border-white/60 bg-white/66 p-4 shadow-[0_18px_58px_rgba(194,65,12,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 sm:flex-row sm:items-center sm:justify-between md:rounded-[1.8rem] md:p-5">
           <div className="min-w-0">
             <p className="truncate text-xl font-black leading-tight text-[#c2410c] dark:text-white md:text-2xl">
-              {state.isLoading ? "Загружаем центр активности..." : state.couple ? coupleName : "Couple Space"}
+              {state.isLoading ? "Загружаем обзор пары..." : state.couple ? coupleName : "Couple Space"}
             </p>
             <p className="mt-1 text-sm font-bold text-[#7c2d12]/58 dark:text-white/52">
               {daysTogether ? `${daysTogether} дней вместе` : state.couple ? "Дата начала пока не указана" : "Создайте пару в профиле"}
@@ -572,12 +629,13 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
           {[
             ["Дней", daysTogether ?? "—"],
             ["Воспоминаний", state.stats.memories],
             ["Ответов", state.stats.answers],
             ["Викторин", state.stats.quizzes],
+            ["К просмотру", state.stats.watchRemaining],
             ["Активности", totalStats],
           ].map(([label, value]) => (
             <div key={label} className="rounded-2xl border border-white/55 bg-white/58 p-3 shadow-inner backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:p-4">
@@ -631,10 +689,10 @@ export default function Home() {
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.16em] text-[#ea580c]/65 dark:text-orange-100/65">
-              Центр активности
+              Обзор пары
             </p>
             <h2 className="mt-1 !text-2xl font-black text-[#c2410c] dark:text-white md:!text-3xl">
-              Что сегодня сделать вдвоём
+              Главное состояние и свежие события
             </h2>
           </div>
           <Link
@@ -672,7 +730,63 @@ export default function Home() {
           </div>
         </Link>
 
-        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          {[
+            state.latestUnreadNotification
+              ? {
+                  label: "Новое",
+                  title: state.latestUnreadNotification.title,
+                  text: state.latestUnreadNotification.body || "Есть новое событие пары.",
+                  href: state.latestUnreadNotification.href || "/notifications",
+                  icon: "●",
+                  className: "bg-orange-50/90 text-orange-800 dark:bg-orange-500/12 dark:text-orange-100",
+                }
+              : null,
+            state.latestWatchItem
+              ? {
+                  label: "Что посмотрим",
+                  title: state.latestWatchItem.title,
+                  text: `${getWatchTypeLabel(state.latestWatchItem.content_type)} · ${
+                    state.latestWatchItem.is_watched ? "уже посмотрели" : "ждёт вечера"
+                  }`,
+                  href: "/watch",
+                  icon: "▥",
+                  className: "bg-lime-50/90 text-lime-800 dark:bg-lime-500/12 dark:text-lime-100",
+                }
+              : null,
+            lastChat
+              ? {
+                  label: "Чат",
+                  title: getMessagePreview(lastChat),
+                  text: formatTime(lastChat.created_at),
+                  href: "/chat",
+                  icon: "◌",
+                  className: "bg-sky-50/90 text-sky-800 dark:bg-sky-500/12 dark:text-sky-100",
+                }
+              : null,
+          ]
+            .filter(Boolean)
+            .map((item) => (
+              <Link
+                key={item!.label}
+                href={item!.href}
+                className={`rounded-2xl p-4 shadow-inner transition hover:-translate-y-0.5 ${item!.className}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black uppercase tracking-[0.12em] opacity-60">
+                      {item!.label}
+                    </p>
+                    <h3 className="mt-2 line-clamp-1 !text-lg font-black">{item!.title}</h3>
+                  </div>
+                  <span className="text-2xl">{item!.icon}</span>
+                </div>
+                <p className="mt-2 line-clamp-2 text-sm font-semibold opacity-70">{item!.text}</p>
+              </Link>
+            ))}
+        </div>
+
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           {[
             {
               label: "Вопрос дня",
@@ -710,6 +824,19 @@ export default function Home() {
               icon: "◌",
               accentClass: "text-sky-800 dark:text-sky-100",
               bgClass: "bg-sky-50/90 dark:bg-sky-500/12",
+            },
+            {
+              label: "Что посмотрим",
+              title: state.stats.watchRemaining
+                ? `${state.stats.watchRemaining} вариантов`
+                : "Добавьте варианты",
+              text: state.stats.watchRemaining
+                ? "Запустите рулетку и выберите вечерний просмотр."
+                : "Соберите общий список фильмов и сериалов.",
+              href: state.stats.watchRemaining ? "/watch?spin=1" : "/watch",
+              icon: "▥",
+              accentClass: "text-lime-800 dark:text-lime-100",
+              bgClass: "bg-lime-50/90 dark:bg-lime-500/12",
             },
             {
               label: "Викторина",

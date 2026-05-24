@@ -32,3 +32,7 @@ export function getRandomWatchItem<T extends WatchListItemBase>(
   const index = Math.floor(random() * availableItems.length);
   return availableItems[Math.min(index, availableItems.length - 1)];
 }
+
+export function shouldAutoSpinWatch(params: Pick<URLSearchParams, "get">) {
+  return params.get("spin") === "1";
+}

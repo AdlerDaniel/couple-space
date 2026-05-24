@@ -5,11 +5,19 @@ import { notificationsUpdatedEventName } from "@/lib/notifications";
 import { getPageTheme } from "@/lib/pageThemes";
 import { profileUpdatedEventName } from "@/lib/profileEvents";
 import { useDashboardAccent } from "@/lib/useDashboardAccent";
+import {
+  isActivePath,
+  primaryNavLinks,
+  quickNavActions,
+  secondaryNavLinks,
+} from "@/lib/navigation";
 import type { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import NavIcon from "./NavIcon";
+import { showAppToast } from "./AppToast";
 
 type UserProfile = {
   name: string;
@@ -78,11 +86,6 @@ function formatNotificationTime(date: string) {
   return `${days} дн назад`;
 }
 
-function isActivePath(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
 function hexToRgb(hex: string) {
   const value = hex.replace("#", "");
   if (value.length !== 6) return "28, 139, 89";
@@ -91,21 +94,6 @@ function hexToRgb(hex: string) {
   const blue = Number.parseInt(value.slice(4, 6), 16);
   return `${red}, ${green}, ${blue}`;
 }
-
-const primaryLinks = [
-  ["Сегодня", "/today"],
-  ["Вопросы", "/questions"],
-  ["Викторины", "/quizzes"],
-  ["Смотреть", "/watch"],
-  ["Чат", "/chat"],
-] as const;
-
-const secondaryLinks = [
-  ["Главная", "/"],
-  ["Кабинет", "/dashboard"],
-  ["Воспоминания", "/memories"],
-  ["Трекер", "/tracker"],
-] as const;
 
 export default function Navbar() {
   const router = useRouter();
@@ -118,6 +106,11 @@ export default function Navbar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isCompact, setIsCompact] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("couple-space:density") === "compact";
+  });
 
   const dashboardAccent = useDashboardAccent();
 
@@ -130,6 +123,7 @@ export default function Navbar() {
           setProfile(null);
           setCurrentUserId(null);
           setNotifications([]);
+          setIsActionsOpen(false);
           setIsLoadingUser(false);
         }
         return;
@@ -208,6 +202,7 @@ export default function Navbar() {
       setIsLoadingUser(true);
       setIsProfileOpen(false);
       setIsNotificationsOpen(false);
+      setIsActionsOpen(false);
       window.setTimeout(() => {
         loadProfile(session?.user || null);
       }, 0);
@@ -272,6 +267,10 @@ export default function Navbar() {
     };
   }, [currentUserId]);
 
+  useEffect(() => {
+    document.body.classList.toggle("app-compact", isCompact);
+  }, [isCompact]);
+
   const isLogin = pathname.startsWith("/login");
   const isHome = pathname === "/";
   const isMemories = pathname.startsWith("/memories");
@@ -295,12 +294,25 @@ export default function Navbar() {
             boxShadow: `0 16px 52px rgba(${accentRgb}, 0.2)`,
           }
         : undefined;
-  const isSecondaryActive = secondaryLinks.some(([, href]) => isActivePath(pathname, href));
+  const isSecondaryActive = secondaryNavLinks.some((link) => isActivePath(pathname, link.href));
+
+  function toggleCompactMode() {
+    const nextCompact = !isCompact;
+    setIsCompact(nextCompact);
+    document.body.classList.toggle("app-compact", nextCompact);
+    localStorage.setItem("couple-space:density", nextCompact ? "compact" : "comfortable");
+    showAppToast({
+      title: nextCompact ? "Компактный режим включён" : "Обычный режим включён",
+      text: nextCompact ? "На десктопе поместится больше данных." : "Интерфейс снова просторнее.",
+      accent,
+    });
+  }
 
   async function logout() {
     setIsProfileOpen(false);
     setIsNotificationsOpen(false);
     setIsMoreOpen(false);
+    setIsActionsOpen(false);
     await supabase.auth.signOut();
     setProfile(null);
     setNotifications([]);
@@ -312,6 +324,7 @@ export default function Navbar() {
     setIsNotificationsOpen(nextIsOpen);
     setIsProfileOpen(false);
     setIsMoreOpen(false);
+    setIsActionsOpen(false);
 
     if (!nextIsOpen || !currentUserId) return;
 
@@ -342,45 +355,52 @@ export default function Navbar() {
   ).length;
 
   return (
-    <header className="fixed left-0 top-0 z-30 hidden w-full px-6 py-3 md:block">
+    <header className="fixed left-0 top-0 z-30 hidden w-full px-5 py-2.5 md:block">
       <nav
         style={navStyle}
-        className="mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-[1.35rem] border border-white/30 bg-white/35 px-3.5 py-2 shadow-[0_12px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-black/25 dark:shadow-black/40"
+        className="app-glass mx-auto flex max-w-6xl items-center justify-between gap-2 rounded-2xl px-2.5 py-1.5 transition-colors"
       >
         <Link
           href="/"
           style={!isLogin ? { color: accent } : undefined}
-          className={`flex shrink-0 items-center gap-2 rounded-full bg-white/42 px-3 py-2 text-sm font-black opacity-95 shadow-inner transition hover:opacity-100 dark:bg-white/8 ${
+          className={`ui-pressable flex shrink-0 items-center gap-2 rounded-full bg-white/45 px-3 py-1.5 text-sm font-black opacity-95 shadow-inner dark:bg-white/8 ${
             isLogin ? "text-gray-800 dark:text-gray-100" : ""
           }`}
         >
-          <span className="text-base">♡</span>
-          <span>Couple Space</span>
+          <NavIcon name="home" className="h-7 w-7" />
+          <span className="hidden lg:inline">Couple Space</span>
+          <span className="lg:hidden">CS</span>
         </Link>
 
         <div className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex">
-          {primaryLinks.map(([label, href]) => {
-            const isActive = isActivePath(pathname, href);
+          {primaryNavLinks.map((link) => {
+            const isActive = isActivePath(pathname, link.href);
             return (
-            <Link
-              key={href}
-              href={href}
-              title={href === "/watch" ? "Что посмотрим?" : label}
-              style={
-                !isLogin
-                  ? {
-                      color: isActive ? "#fff" : accent,
-                      backgroundColor: isActive ? accent : `rgba(${accentRgb}, 0.1)`,
-                    }
-                  : undefined
-              }
-              className={`rounded-full px-3.5 py-2 text-sm font-black transition hover:-translate-y-0.5 hover:opacity-100 ${
-                isLogin ? "text-gray-700 dark:text-gray-200" : ""
-              }`}
-            >
-              {label}
-            </Link>
-          );
+              <Link
+                key={link.href}
+                href={link.href}
+                title={link.description || link.label}
+                style={
+                  !isLogin
+                    ? {
+                        color: isActive ? "#fff" : accent,
+                        backgroundColor: isActive ? accent : `rgba(${accentRgb}, 0.09)`,
+                        boxShadow: isActive ? `0 10px 28px rgba(${accentRgb}, 0.26)` : undefined,
+                      }
+                    : undefined
+                }
+                className={`group ui-pressable relative flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-black ${
+                  isLogin ? "text-gray-700 dark:text-gray-200" : ""
+                }`}
+              >
+                <NavIcon name={link.icon} className="h-7 w-7" />
+                <span className="hidden xl:inline">{link.label}</span>
+                <span className="app-tooltip">{link.label}</span>
+                {isActive && (
+                  <span className="absolute inset-x-4 -bottom-1 h-0.5 rounded-full bg-white/90" />
+                )}
+              </Link>
+            );
           })}
 
           <div className="relative">
@@ -390,42 +410,63 @@ export default function Navbar() {
                 setIsMoreOpen((current) => !current);
                 setIsProfileOpen(false);
                 setIsNotificationsOpen(false);
+                setIsActionsOpen(false);
               }}
               style={
                 !isLogin
                   ? {
                       color: isSecondaryActive ? "#fff" : accent,
-                      backgroundColor: isSecondaryActive ? accent : `rgba(${accentRgb}, 0.1)`,
+                      backgroundColor: isSecondaryActive ? accent : `rgba(${accentRgb}, 0.09)`,
+                      boxShadow: isSecondaryActive ? `0 10px 28px rgba(${accentRgb}, 0.26)` : undefined,
                     }
                   : undefined
               }
-              className={`rounded-full px-3.5 py-2 text-sm font-black transition hover:-translate-y-0.5 ${
+              className={`group ui-pressable relative flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-black ${
                 isLogin ? "text-gray-700 dark:text-gray-200" : ""
               }`}
             >
-              Ещё
+              <NavIcon name="settings" className="h-7 w-7" />
+              <span className="hidden xl:inline">Ещё</span>
+              <span className="app-tooltip">Ещё</span>
+              {isSecondaryActive && (
+                <span className="absolute inset-x-4 -bottom-1 h-0.5 rounded-full bg-white/90" />
+              )}
             </button>
 
             {isMoreOpen && (
-              <div className="absolute left-1/2 top-12 w-56 -translate-x-1/2 overflow-hidden rounded-3xl border border-white/45 bg-white/92 p-2 text-[#7f1d1d] shadow-[0_24px_80px_rgba(0,0,0,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-black/84 dark:text-white">
-                {secondaryLinks.map(([label, href]) => {
-                  const isActive = isActivePath(pathname, href);
+              <div
+                className="app-glass absolute left-1/2 top-11 w-72 -translate-x-1/2 overflow-hidden rounded-3xl p-3 text-[#7f1d1d] dark:text-white"
+                style={{ color: accent }}
+              >
+                <p className="px-2 pb-2 text-[10px] font-black uppercase tracking-wide opacity-45">
+                  Разделы
+                </p>
+                <div className="grid gap-1">
+                {secondaryNavLinks.map((link) => {
+                  const isActive = isActivePath(pathname, link.href);
                   return (
                     <Link
-                      key={href}
-                      href={href}
+                      key={link.href}
+                      href={link.href}
                       onClick={() => setIsMoreOpen(false)}
                       style={
                         !isLogin && isActive
-                          ? { backgroundColor: `${accent}18`, color: accent }
+                          ? { backgroundColor: accent, color: "#fff" }
                           : undefined
                       }
-                      className="mb-1 block rounded-2xl px-4 py-3 text-sm font-black transition hover:bg-black/5 dark:hover:bg-white/10"
+                      className="ui-pressable flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-black hover:bg-black/5 dark:hover:bg-white/10"
                     >
-                      {label}
+                      <NavIcon name={link.icon} className="h-9 w-9 bg-white/55 shadow-inner dark:bg-white/10" />
+                      <span className="min-w-0">
+                        <span className="block truncate">{link.label}</span>
+                        <span className="block truncate text-xs font-bold opacity-55">
+                          {link.description}
+                        </span>
+                      </span>
                     </Link>
                   );
                 })}
+                </div>
               </div>
             )}
           </div>
@@ -460,16 +501,68 @@ export default function Navbar() {
           <div className="flex items-center gap-2">
             <div className="relative">
               <button
+                type="button"
+                onClick={() => {
+                  setIsActionsOpen((current) => !current);
+                  setIsNotificationsOpen(false);
+                  setIsProfileOpen(false);
+                  setIsMoreOpen(false);
+                }}
+                style={!isLogin ? { backgroundColor: accent, color: "#fff" } : undefined}
+                className={`ui-pressable grid h-9 w-9 place-items-center rounded-full text-xl font-black shadow-lg ${
+                  isLogin ? "bg-black text-white dark:bg-white dark:text-black" : ""
+                }`}
+                aria-label="Быстрые действия"
+              >
+                <NavIcon name="plus" className="h-7 w-7" />
+              </button>
+
+              {isActionsOpen && (
+                <div
+                  className="app-glass absolute right-0 top-12 w-72 overflow-hidden rounded-3xl p-3 text-[#7f1d1d] dark:text-white"
+                  style={{ color: accent }}
+                >
+                  <p className="px-2 pb-2 text-[10px] font-black uppercase tracking-wide opacity-45">
+                    Быстро добавить
+                  </p>
+                  <div className="grid gap-1">
+                    {quickNavActions.map((action) => (
+                      <Link
+                        key={action.href + action.label}
+                        href={action.href}
+                        onClick={() => setIsActionsOpen(false)}
+                        className="ui-pressable flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-black hover:bg-black/5 dark:hover:bg-white/10"
+                      >
+                        <NavIcon
+                          name={action.icon}
+                          className="h-9 w-9 text-white shadow-inner"
+                          title={action.label}
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate">{action.label}</span>
+                          <span className="block truncate text-xs font-bold opacity-55">
+                            {action.description}
+                          </span>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="relative">
+              <button
                 onClick={openNotifications}
                 style={!isLogin ? { backgroundColor: `${accent}18`, color: accent } : undefined}
-                className={`relative grid h-11 w-11 place-items-center rounded-full border border-white/35 text-lg font-black shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl ${
+                className={`ui-pressable relative grid h-9 w-9 place-items-center rounded-full border border-white/35 text-base font-black shadow-lg backdrop-blur ${
                   isLogin
                     ? "bg-white/75 text-[#be123c] dark:bg-white/10 dark:text-white"
                     : ""
                 }`}
                 aria-label="Уведомления"
               >
-                🔔
+                <NavIcon name="notifications" className="h-7 w-7" />
                 {unreadNotifications > 0 && (
                   <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#ef4444] px-1.5 text-[11px] font-black leading-none text-white shadow-[0_0_18px_rgba(239,68,68,0.8)] ring-2 ring-white">
                     {unreadNotifications > 9 ? "9+" : unreadNotifications}
@@ -478,7 +571,7 @@ export default function Navbar() {
               </button>
 
               {isNotificationsOpen && (
-                <div className="absolute right-0 top-14 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-3xl border border-white/45 bg-white/92 p-2 text-[#7f1d1d] shadow-[0_24px_80px_rgba(127,29,29,0.22)] backdrop-blur-2xl dark:border-white/10 dark:bg-black/84 dark:text-white">
+                <div className="app-glass absolute right-0 top-12 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-3xl p-2 text-[#7f1d1d] dark:text-white">
                   <div className="flex items-center justify-between px-4 py-3">
                     <div>
                       <p className="text-xs font-black uppercase tracking-wide opacity-55">
@@ -553,9 +646,10 @@ export default function Navbar() {
                 setIsProfileOpen((current) => !current);
                 setIsNotificationsOpen(false);
                 setIsMoreOpen(false);
+                setIsActionsOpen(false);
               }}
               style={!isLogin ? { backgroundColor: `${accent}22`, color: accent } : undefined}
-              className={`flex items-center gap-3 rounded-full border border-white/35 px-2 py-1.5 pr-4 font-bold shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl ${
+              className={`ui-pressable flex items-center gap-2 rounded-full border border-white/35 px-1.5 py-1 pr-3 text-sm font-bold shadow-lg backdrop-blur ${
                 isLogin
                   ? "bg-white/75 text-[#be123c] dark:bg-white/10 dark:text-white"
                   : ""
@@ -568,10 +662,10 @@ export default function Navbar() {
                   width={36}
                   height={36}
                   sizes="36px"
-                  className="h-9 w-9 rounded-full object-cover ring-2 ring-white/70"
+                  className="h-8 w-8 rounded-full object-cover ring-2 ring-white/70"
                 />
               ) : (
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/75 text-sm font-black shadow-inner dark:bg-white/10">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/75 text-sm font-black shadow-inner dark:bg-white/10">
                   {getInitial(profile.name)}
                 </span>
               )}
@@ -579,7 +673,7 @@ export default function Navbar() {
             </button>
 
             {isProfileOpen && (
-              <div className="absolute right-0 top-14 w-56 overflow-hidden rounded-3xl border border-white/45 bg-white/90 p-2 text-[#7f1d1d] shadow-[0_24px_80px_rgba(127,29,29,0.22)] backdrop-blur-2xl dark:border-white/10 dark:bg-black/80 dark:text-white">
+              <div className="app-glass absolute right-0 top-12 w-56 overflow-hidden rounded-3xl p-2 text-[#7f1d1d] dark:text-white">
                 <div className="px-4 py-3">
                   <p className="text-xs font-black uppercase tracking-wide opacity-55">
                     Профиль
@@ -593,6 +687,13 @@ export default function Navbar() {
                 >
                   Открыть профиль
                 </Link>
+                <button
+                  type="button"
+                  onClick={toggleCompactMode}
+                  className="mb-2 w-full rounded-2xl bg-white/70 px-4 py-3 text-left font-black shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
+                >
+                  {isCompact ? "Обычная плотность" : "Компактная плотность"}
+                </button>
                 <button
                   onClick={logout}
                   className="w-full rounded-2xl bg-[#dc2626] px-4 py-3 text-left font-black text-white shadow-lg transition hover:bg-[#ef4444]"

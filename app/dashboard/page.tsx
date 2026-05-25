@@ -1618,12 +1618,16 @@ export default function DashboardPage() {
                   {nearestDashboardAchievements.length > 0 ? "Почти открыто" : "Последние открытые"}
                 </h2>
               </div>
-              <Link
-                href="/achievements"
+              <button
+                type="button"
+                onClick={() => {
+                  setAchievementView(unlockedAchievements > 0 ? "unlocked" : "locked");
+                  setIsAchievementsOpen(true);
+                }}
                 className="rounded-full bg-white/60 px-4 py-2 text-sm font-black shadow-inner transition hover:bg-red-50/80 dark:bg-white/10 dark:hover:bg-red-500/12"
               >
                 Все
-              </Link>
+              </button>
             </div>
 
             <div className="mt-5 space-y-3">

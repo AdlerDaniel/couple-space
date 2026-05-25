@@ -36,7 +36,8 @@ values
   ('Поели', 'food', '🍽️', '#f97316', 10, true),
   ('Секс', 'sex', '❤️', '#f59e0b', 20, true),
   ('Спорт', 'sport', '🏃', '#ca8a04', 30, true),
-  ('Игры', 'games', '🎮', '#eab308', 40, true)
+  ('Игры', 'games', '🎮', '#eab308', 40, true),
+  ('Рисунки', 'drawings', '🎨', '#84cc16', 50, true)
 on conflict (slug) do update
 set
   name = excluded.name,

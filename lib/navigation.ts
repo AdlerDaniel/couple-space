@@ -42,7 +42,6 @@ export const secondaryNavLinks: NavLinkItem[] = [
   { label: "Кабинет", href: "/dashboard", icon: "dashboard", description: "Аналитика пары" },
   { label: "Воспоминания", href: "/memories", icon: "memories", description: "Фото и моменты" },
   { label: "Трекер", href: "/tracker", icon: "tracker", description: "Цели и привычки" },
-  { label: "Достижения", href: "/achievements", icon: "achievements", description: "Прогресс" },
   { label: "Чат", href: "/chat", icon: "chat", description: "Сообщения" },
 ];
 
@@ -121,11 +120,6 @@ export const routeMeta: Record<
     label: "Трекер",
     description: "Цели, привычки и прогресс",
     icon: "tracker",
-  },
-  "/achievements": {
-    label: "Достижения",
-    description: "Открытый и ближайший прогресс",
-    icon: "achievements",
   },
   "/profile": {
     label: "Профиль",

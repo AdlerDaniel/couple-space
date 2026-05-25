@@ -172,6 +172,7 @@ const trackerShortcuts = [
   { label: "Секс", icon: "❤️", href: "/tracker" },
   { label: "Спорт", icon: "🏃", href: "/tracker" },
   { label: "Игры", icon: "🎮", href: "/tracker" },
+  { label: "Рисунки", icon: "🎨", href: "/tracker" },
 ];
 
 function getTodayKey() {

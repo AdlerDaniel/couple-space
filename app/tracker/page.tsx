@@ -2,6 +2,7 @@
 
 import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/lib/supabaseClient";
+import { trackerCategoryColors, trackerDefaultCategories } from "@/lib/trackerCategories";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -53,20 +54,6 @@ type TrackerGoal = {
 };
 
 type GoalPeriod = "day" | "week" | "month" | "year";
-
-const fallbackCategories = [
-  { name: "Поели", slug: "food", icon: "🍽️", color: "#facc15", sort_order: 10, is_default: true },
-  { name: "Секс", slug: "sex", icon: "❤️", color: "#fde047", sort_order: 20, is_default: true },
-  { name: "Спорт", slug: "sport", icon: "🏃", color: "#bef264", sort_order: 30, is_default: true },
-  { name: "Игры", slug: "games", icon: "🎮", color: "#ca8a04", sort_order: 40, is_default: true },
-];
-
-const trackerCategoryColors: Record<string, string> = {
-  food: "#facc15",
-  sex: "#fde047",
-  sport: "#bef264",
-  games: "#ca8a04",
-};
 
 function getCategoryColor(category: TrackerCategory) {
   return trackerCategoryColors[category.slug] || category.color || "#ca8a04";
@@ -344,10 +331,38 @@ export default function TrackerPage() {
 
       let nextCategories = (categoryRows || []) as TrackerCategory[];
 
+      const hasMissingDefaultCategories = trackerDefaultCategories.some(
+        (defaultCategory) =>
+          !nextCategories.some((category) => category.slug === defaultCategory.slug)
+      );
+
+      if (hasMissingDefaultCategories) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        const response = await fetch("/api/tracker/categories", {
+          method: "POST",
+          headers: session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {},
+        });
+        const result = (await response.json()) as {
+          categories?: TrackerCategory[];
+          error?: string;
+        };
+
+        if (response.ok && result.categories) {
+          nextCategories = result.categories;
+        } else if (nextCategories.length === 0) {
+          console.error(result.error || "Не удалось обновить категории трекера");
+        }
+      }
+
       if (nextCategories.length === 0) {
         const { data: insertedCategories } = await supabase
           .from("tracker_categories")
-          .insert(fallbackCategories)
+          .insert(trackerDefaultCategories)
           .select("*");
         nextCategories = (insertedCategories || []) as TrackerCategory[];
       }

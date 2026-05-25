@@ -123,7 +123,6 @@ export default function Navbar() {
           setProfile(null);
           setCurrentUserId(null);
           setNotifications([]);
-          setIsActionsOpen(false);
           setIsLoadingUser(false);
         }
         return;
@@ -202,7 +201,6 @@ export default function Navbar() {
       setIsLoadingUser(true);
       setIsProfileOpen(false);
       setIsNotificationsOpen(false);
-      setIsActionsOpen(false);
       window.setTimeout(() => {
         loadProfile(session?.user || null);
       }, 0);
@@ -312,7 +310,6 @@ export default function Navbar() {
     setIsProfileOpen(false);
     setIsNotificationsOpen(false);
     setIsMoreOpen(false);
-    setIsActionsOpen(false);
     await supabase.auth.signOut();
     setProfile(null);
     setNotifications([]);
@@ -324,7 +321,6 @@ export default function Navbar() {
     setIsNotificationsOpen(nextIsOpen);
     setIsProfileOpen(false);
     setIsMoreOpen(false);
-    setIsActionsOpen(false);
 
     if (!nextIsOpen || !currentUserId) return;
 
@@ -410,7 +406,6 @@ export default function Navbar() {
                 setIsMoreOpen((current) => !current);
                 setIsProfileOpen(false);
                 setIsNotificationsOpen(false);
-                setIsActionsOpen(false);
               }}
               style={
                 !isLogin
@@ -509,7 +504,7 @@ export default function Navbar() {
                   setIsMoreOpen(false);
                 }}
                 style={!isLogin ? { backgroundColor: accent, color: "#fff" } : undefined}
-                className={`ui-pressable grid h-9 w-9 place-items-center rounded-full text-xl font-black shadow-lg ${
+                className={`hidden ui-pressable h-9 w-9 place-items-center rounded-full text-xl font-black shadow-lg ${
                   isLogin ? "bg-black text-white dark:bg-white dark:text-black" : ""
                 }`}
                 aria-label="Быстрые действия"
@@ -646,7 +641,6 @@ export default function Navbar() {
                 setIsProfileOpen((current) => !current);
                 setIsNotificationsOpen(false);
                 setIsMoreOpen(false);
-                setIsActionsOpen(false);
               }}
               style={!isLogin ? { backgroundColor: `${accent}22`, color: accent } : undefined}
               className={`ui-pressable flex items-center gap-2 rounded-full border border-white/35 px-1.5 py-1 pr-3 text-sm font-bold shadow-lg backdrop-blur ${

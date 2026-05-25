@@ -199,7 +199,7 @@ export default function TodayPage() {
         : state.question,
       href: myAnswer ? "/questions/today" : "/questions/answer",
       icon: "✉",
-      color: "emerald",
+      color: "orange",
     },
     {
       title: state.goal ? "Отметить цель" : "Поставить первую цель",
@@ -215,7 +215,7 @@ export default function TodayPage() {
       text: getChatPreview(state.chat),
       href: "/chat",
       icon: "◌",
-      color: "sky",
+      color: "orange",
     },
     {
       title: state.watchRemaining ? "Выбрать фильм на вечер" : "Добавить первый фильм",
@@ -224,14 +224,14 @@ export default function TodayPage() {
         : "Соберите общий список фильмов, сериалов и аниме.",
       href: state.watchRemaining ? "/watch?spin=1" : "/watch",
       icon: "▥",
-      color: "lime",
+      color: "orange",
     },
     {
       title: "Викторина дня",
       text: recommendedQuiz.description,
       href: `/quizzes/play?quiz=${recommendedQuiz.id}`,
       icon: "✦",
-      color: "violet",
+      color: "orange",
     },
   ];
 
@@ -311,16 +311,16 @@ export default function TodayPage() {
               </Link>
             </div>
 
-            <div className="mt-5 rounded-[2rem] border border-lime-200/70 bg-lime-50/80 p-5 shadow-inner dark:border-lime-200/10 dark:bg-lime-500/10">
+            <div className="mt-5 rounded-[2rem] border border-orange-200/70 bg-orange-50/80 p-5 shadow-inner dark:border-orange-200/10 dark:bg-orange-500/10">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-sm font-black uppercase tracking-[0.18em] text-lime-700/60 dark:text-lime-100/60">
+                  <p className="text-sm font-black uppercase tracking-[0.18em] text-orange-700/60 dark:text-orange-100/60">
                     Вечерний выбор
                   </p>
-                  <h2 className="mt-2 text-3xl font-black text-lime-900 dark:text-white">
+                  <h2 className="mt-2 text-3xl font-black text-orange-900 dark:text-white">
                     {state.watchRemaining ? "Рулетка готова" : "Соберите список на просмотр"}
                   </h2>
-                  <p className="mt-2 font-semibold leading-7 text-lime-900/65 dark:text-white/55">
+                  <p className="mt-2 font-semibold leading-7 text-orange-900/65 dark:text-white/55">
                     {state.watchRemaining
                       ? `${state.watchRemaining} вариантов в списке. ${
                           state.latestWatchItem
@@ -332,7 +332,7 @@ export default function TodayPage() {
                 </div>
                 <Link
                   href={state.watchRemaining ? "/watch?spin=1" : "/watch"}
-                  className="shrink-0 rounded-full bg-lime-600 px-5 py-3 text-center font-black text-white shadow-lg transition hover:-translate-y-0.5"
+                  className="shrink-0 rounded-full bg-[#ea580c] px-5 py-3 text-center font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#f97316]"
                 >
                   {state.watchRemaining ? "Крутить рулетку" : "Открыть список"}
                 </Link>

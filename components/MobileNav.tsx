@@ -526,7 +526,7 @@ export default function MobileNav() {
           isHiddenByScroll ? "translate-y-24" : "translate-y-0"
         }`}
       >
-        <div className="grid grid-cols-6 items-stretch gap-1 text-center text-[9px] font-black leading-tight min-[380px]:text-[10px]">
+        <div className="grid grid-cols-5 items-stretch gap-1 text-center text-[9px] font-black leading-tight min-[380px]:text-[10px]">
           {mobileMainLinks.map((link) => {
             const isActive = isActivePath(pathname, link.href);
 
@@ -562,7 +562,7 @@ export default function MobileNav() {
                 ? { color: "#ffffff", backgroundColor: accent }
                 : { color: "#ffffff", backgroundColor: accent }
             }
-            className="ui-pressable relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 shadow-lg"
+            className="hidden"
             aria-label="Открыть быстрые действия"
           >
             <NavIcon name="plus" className="h-8 w-8" />

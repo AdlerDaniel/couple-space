@@ -135,21 +135,21 @@ const quickActions = [
     text: "Откройте сегодняшнюю карточку и сохраните ответ отдельно от партнёра.",
     href: "/questions/answer",
     icon: "✉",
-    color: "from-emerald-500 to-teal-500",
+    color: "from-orange-500 to-amber-500",
   },
   {
     title: "Добавить воспоминание",
     text: "Фото, подпись, дата события, реакции и комментарии партнёра.",
     href: "/memories",
     icon: "▣",
-    color: "from-blue-600 to-indigo-700",
+    color: "from-orange-500 to-amber-600",
   },
   {
     title: "Пройти викторину",
     text: "Выберите категорию, ответьте отдельно и сравните ответы.",
     href: "/quizzes",
     icon: "✦",
-    color: "from-violet-600 to-fuchsia-600",
+    color: "from-orange-500 to-amber-500",
   },
   {
     title: "Отметить цель",
@@ -163,7 +163,7 @@ const quickActions = [
     text: "Сообщения, голосовые, фото, реакции, стикеры и закрепы.",
     href: "/chat",
     icon: "◌",
-    color: "from-sky-500 to-blue-700",
+    color: "from-orange-500 to-amber-600",
   },
 ];
 
@@ -338,7 +338,7 @@ export default function Home() {
         href: "/questions/answer",
         button: "Ответить",
         icon: "✉",
-        tone: "emerald",
+        tone: "orange",
       };
     }
 
@@ -350,7 +350,7 @@ export default function Home() {
         href: "/chat",
         button: "Написать",
         icon: "⌛",
-        tone: "sky",
+        tone: "orange",
       };
     }
 
@@ -366,7 +366,7 @@ export default function Home() {
         href: "/questions/today",
         button: "Открыть ответ",
         icon: partnerReactionOnMyAnswer || "❤",
-        tone: "emerald",
+        tone: "orange",
       };
     }
 
@@ -394,7 +394,7 @@ export default function Home() {
         href: "/watch?spin=1",
         button: "Крутить",
         icon: "▥",
-        tone: "emerald",
+        tone: "orange",
       };
     }
 
@@ -418,7 +418,7 @@ export default function Home() {
         href: "/chat",
         button: "Открыть чат",
         icon: "◌",
-        tone: "sky",
+        tone: "orange",
       };
     }
 
@@ -429,19 +429,13 @@ export default function Home() {
       href: recommendedQuiz ? `/quizzes/play?quiz=${recommendedQuiz.id}` : "/quizzes",
       button: "Начать",
       icon: "✦",
-      tone: "violet",
+      tone: "orange",
     };
   })();
   const primaryToneClass =
-    primaryAction.tone === "emerald"
-      ? "from-emerald-50 via-white to-teal-50 text-emerald-900 dark:from-emerald-500/16 dark:via-white/8 dark:to-teal-500/12"
-      : primaryAction.tone === "sky"
-        ? "from-sky-50 via-white to-cyan-50 text-sky-900 dark:from-sky-500/16 dark:via-white/8 dark:to-cyan-500/12"
-        : primaryAction.tone === "amber"
-          ? "from-amber-50 via-white to-orange-50 text-amber-900 dark:from-amber-500/16 dark:via-white/8 dark:to-orange-500/12"
-          : primaryAction.tone === "violet"
-            ? "from-violet-50 via-white to-fuchsia-50 text-violet-900 dark:from-violet-500/16 dark:via-white/8 dark:to-fuchsia-500/12"
-            : "from-orange-50 via-white to-amber-50 text-orange-900 dark:from-orange-500/16 dark:via-white/8 dark:to-amber-500/12";
+    primaryAction.tone === "amber"
+      ? "from-amber-50 via-white to-orange-50 text-amber-900 dark:from-amber-500/16 dark:via-white/8 dark:to-orange-500/12"
+      : "from-orange-50 via-white to-amber-50 text-orange-900 dark:from-orange-500/16 dark:via-white/8 dark:to-amber-500/12";
 
   useEffect(() => {
     async function loadHome() {
@@ -667,7 +661,7 @@ export default function Home() {
                   href={step.href}
                   className={`rounded-2xl p-3 shadow-inner transition hover:-translate-y-0.5 ${
                     step.done
-                      ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-500/12 dark:text-emerald-100"
+                      ? "bg-orange-50 text-orange-900 dark:bg-orange-500/12 dark:text-orange-100"
                       : "bg-orange-50 text-orange-900 dark:bg-orange-500/12 dark:text-orange-100"
                   }`}
                 >
@@ -751,7 +745,7 @@ export default function Home() {
                   }`,
                   href: "/watch",
                   icon: "▥",
-                  className: "bg-lime-50/90 text-lime-800 dark:bg-lime-500/12 dark:text-lime-100",
+                  className: "bg-orange-50/90 text-orange-800 dark:bg-orange-500/12 dark:text-orange-100",
                 }
               : null,
             lastChat
@@ -761,7 +755,7 @@ export default function Home() {
                   text: formatTime(lastChat.created_at),
                   href: "/chat",
                   icon: "◌",
-                  className: "bg-sky-50/90 text-sky-800 dark:bg-sky-500/12 dark:text-sky-100",
+                  className: "bg-orange-50/90 text-orange-800 dark:bg-orange-500/12 dark:text-orange-100",
                 }
               : null,
           ]
@@ -802,8 +796,8 @@ export default function Home() {
                 : "Начните с короткого ответа на сегодняшний вопрос.",
               href: myAnswer ? "/questions/today" : "/questions/answer",
               icon: isWaitingForPartnerAnswer ? "⌛" : "✉",
-              accentClass: "text-emerald-700 dark:text-emerald-100",
-              bgClass: "bg-emerald-50/90 dark:bg-emerald-500/12",
+              accentClass: "text-orange-800 dark:text-orange-100",
+              bgClass: "bg-orange-50/90 dark:bg-orange-500/12",
             },
             {
               label: "Цель пары",
@@ -813,8 +807,8 @@ export default function Home() {
                 : "Например: тренировки, свидания или вечер без телефона.",
               href: "/tracker",
               icon: "◫",
-              accentClass: "text-amber-800 dark:text-amber-100",
-              bgClass: "bg-amber-50/90 dark:bg-amber-500/12",
+              accentClass: "text-orange-800 dark:text-orange-100",
+              bgClass: "bg-orange-50/90 dark:bg-orange-500/12",
             },
             {
               label: "Последнее сообщение",
@@ -822,8 +816,8 @@ export default function Home() {
               text: lastChat ? formatTime(lastChat.created_at) : "Оставьте короткое сообщение партнёру.",
               href: "/chat",
               icon: "◌",
-              accentClass: "text-sky-800 dark:text-sky-100",
-              bgClass: "bg-sky-50/90 dark:bg-sky-500/12",
+              accentClass: "text-orange-800 dark:text-orange-100",
+              bgClass: "bg-orange-50/90 dark:bg-orange-500/12",
             },
             {
               label: "Что посмотрим",
@@ -835,8 +829,8 @@ export default function Home() {
                 : "Соберите общий список фильмов и сериалов.",
               href: state.stats.watchRemaining ? "/watch?spin=1" : "/watch",
               icon: "▥",
-              accentClass: "text-lime-800 dark:text-lime-100",
-              bgClass: "bg-lime-50/90 dark:bg-lime-500/12",
+              accentClass: "text-orange-800 dark:text-orange-100",
+              bgClass: "bg-orange-50/90 dark:bg-orange-500/12",
             },
             {
               label: "Викторина",
@@ -846,8 +840,8 @@ export default function Home() {
                 : "Пройдите один короткий тест отдельно.",
               href: recommendedQuiz ? `/quizzes/play?quiz=${recommendedQuiz.id}` : "/quizzes",
               icon: "✦",
-              accentClass: "text-violet-800 dark:text-violet-100",
-              bgClass: "bg-violet-50/90 dark:bg-violet-500/12",
+              accentClass: "text-orange-800 dark:text-orange-100",
+              bgClass: "bg-orange-50/90 dark:bg-orange-500/12",
             },
           ].map((item) => (
             <Link
@@ -875,51 +869,51 @@ export default function Home() {
       </section>
 
       <section className="mx-auto mt-3 grid max-w-7xl gap-3 md:mt-5 md:gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <article className="rounded-[1.35rem] border border-emerald-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(21,128,61,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+        <article className="rounded-[1.35rem] border border-orange-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(234,88,12,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
           <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-emerald-600/70 dark:text-emerald-100/70">
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-orange-600/70 dark:text-orange-100/70">
                 Вопрос дня
               </p>
-              <h2 className="mt-2 !text-2xl font-black leading-tight text-emerald-800 dark:text-white md:mt-3 md:!text-5xl">
+              <h2 className="mt-2 !text-2xl font-black leading-tight text-orange-900 dark:text-white md:mt-3 md:!text-5xl">
                 {todayQuestion}
               </h2>
             </div>
             <Link
               href="/questions/answer"
-              className="shrink-0 rounded-full bg-emerald-600 px-5 py-3 text-center font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-700"
+              className="shrink-0 rounded-full bg-[#ea580c] px-5 py-3 text-center font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#f97316]"
             >
               Ответить
             </Link>
           </div>
 
           <div className="mt-4 grid gap-2 md:mt-6 md:grid-cols-2 md:gap-3">
-            <div className="rounded-2xl bg-emerald-50 p-4 shadow-inner dark:bg-white/8">
-              <p className="text-sm font-black text-emerald-700 dark:text-emerald-100">Ваш статус</p>
-              <p className="mt-2 font-semibold text-emerald-950/70 dark:text-white/60">
+            <div className="rounded-2xl bg-orange-50 p-4 shadow-inner dark:bg-white/8">
+              <p className="text-sm font-black text-orange-700 dark:text-orange-100">Ваш статус</p>
+              <p className="mt-2 font-semibold text-orange-950/70 dark:text-white/60">
                 {myAnswer ? "Вы уже ответили сегодня." : "Ответ ещё не сохранён."}
               </p>
             </div>
-            <div className="rounded-2xl bg-emerald-50 p-4 shadow-inner dark:bg-white/8">
-              <p className="text-sm font-black text-emerald-700 dark:text-emerald-100">Партнёр</p>
-              <p className="mt-2 font-semibold text-emerald-950/70 dark:text-white/60">
+            <div className="rounded-2xl bg-orange-50 p-4 shadow-inner dark:bg-white/8">
+              <p className="text-sm font-black text-orange-700 dark:text-orange-100">Партнёр</p>
+              <p className="mt-2 font-semibold text-orange-950/70 dark:text-white/60">
                 {partnerAnswer ? "Ответ партнёра уже ждёт раскрытия." : "Партнёр ещё отвечает."}
               </p>
             </div>
           </div>
         </article>
 
-        <article className="rounded-[1.35rem] border border-blue-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(37,99,235,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+        <article className="rounded-[1.35rem] border border-orange-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(234,88,12,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-blue-600/70 dark:text-blue-100/70">
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-orange-600/70 dark:text-orange-100/70">
                 Воспоминания
               </p>
-              <h2 className="mt-2 !text-2xl font-black text-blue-900 dark:text-white md:!text-3xl">
+              <h2 className="mt-2 !text-2xl font-black text-orange-900 dark:text-white md:!text-3xl">
                 Последние моменты
               </h2>
             </div>
-            <Link href="/memories" className="rounded-full bg-blue-600 px-4 py-2 text-sm font-black text-white">
+            <Link href="/memories" className="rounded-full bg-[#ea580c] px-4 py-2 text-sm font-black text-white">
               Открыть
             </Link>
           </div>
@@ -928,13 +922,13 @@ export default function Home() {
             {state.memories.length === 0 ? (
               <Link
                 href="/memories"
-                className="rounded-2xl bg-blue-50/80 p-5 text-center shadow-inner transition hover:bg-blue-100 dark:bg-white/8 dark:hover:bg-blue-500/15"
+                className="rounded-2xl bg-orange-50/80 p-5 text-center shadow-inner transition hover:bg-orange-100 dark:bg-white/8 dark:hover:bg-orange-500/15"
               >
                 <p className="text-3xl">▣</p>
-                <p className="mt-2 font-black text-blue-950 dark:text-white">
+                <p className="mt-2 font-black text-orange-950 dark:text-white">
                   Добавьте первое воспоминание
                 </p>
-                <p className="mt-1 text-sm font-semibold text-blue-950/58 dark:text-white/50">
+                <p className="mt-1 text-sm font-semibold text-orange-950/58 dark:text-white/50">
                   Фото, дата и короткая подпись сделают главную живее.
                 </p>
               </Link>
@@ -943,21 +937,21 @@ export default function Home() {
                 <Link
                   key={memory.id}
                   href="/memories"
-                  className="grid grid-cols-[4.5rem_1fr] gap-3 rounded-2xl bg-blue-50/80 p-2 shadow-inner transition hover:bg-blue-100 dark:bg-white/8 dark:hover:bg-blue-500/15"
+                  className="grid grid-cols-[4.5rem_1fr] gap-3 rounded-2xl bg-orange-50/80 p-2 shadow-inner transition hover:bg-orange-100 dark:bg-white/8 dark:hover:bg-orange-500/15"
                 >
                   <div
-                    className="h-16 rounded-xl bg-cover bg-center bg-blue-200"
+                    className="h-16 rounded-xl bg-cover bg-center bg-orange-200"
                     style={{
                       backgroundImage: memory.image
                         ? `url("${memory.image}")`
-                        : "linear-gradient(135deg,#bfdbfe,#dbeafe)",
+                        : "linear-gradient(135deg,#fed7aa,#ffedd5)",
                     }}
                   />
                   <div className="min-w-0 py-1">
-                    <p className="truncate font-black text-blue-950 dark:text-white">
+                    <p className="truncate font-black text-orange-950 dark:text-white">
                       {memory.title || "Воспоминание"}
                     </p>
-                    <p className="mt-1 line-clamp-2 text-sm font-semibold text-blue-950/58 dark:text-white/50">
+                    <p className="mt-1 line-clamp-2 text-sm font-semibold text-orange-950/58 dark:text-white/50">
                       {memory.caption || formatDate(memory.event_date)}
                     </p>
                   </div>
@@ -1023,43 +1017,43 @@ export default function Home() {
         </article>
 
         <div className="grid gap-3 md:grid-cols-2 md:gap-5">
-          <article className="rounded-[1.35rem] border border-violet-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(124,58,237,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-violet-600/70 dark:text-violet-100/70">
+          <article className="rounded-[1.35rem] border border-orange-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(234,88,12,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-orange-600/70 dark:text-orange-100/70">
               Викторина
             </p>
-            <h2 className="mt-2 !text-2xl font-black text-violet-900 dark:text-white md:mt-3 md:!text-3xl">
+            <h2 className="mt-2 !text-2xl font-black text-orange-900 dark:text-white md:mt-3 md:!text-3xl">
               {recommendedQuiz?.title || "Выберите тест"}
             </h2>
-            <p className="mt-3 line-clamp-3 font-semibold leading-7 text-violet-950/62 dark:text-white/55">
+            <p className="mt-3 line-clamp-3 font-semibold leading-7 text-orange-950/62 dark:text-white/55">
               {recommendedQuiz?.description || "Категории и тесты ждут вас в разделе викторин."}
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-black text-violet-700 dark:bg-white/10 dark:text-violet-100">
+              <span className="rounded-full bg-orange-100 px-3 py-1 text-sm font-black text-orange-700 dark:bg-white/10 dark:text-orange-100">
                 {recommendedQuiz?.duration || "тесты"}
               </span>
-              <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-black text-violet-700 dark:bg-white/10 dark:text-violet-100">
+              <span className="rounded-full bg-orange-100 px-3 py-1 text-sm font-black text-orange-700 dark:bg-white/10 dark:text-orange-100">
                 пройдено: {state.stats.quizzes}
               </span>
             </div>
             <Link
               href={recommendedQuiz ? `/quizzes/play?quiz=${recommendedQuiz.id}` : "/quizzes"}
-              className="mt-6 inline-flex rounded-full bg-violet-600 px-5 py-3 font-black text-white shadow-lg transition hover:-translate-y-0.5"
+              className="mt-6 inline-flex rounded-full bg-[#ea580c] px-5 py-3 font-black text-white shadow-lg transition hover:-translate-y-0.5"
             >
               Начать
             </Link>
           </article>
 
-          <article className="rounded-[1.35rem] border border-sky-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(2,132,199,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+          <article className="rounded-[1.35rem] border border-orange-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(234,88,12,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.18em] text-sky-600/70 dark:text-sky-100/70">
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-orange-600/70 dark:text-orange-100/70">
                   Чат
                 </p>
-                <h2 className="mt-2 !text-2xl font-black text-sky-900 dark:text-white md:!text-3xl">
+                <h2 className="mt-2 !text-2xl font-black text-orange-900 dark:text-white md:!text-3xl">
                   Последнее
                 </h2>
               </div>
-              <Link href="/chat" className="rounded-full bg-sky-600 px-4 py-2 text-sm font-black text-white">
+              <Link href="/chat" className="rounded-full bg-[#ea580c] px-4 py-2 text-sm font-black text-white">
                 Открыть
               </Link>
             </div>
@@ -1067,12 +1061,12 @@ export default function Home() {
               {state.chats.length === 0 ? (
                 <Link
                   href="/chat"
-                  className="block rounded-2xl bg-sky-50 p-4 text-center shadow-inner transition hover:bg-sky-100 dark:bg-white/8 dark:hover:bg-sky-500/15"
+                  className="block rounded-2xl bg-orange-50 p-4 text-center shadow-inner transition hover:bg-orange-100 dark:bg-white/8 dark:hover:bg-orange-500/15"
                 >
-                  <p className="font-black text-sky-950 dark:text-white">
+                  <p className="font-black text-orange-950 dark:text-white">
                     Напишите первое сообщение
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-sky-950/50 dark:text-white/45">
+                  <p className="mt-2 text-sm font-semibold text-orange-950/50 dark:text-white/45">
                     “Как прошёл день?”, “Что сделаем вечером?” или просто тёплая фраза.
                   </p>
                 </Link>
@@ -1081,12 +1075,12 @@ export default function Home() {
                   <Link
                     key={message.id}
                     href="/chat"
-                    className="block rounded-2xl bg-sky-50 p-3 shadow-inner transition hover:bg-sky-100 dark:bg-white/8 dark:hover:bg-sky-500/15"
+                    className="block rounded-2xl bg-orange-50 p-3 shadow-inner transition hover:bg-orange-100 dark:bg-white/8 dark:hover:bg-orange-500/15"
                   >
-                    <p className="line-clamp-1 font-black text-sky-950 dark:text-white">
+                    <p className="line-clamp-1 font-black text-orange-950 dark:text-white">
                       {getMessagePreview(message)}
                     </p>
-                    <p className="mt-1 text-xs font-semibold text-sky-950/50 dark:text-white/45">
+                    <p className="mt-1 text-xs font-semibold text-orange-950/50 dark:text-white/45">
                       {formatTime(message.created_at)}
                     </p>
                   </Link>

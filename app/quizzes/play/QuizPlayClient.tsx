@@ -208,6 +208,30 @@ export default function QuizPlayClient() {
     );
   }
 
+  if (quiz.questions.length === 0) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#f1e7ff] to-[#fbf7ff] px-6 py-28 text-[#7c3aed] dark:from-[#170525] dark:to-[#09020f] dark:text-[#c084fc]">
+        <section className="w-full max-w-2xl rounded-[2rem] bg-gradient-to-b from-[#dfc8ff] to-[#eadcff] p-8 text-center shadow-2xl dark:from-[#2b1240] dark:to-[#1b0828]">
+          <p className="text-sm font-black uppercase tracking-wide text-[#8b5cf6] dark:text-[#d8b4fe]">
+            {quiz.category}
+          </p>
+          <h1 className="mt-3 text-4xl font-black text-[#6d28d9] dark:text-[#c084fc]">
+            {quiz.title}
+          </h1>
+          <p className="mx-auto mt-4 max-w-lg font-semibold leading-7 text-[#6d28d9]/72 dark:text-[#d8b4fe]/72">
+            Вопросы для этой викторины пока убраны. Категория, карточка и логика остались, но пройти тест можно будет после добавления новых вопросов.
+          </p>
+          <button
+            onClick={() => router.push("/quizzes")}
+            className="mt-6 rounded-full bg-[#7c3aed] px-6 py-3 font-black text-white shadow-lg transition hover:bg-[#8b5cf6]"
+          >
+            Вернуться к викторинам
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   const answeredCount = quiz.questions.filter((question) => answers[question.id]).length;
 
   return (

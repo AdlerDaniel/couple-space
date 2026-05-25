@@ -679,13 +679,13 @@ export default function Home() {
         )}
       </section>
 
-      <section className="mx-auto mt-3 max-w-7xl rounded-[1.35rem] border border-white/60 bg-white/66 p-4 shadow-[0_20px_64px_rgba(194,65,12,0.10)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:mt-5 md:rounded-[2rem] md:p-6">
+      <section className="mx-auto mt-3 max-w-7xl rounded-[1.35rem] border border-orange-200/80 bg-white/88 p-4 shadow-[0_20px_64px_rgba(194,65,12,0.12)] backdrop-blur-2xl dark:border-orange-200/15 dark:bg-[#2a0d05]/86 md:mt-5 md:rounded-[2rem] md:p-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.16em] text-[#ea580c]/65 dark:text-orange-100/65">
+            <p className="text-sm font-black uppercase tracking-[0.16em] text-[#c2410c] dark:text-orange-100">
               Обзор пары
             </p>
-            <h2 className="mt-1 !text-2xl font-black text-[#c2410c] dark:text-white md:!text-3xl">
+            <h2 className="mt-1 !text-2xl font-black text-[#7c2d12] dark:text-white md:!text-3xl">
               Главное состояние и свежие события
             </h2>
           </div>
@@ -699,17 +699,17 @@ export default function Home() {
 
         <Link
           href={primaryAction.href}
-          className={`mt-4 block rounded-[1.4rem] border border-white/70 bg-gradient-to-br p-5 shadow-[0_18px_58px_rgba(194,65,12,0.12)] transition hover:-translate-y-0.5 dark:border-white/10 md:rounded-[1.8rem] md:p-6 ${primaryToneClass}`}
+          className={`mt-4 block rounded-[1.4rem] border border-orange-200/80 bg-gradient-to-br p-5 shadow-[0_18px_58px_rgba(194,65,12,0.14)] transition hover:-translate-y-0.5 dark:border-orange-200/15 md:rounded-[1.8rem] md:p-6 ${primaryToneClass}`}
         >
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.16em] opacity-55">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-[#c2410c] dark:text-orange-100">
                 {primaryAction.label}
               </p>
-              <h3 className="mt-2 !text-2xl font-black leading-tight md:!text-4xl">
+              <h3 className="mt-2 !text-2xl font-black leading-tight text-[#7c2d12] dark:text-white md:!text-4xl">
                 {primaryAction.title}
               </h3>
-              <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 opacity-68 md:text-base">
+              <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-[#7c2d12]/90 dark:text-orange-50/88 md:text-base">
                 {primaryAction.text}
               </p>
             </div>
@@ -733,7 +733,7 @@ export default function Home() {
                   text: state.latestUnreadNotification.body || "Есть новое событие пары.",
                   href: state.latestUnreadNotification.href || "/notifications",
                   icon: "●",
-                  className: "bg-orange-50/90 text-orange-800 dark:bg-orange-500/12 dark:text-orange-100",
+                  className: "border border-orange-100 bg-white/90 text-orange-950 dark:border-orange-200/15 dark:bg-orange-500/18 dark:text-white",
                 }
               : null,
             state.latestWatchItem
@@ -745,7 +745,7 @@ export default function Home() {
                   }`,
                   href: "/watch",
                   icon: "▥",
-                  className: "bg-orange-50/90 text-orange-800 dark:bg-orange-500/12 dark:text-orange-100",
+                  className: "border border-orange-100 bg-white/90 text-orange-950 dark:border-orange-200/15 dark:bg-orange-500/18 dark:text-white",
                 }
               : null,
             lastChat
@@ -755,7 +755,7 @@ export default function Home() {
                   text: formatTime(lastChat.created_at),
                   href: "/chat",
                   icon: "◌",
-                  className: "bg-orange-50/90 text-orange-800 dark:bg-orange-500/12 dark:text-orange-100",
+                  className: "border border-orange-100 bg-white/90 text-orange-950 dark:border-orange-200/15 dark:bg-orange-500/18 dark:text-white",
                 }
               : null,
           ]
@@ -768,14 +768,14 @@ export default function Home() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-black uppercase tracking-[0.12em] opacity-60">
+                    <p className="text-xs font-black uppercase tracking-[0.12em] text-[#c2410c] dark:text-orange-100">
                       {item!.label}
                     </p>
-                    <h3 className="mt-2 line-clamp-1 !text-lg font-black">{item!.title}</h3>
+                    <h3 className="mt-2 line-clamp-1 !text-lg font-black text-[#7c2d12] dark:text-white">{item!.title}</h3>
                   </div>
-                  <span className="text-2xl">{item!.icon}</span>
+                  <span className="text-2xl text-[#c2410c] dark:text-orange-100">{item!.icon}</span>
                 </div>
-                <p className="mt-2 line-clamp-2 text-sm font-semibold opacity-70">{item!.text}</p>
+                <p className="mt-2 line-clamp-2 text-sm font-semibold text-[#7c2d12]/88 dark:text-orange-50/82">{item!.text}</p>
               </Link>
             ))}
         </div>
@@ -796,8 +796,8 @@ export default function Home() {
                 : "Начните с короткого ответа на сегодняшний вопрос.",
               href: myAnswer ? "/questions/today" : "/questions/answer",
               icon: isWaitingForPartnerAnswer ? "⌛" : "✉",
-              accentClass: "text-orange-800 dark:text-orange-100",
-              bgClass: "bg-orange-50/90 dark:bg-orange-500/12",
+              accentClass: "text-orange-950 dark:text-white",
+              bgClass: "border border-orange-100 bg-white/90 dark:border-orange-200/15 dark:bg-orange-500/18",
             },
             {
               label: "Цель пары",
@@ -807,8 +807,8 @@ export default function Home() {
                 : "Например: тренировки, свидания или вечер без телефона.",
               href: "/tracker",
               icon: "◫",
-              accentClass: "text-orange-800 dark:text-orange-100",
-              bgClass: "bg-orange-50/90 dark:bg-orange-500/12",
+              accentClass: "text-orange-950 dark:text-white",
+              bgClass: "border border-orange-100 bg-white/90 dark:border-orange-200/15 dark:bg-orange-500/18",
             },
             {
               label: "Последнее сообщение",
@@ -816,8 +816,8 @@ export default function Home() {
               text: lastChat ? formatTime(lastChat.created_at) : "Оставьте короткое сообщение партнёру.",
               href: "/chat",
               icon: "◌",
-              accentClass: "text-orange-800 dark:text-orange-100",
-              bgClass: "bg-orange-50/90 dark:bg-orange-500/12",
+              accentClass: "text-orange-950 dark:text-white",
+              bgClass: "border border-orange-100 bg-white/90 dark:border-orange-200/15 dark:bg-orange-500/18",
             },
             {
               label: "Что посмотрим",
@@ -829,8 +829,8 @@ export default function Home() {
                 : "Соберите общий список фильмов и сериалов.",
               href: state.stats.watchRemaining ? "/watch?spin=1" : "/watch",
               icon: "▥",
-              accentClass: "text-orange-800 dark:text-orange-100",
-              bgClass: "bg-orange-50/90 dark:bg-orange-500/12",
+              accentClass: "text-orange-950 dark:text-white",
+              bgClass: "border border-orange-100 bg-white/90 dark:border-orange-200/15 dark:bg-orange-500/18",
             },
             {
               label: "Викторина",
@@ -840,8 +840,8 @@ export default function Home() {
                 : "Пройдите один короткий тест отдельно.",
               href: recommendedQuiz ? `/quizzes/play?quiz=${recommendedQuiz.id}` : "/quizzes",
               icon: "✦",
-              accentClass: "text-orange-800 dark:text-orange-100",
-              bgClass: "bg-orange-50/90 dark:bg-orange-500/12",
+              accentClass: "text-orange-950 dark:text-white",
+              bgClass: "border border-orange-100 bg-white/90 dark:border-orange-200/15 dark:bg-orange-500/18",
             },
           ].map((item) => (
             <Link
@@ -851,7 +851,7 @@ export default function Home() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className={`text-xs font-black uppercase tracking-[0.12em] opacity-60 ${item.accentClass}`}>
+                  <p className="text-xs font-black uppercase tracking-[0.12em] text-[#c2410c] dark:text-orange-100">
                     {item.label}
                   </p>
                   <h3 className={`mt-2 line-clamp-2 !text-lg font-black ${item.accentClass}`}>
@@ -860,7 +860,7 @@ export default function Home() {
                 </div>
                 <span className={`text-2xl ${item.accentClass}`}>{item.icon}</span>
               </div>
-              <p className={`mt-3 line-clamp-2 text-sm font-semibold opacity-68 ${item.accentClass}`}>
+              <p className="mt-3 line-clamp-2 text-sm font-semibold text-[#7c2d12]/88 dark:text-orange-50/82">
                 {item.text}
               </p>
             </Link>

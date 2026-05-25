@@ -3,11 +3,9 @@
 import {
   findDuplicateWatchTitle,
   getRandomWatchItem,
-  normalizeOptionalUrl,
   normalizeWatchTitle,
   shouldAutoSpinWatch,
 } from "@/lib/watchList";
-import { compressImageFile } from "@/lib/imageCompression";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -62,12 +60,6 @@ function getContentTypeIcon(type: ContentType) {
   return contentTypes.find((item) => item.key === type)?.icon || "◉";
 }
 
-function getPosterPath(coupleId: string, file: File) {
-  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const fallbackExtension = file.type.split("/").pop()?.replace(/[^a-z0-9]/g, "") || "jpg";
-  return `${coupleId}/${crypto.randomUUID()}.${extension || fallbackExtension}`;
-}
-
 export default function WatchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -76,9 +68,6 @@ export default function WatchPage() {
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
   const [items, setItems] = useState<WatchItem[]>([]);
   const [title, setTitle] = useState("");
-  const [externalUrl, setExternalUrl] = useState("");
-  const [posterUrl, setPosterUrl] = useState("");
-  const [posterFile, setPosterFile] = useState<File | null>(null);
   const [contentType, setContentType] = useState<ContentType>("movie");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -107,11 +96,14 @@ export default function WatchPage() {
 
   useEffect(() => {
     document.title = "Что посмотрим? · Couple Space";
+    let ignore = false;
 
     async function loadPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
+      if (ignore) return;
 
       if (!user) {
         router.push("/login");
@@ -126,6 +118,8 @@ export default function WatchPage() {
         .or(`partner_one_id.eq.${user.id},partner_two_id.eq.${user.id}`)
         .limit(1)
         .maybeSingle<Couple>();
+
+      if (ignore) return;
 
       if (!coupleData) {
         router.push("/couple");
@@ -149,60 +143,63 @@ export default function WatchPage() {
           .order("updated_at", { ascending: false }),
       ]);
 
+      if (ignore) return;
+
       setProfile(profileData || null);
       setItems((watchData || []) as WatchItem[]);
       setIsLoading(false);
-
-      const channel = supabase
-        .channel(`watch-items:${coupleData.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "watch_items",
-            filter: `couple_id=eq.${coupleData.id}`,
-          },
-          (payload) => {
-            if (payload.eventType === "INSERT") {
-              const next = payload.new as WatchItem;
-              setItems((current) =>
-                current.some((item) => item.id === next.id) ? current : [next, ...current],
-              );
-            }
-
-            if (payload.eventType === "UPDATE") {
-              const next = payload.new as WatchItem;
-              setItems((current) =>
-                current.map((item) => (item.id === next.id ? next : item)),
-              );
-              setSelectedItem((current) => (current?.id === next.id ? next : current));
-            }
-
-            if (payload.eventType === "DELETE") {
-              const removed = payload.old as Pick<WatchItem, "id">;
-              setItems((current) => current.filter((item) => item.id !== removed.id));
-              setSelectedItem((current) => (current?.id === removed.id ? null : current));
-            }
-          },
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
 
-    let cleanup: (() => void) | undefined;
-    loadPage().then((value) => {
-      cleanup = value;
-    });
+    loadPage();
 
     return () => {
+      ignore = true;
       if (deleteTimerRef.current) window.clearTimeout(deleteTimerRef.current);
-      cleanup?.();
     };
   }, [router]);
+
+  useEffect(() => {
+    if (!couple?.id) return;
+
+    const channel = supabase
+      .channel(`watch-items:${couple.id}:${crypto.randomUUID()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "watch_items",
+          filter: `couple_id=eq.${couple.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const next = payload.new as WatchItem;
+            setItems((current) =>
+              current.some((item) => item.id === next.id) ? current : [next, ...current],
+            );
+          }
+
+          if (payload.eventType === "UPDATE") {
+            const next = payload.new as WatchItem;
+            setItems((current) =>
+              current.map((item) => (item.id === next.id ? next : item)),
+            );
+            setSelectedItem((current) => (current?.id === next.id ? next : current));
+          }
+
+          if (payload.eventType === "DELETE") {
+            const removed = payload.old as Pick<WatchItem, "id">;
+            setItems((current) => current.filter((item) => item.id !== removed.id));
+            setSelectedItem((current) => (current?.id === removed.id ? null : current));
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [couple?.id]);
 
   function getAddedByName(userId: string) {
     if (!couple || !currentUserId) return "Партнёр";
@@ -226,31 +223,6 @@ export default function WatchPage() {
     }
 
     setIsSaving(true);
-    const normalizedExternalUrl = normalizeOptionalUrl(externalUrl);
-    let normalizedPosterUrl = normalizeOptionalUrl(posterUrl);
-
-    if (!normalizedPosterUrl && posterFile) {
-      const posterUpload = await compressImageFile(posterFile, {
-        maxWidth: 1200,
-        maxHeight: 1200,
-        quality: 0.78,
-      });
-      const filePath = getPosterPath(couple.id, posterUpload);
-      const { error: uploadError } = await supabase.storage
-        .from("watch-posters")
-        .upload(filePath, posterUpload, { upsert: true });
-
-      if (uploadError) {
-        setMessage("Не удалось загрузить постер. Попробуйте ссылку на изображение.");
-        setIsSaving(false);
-        return;
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("watch-posters")
-        .getPublicUrl(filePath);
-      normalizedPosterUrl = publicUrlData.publicUrl;
-    }
     const { data, error } = await supabase
       .from("watch_items")
       .insert([
@@ -259,8 +231,8 @@ export default function WatchPage() {
           title: trimmedTitle,
           content_type: contentType,
           added_by: currentUserId,
-          external_url: normalizedExternalUrl || null,
-          poster_url: normalizedPosterUrl || null,
+          external_url: null,
+          poster_url: null,
         },
       ])
       .select("*")
@@ -278,9 +250,6 @@ export default function WatchPage() {
 
     setItems((current) => [data as WatchItem, ...current]);
     setTitle("");
-    setExternalUrl("");
-    setPosterUrl("");
-    setPosterFile(null);
     setMessage("Добавлено в список на просмотр.");
     setIsSaving(false);
   }
@@ -427,7 +396,7 @@ export default function WatchPage() {
             {getContentTypeIcon(item.content_type)}
           </span>
           <span
-            className={`rounded-full px-3 py-1 text-xs font-black ${
+            className={`max-w-[11rem] rounded-full px-3 py-1 text-center text-xs font-black leading-tight sm:max-w-[12rem] ${
               item.is_watched
                 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-100"
                 : "bg-lime-100 text-lime-700 dark:bg-lime-400/15 dark:text-lime-100"
@@ -437,27 +406,29 @@ export default function WatchPage() {
           </span>
         </div>
 
-        <h3 className="mt-4 break-words text-2xl font-black text-lime-950 dark:text-white">
+        <h3 className="mt-4 min-w-0 break-words text-2xl font-black leading-tight text-lime-950 dark:text-white [overflow-wrap:anywhere]">
           {item.title}
         </h3>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs font-black uppercase tracking-wide text-lime-900/55 dark:text-white/45">
-          <span>{getContentTypeLabel(item.content_type)}</span>
-          <span>Добавил: {getAddedByName(item.added_by)}</span>
+        <div className="mt-3 flex min-w-0 flex-wrap gap-2 text-xs font-black uppercase tracking-wide text-lime-900/55 dark:text-white/45">
+          <span className="min-w-0 [overflow-wrap:anywhere]">{getContentTypeLabel(item.content_type)}</span>
+          <span className="min-w-0 [overflow-wrap:anywhere]">Добавил: {getAddedByName(item.added_by)}</span>
         </div>
 
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-          <button
-            type="button"
-            onClick={() => openEveningMode(item)}
-            className="rounded-full bg-white/75 px-4 py-2.5 text-sm font-black text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
-          >
-            Вечерний режим
-          </button>
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          {item.is_watched && (
+            <button
+              type="button"
+              onClick={() => openEveningMode(item)}
+              className="min-w-0 rounded-full bg-white/75 px-4 py-2.5 text-center text-sm font-black leading-tight text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
+            >
+              Вечерний режим
+            </button>
+          )}
           {!item.is_watched && (
             <button
               type="button"
               onClick={() => markWatched(item)}
-              className="rounded-full bg-lime-600 px-4 py-2.5 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5"
+              className="min-w-0 rounded-full bg-lime-600 px-4 py-2.5 text-center text-sm font-black leading-tight text-white shadow-lg transition hover:-translate-y-0.5"
             >
               Отметить как просмотрено
             </button>
@@ -465,7 +436,7 @@ export default function WatchPage() {
           <button
             type="button"
             onClick={() => deleteItem(item)}
-            className="rounded-full bg-white/75 px-4 py-2.5 text-sm font-black text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
+            className="min-w-0 rounded-full bg-white/75 px-4 py-2.5 text-center text-sm font-black leading-tight text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
           >
             Удалить
           </button>
@@ -624,31 +595,6 @@ export default function WatchPage() {
             >
               Добавить
             </button>
-          </div>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <input
-              value={externalUrl}
-              onChange={(event) => setExternalUrl(event.target.value)}
-              placeholder="Ссылка на Кинопоиск, IMDb или трейлер"
-              className="h-12 rounded-2xl border border-lime-200/70 bg-white/82 px-4 font-semibold text-lime-950 outline-none transition placeholder:text-lime-900/35 focus:border-lime-500 dark:border-white/10 dark:bg-black/20 dark:text-white"
-            />
-            <input
-              value={posterUrl}
-              onChange={(event) => setPosterUrl(event.target.value)}
-              placeholder="Ссылка на постер или загрузите файл ниже"
-              className="h-12 rounded-2xl border border-lime-200/70 bg-white/82 px-4 font-semibold text-lime-950 outline-none transition placeholder:text-lime-900/35 focus:border-lime-500 dark:border-white/10 dark:bg-black/20 dark:text-white"
-            />
-          </div>
-          <div className="mt-3 rounded-2xl border border-lime-200/70 bg-white/58 p-3 shadow-inner dark:border-white/10 dark:bg-white/8">
-            <label className="flex flex-col gap-2 text-sm font-black text-lime-800 dark:text-lime-100 sm:flex-row sm:items-center sm:justify-between">
-              <span>{posterFile ? `Постер: ${posterFile.name}` : "Загрузить постер файлом"}</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) => setPosterFile(event.target.files?.[0] || null)}
-                className="max-w-full text-sm font-semibold file:mr-3 file:rounded-full file:border-0 file:bg-lime-600 file:px-4 file:py-2 file:font-black file:text-white"
-              />
-            </label>
           </div>
           {message && (
             <p className="mt-3 text-sm font-black text-lime-800 dark:text-lime-100">

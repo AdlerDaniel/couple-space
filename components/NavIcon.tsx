@@ -10,6 +10,7 @@ const iconPaths: Record<NavIconName, string> = {
   dashboard: "M5 13h5v6H5v-6Zm9-8h5v14h-5V5ZM5 5h5v5H5V5Z",
   memories: "M5 7h14v11H5V7Zm3-2h8l1 2H7l1-2Zm1 9 2-2.3 2 2 1.4-1.4L17 15H7l2-1Z",
   tracker: "M5 12h4l2-5 3 10 2-5h3m-12 7h10",
+  calendar: "M5 5.5h14v14H5v-14Zm3-2v4m8-4v4M8 11h2m3 0h2m-7 4h2m3 0h2",
   achievements: "M8 5h8v3a4 4 0 0 1-8 0V5Zm-2 1H4v2a3 3 0 0 0 3 3m10-5h2v2a3 3 0 0 1-3 3m-4 1v4m-3 0h6",
   profile: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0",
   settings: "M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm0-4v2m0 11v2m7.5-7.5h-2m-11 0h-2m12.1-5.1-1.4 1.4m-7.8 7.8-1.4 1.4m0-10.6 1.4 1.4m7.8 7.8 1.4 1.4",

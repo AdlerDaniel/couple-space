@@ -6,6 +6,15 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --ui-radius-sm: 0.75rem;
+  --ui-radius-md: 1rem;
+  --ui-radius-lg: 1.25rem;
+  --ui-radius-xl: 1.5rem;
+  --ui-surface: rgba(255, 255, 255, 0.82);
+  --ui-surface-strong: rgba(255, 255, 255, 0.94);
+  --ui-border: rgba(148, 163, 184, 0.22);
+  --ui-shadow: 0 18px 56px rgba(15, 23, 42, 0.1);
+  --ui-inner: inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -18px 44px rgba(15, 23, 42, 0.035);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,6 +28,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
 html,
@@ -282,6 +292,350 @@ body.app-compact main a {
 
 .ui-pressable:active {
   transform: translateY(1px) scale(0.98);
+}
+
+.ui-lift {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.ui-lift:hover {
+  transform: translateY(-2px);
+}
+
+.anime-word {
+  display: inline-block;
+  transform-origin: 50% 90%;
+  will-change: transform, opacity;
+}
+
+.anime-burst-layer {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.anime-burst-particle,
+.anime-inline-particle {
+  position: fixed;
+  display: inline-grid;
+  height: 1.6rem;
+  width: 1.6rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.18);
+  color: #ea580c;
+  font-size: 0.9rem;
+  font-weight: 900;
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+}
+
+.anime-inline-particle {
+  left: 0;
+  top: 0;
+}
+
+.anime-draggable-card {
+  cursor: grab;
+  touch-action: pan-y;
+  will-change: transform;
+}
+
+.anime-draggable-card.anime-dragging {
+  cursor: grabbing;
+  z-index: 20;
+  box-shadow: 0 34px 90px rgba(77, 124, 15, 0.24);
+}
+
+.anime-journey-svg {
+  display: block;
+  width: 100%;
+  min-height: 8rem;
+  overflow: visible;
+  filter: drop-shadow(0 18px 38px rgba(127, 29, 29, 0.14));
+}
+
+.anime-roulette-wheel {
+  background:
+    conic-gradient(from 0deg, #bef264, #84cc16, #ecfccb, #22c55e, #bef264),
+    #fff;
+  position: relative;
+  will-change: transform;
+}
+
+.anime-roulette-wheel::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 9999px;
+  border: 2px dashed rgba(77, 124, 15, 0.28);
+}
+
+.anime-roulette-result {
+  will-change: transform, opacity;
+}
+
+.anime-heat-cell {
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.app-route-transition {
+  animation: app-route-in 420ms ease both;
+}
+
+@keyframes app-route-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.app-empty-scene {
+  position: relative;
+  isolation: isolate;
+}
+
+.app-empty-scene::before,
+.app-empty-scene::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.1;
+}
+
+.app-empty-scene::before {
+  inset: 12% auto auto 18%;
+  height: 2.6rem;
+  width: 2.6rem;
+}
+
+.app-empty-scene::after {
+  inset: auto 17% 10% auto;
+  height: 1.7rem;
+  width: 1.7rem;
+}
+
+.couple-pulse {
+  position: relative;
+}
+
+.couple-pulse::after {
+  content: "";
+  position: absolute;
+  right: -3rem;
+  top: -3rem;
+  height: 10rem;
+  width: 10rem;
+  border-radius: 9999px;
+  background: var(--scroll-accent, #ea580c);
+  opacity: 0.1;
+  filter: blur(8px);
+}
+
+.couple-pulse-orb {
+  position: relative;
+  display: inline-block;
+  height: 0.9rem;
+  width: 0.9rem;
+  flex: 0 0 auto;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--scroll-accent, #ea580c) 35%, transparent);
+  animation: couple-pulse-ring 2.6s ease-out infinite;
+}
+
+@keyframes couple-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--scroll-accent, #ea580c) 38%, transparent);
+  }
+
+  72% {
+    box-shadow: 0 0 0 1rem transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.calendar-day {
+  min-height: 6.25rem;
+}
+
+.mobile-active-glow {
+  position: absolute;
+  inset: auto 18% -0.15rem;
+  height: 0.2rem;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anime-word,
+  .anime-burst-particle,
+  .anime-inline-particle,
+  .anime-draggable-card,
+  .anime-journey-svg,
+  .anime-roulette-wheel,
+  .anime-roulette-result,
+  .anime-heat-cell,
+  .app-route-transition,
+  .couple-pulse-orb {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+.ui-card {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.ui-card-compact {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-inner);
+}
+
+.ui-action-card {
+  border: 1px solid color-mix(in srgb, var(--scroll-accent, #ea580c) 24%, white 28%);
+  border-radius: var(--ui-radius-xl);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--scroll-accent, #ea580c) 10%, white 88%), var(--ui-surface-strong));
+  box-shadow: 0 20px 64px color-mix(in srgb, var(--scroll-accent, #ea580c) 15%, transparent);
+}
+
+.ui-button {
+  display: inline-flex;
+  min-height: 2.55rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  background: var(--scroll-accent, #ea580c);
+  color: #fff;
+  padding: 0.62rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--scroll-accent, #ea580c) 30%, transparent);
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.ui-button:hover {
+  transform: translateY(-1px);
+  opacity: 0.94;
+}
+
+.ui-button:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.ui-button-secondary {
+  display: inline-flex;
+  min-height: 2.45rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--scroll-accent, #ea580c) 20%, white 40%);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--scroll-accent, #ea580c) 9%, white 78%);
+  color: color-mix(in srgb, var(--scroll-accent, #ea580c) 76%, #111827);
+  padding: 0.58rem 0.95rem;
+  font-size: 0.875rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: var(--ui-inner);
+}
+
+.ui-chip {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--scroll-accent, #ea580c) 16%, white 42%);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--scroll-accent, #ea580c) 8%, white 82%);
+  color: color-mix(in srgb, var(--scroll-accent, #ea580c) 70%, #111827);
+  padding: 0.42rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.ui-eyebrow {
+  color: color-mix(in srgb, var(--scroll-accent, #ea580c) 68%, #111827);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ui-section-title {
+  color: color-mix(in srgb, var(--scroll-accent, #ea580c) 42%, #111827);
+  font-weight: 900;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.ui-muted {
+  color: color-mix(in srgb, var(--scroll-accent, #ea580c) 26%, #111827 74%);
+  opacity: 0.72;
+  font-weight: 650;
+  text-wrap: pretty;
+}
+
+.ui-readable {
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f2937;
+}
+
+.dark .ui-card,
+.dark .ui-card-compact,
+.dark .ui-action-card {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.075);
+  box-shadow: 0 18px 56px rgba(0, 0, 0, 0.32);
+}
+
+.dark .ui-button-secondary,
+.dark .ui-chip {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.dark .ui-eyebrow,
+.dark .ui-section-title,
+.dark .ui-muted {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.dark .ui-readable {
+  background: rgba(12, 10, 9, 0.78);
+  color: #fff;
 }
 
 .ui-skeleton {
@@ -1191,6 +1545,18 @@ body.app-compact main a {
   .mobile-sticky-action button,
   .mobile-sticky-action a {
     min-height: 3.15rem;
+  }
+
+  .ui-card,
+  .ui-action-card {
+    border-radius: 1.15rem;
+    box-shadow: 0 14px 38px rgba(15, 23, 42, 0.09);
+  }
+
+  .ui-button,
+  .ui-button-secondary {
+    width: 100%;
+    min-height: 3rem;
   }
 
   button,

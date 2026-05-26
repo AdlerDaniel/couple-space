@@ -12,6 +12,7 @@ import {
   dashboardAccentStorageKey,
   dashboardThemeAccents,
 } from "@/lib/dashboardTheme";
+import { CountUp, PulseBurst, RelationshipJourney } from "@/components/AnimeWidgets";
 import NextImage from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -1075,6 +1076,8 @@ export default function DashboardPage() {
       : unlockedAchievementList.slice(0, 3);
   const weeklyActivityCount = getWeeklyActivityCount(activity);
   const latestImportantActivity = activity[0];
+  const totalDashboardActivity =
+    stats.memories + stats.questionAnswers + stats.quizzes + stats.statusUpdates;
 
   useEffect(() => {
     if (!isDashboardLoaded || !couple || !currentUserId || achievements.length === 0) {
@@ -1369,6 +1372,7 @@ export default function DashboardPage() {
   return (
     <main
       className={`min-h-screen bg-gradient-to-b ${theme.page} ${theme.darkPage} px-4 pb-28 pt-20 ${theme.text} transition-colors dark:text-white md:px-6 md:pt-28`}
+      style={{ ["--scroll-accent" as string]: "#dc2626" }}
     >
       <div className="mx-auto max-w-6xl space-y-5 md:space-y-8">
         <section
@@ -1480,15 +1484,13 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section
-          className={`rounded-[1.75rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-4 shadow-2xl md:p-6`}
-        >
+        <section className="ui-card p-4 md:p-6">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className={`text-sm font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
+              <p className="ui-eyebrow">
                 Сводка состояния
               </p>
-              <h2 className="mt-1 text-3xl font-black">Что видно по паре сейчас</h2>
+              <h2 className="ui-section-title mt-1 text-3xl">Что видно по паре сейчас</h2>
             </div>
             <p className={`max-w-xl text-sm font-semibold ${theme.muted} dark:text-white/65`}>
               Здесь собрана динамика и история. Ежедневные действия живут на странице
@@ -1501,7 +1503,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <article className="rounded-3xl border border-white/45 bg-white/45 p-5 shadow-inner dark:border-white/10 dark:bg-white/5">
+            <article className="ui-card-compact p-5">
               <p className="text-sm font-black uppercase tracking-wide opacity-60">
                 Статус пары
               </p>
@@ -1525,27 +1527,31 @@ export default function DashboardPage() {
               </div>
             </article>
 
-            <article className="rounded-3xl border border-white/45 bg-white/45 p-5 shadow-inner dark:border-white/10 dark:bg-white/5">
+            <article className="ui-card-compact p-5">
               <p className="text-sm font-black uppercase tracking-wide opacity-60">
                 Серия ответов
               </p>
-              <p className="mt-4 text-5xl font-black">{stats.streak}</p>
+              <p className="mt-4 text-5xl font-black">
+                <CountUp value={stats.streak} />
+              </p>
               <p className={`mt-2 text-sm font-semibold ${theme.muted} dark:text-white/65`}>
                 дней подряд с ответами на вопросы. Это главный показатель ритма общения.
               </p>
             </article>
 
-            <article className="rounded-3xl border border-white/45 bg-white/45 p-5 shadow-inner dark:border-white/10 dark:bg-white/5">
+            <article className="ui-card-compact p-5">
               <p className="text-sm font-black uppercase tracking-wide opacity-60">
                 Активность недели
               </p>
-              <p className="mt-4 text-5xl font-black">{weeklyActivityCount}</p>
+              <p className="mt-4 text-5xl font-black">
+                <CountUp value={weeklyActivityCount} />
+              </p>
               <p className={`mt-2 text-sm font-semibold ${theme.muted} dark:text-white/65`}>
                 событий за последние 7 дней: ответы, викторины, воспоминания и реакции.
               </p>
             </article>
 
-            <article className="rounded-3xl border border-white/45 bg-white/45 p-5 shadow-inner dark:border-white/10 dark:bg-white/5">
+            <article className="ui-card-compact p-5">
               <p className="text-sm font-black uppercase tracking-wide opacity-60">
                 Последнее важное
               </p>
@@ -1566,10 +1572,27 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        <section className="ui-card p-5 md:p-6">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className={`text-sm font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
+                Путь пары
+              </p>
+              <h2 className="mt-1 text-2xl font-black">Живая линия прогресса</h2>
+            </div>
+            <p className={`max-w-md text-sm font-semibold ${theme.muted} dark:text-white/65`}>
+              Линия двигается по дням вместе и общей активности, чтобы кабинет ощущался живым.
+            </p>
+          </div>
+          <RelationshipJourney
+            daysTogether={daysTogether}
+            activity={totalDashboardActivity}
+            className="mt-5 rounded-[1.5rem] bg-white/35 p-4 shadow-inner dark:bg-white/6"
+          />
+        </section>
+
         <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
-          <div
-            className={`rounded-[1.75rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-5 shadow-2xl md:p-6`}
-          >
+          <div className="ui-card p-5 md:p-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className={`text-sm font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
@@ -1579,7 +1602,7 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setIsTimelineOpen(true)}
-                className="rounded-full bg-white/60 px-4 py-2 text-sm font-black shadow-inner transition hover:bg-red-50/80 dark:bg-white/10 dark:hover:bg-red-500/12"
+                className="ui-button-secondary"
               >
                 Открыть таймлайн
               </button>
@@ -1594,21 +1617,21 @@ export default function DashboardPage() {
               ].map(([icon, label, value]) => (
                 <div
                   key={label}
-                  className="rounded-2xl border border-white/40 bg-white/38 p-4 shadow-inner dark:border-white/10 dark:bg-white/5"
+                  className="ui-card-compact p-4"
                 >
                   <p className="text-2xl">{icon}</p>
                   <p className={`mt-3 text-xs font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
                     {label}
                   </p>
-                  <p className="mt-1 text-3xl font-black">{value}</p>
+                  <p className="mt-1 text-3xl font-black">
+                    {typeof value === "number" ? <CountUp value={value} /> : value}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div
-            className={`rounded-[1.75rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-5 shadow-2xl md:p-6`}
-          >
+          <div className="ui-card p-5 md:p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className={`text-sm font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
@@ -1624,7 +1647,7 @@ export default function DashboardPage() {
                   setAchievementView(unlockedAchievements > 0 ? "unlocked" : "locked");
                   setIsAchievementsOpen(true);
                 }}
-                className="rounded-full bg-white/60 px-4 py-2 text-sm font-black shadow-inner transition hover:bg-red-50/80 dark:bg-white/10 dark:hover:bg-red-500/12"
+                className="ui-button-secondary"
               >
                 Все
               </button>
@@ -1640,7 +1663,7 @@ export default function DashboardPage() {
                   <button
                     key={achievement.id}
                     onClick={() => setSelectedAchievement(achievement)}
-                    className="w-full rounded-2xl border border-white/40 bg-white/42 p-4 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-red-50/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-red-500/12"
+                    className="ui-card-compact ui-lift w-full p-4 text-left"
                   >
                     <div className="flex items-start gap-3">
                       <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/65 text-2xl shadow-inner dark:bg-white/10">
@@ -2128,6 +2151,7 @@ export default function DashboardPage() {
 
       {achievementToast && (
         <div className="achievement-toast fixed right-6 top-24 z-40 max-w-sm rounded-3xl border border-white/50 bg-white/85 p-5 text-[#dc2626] shadow-[0_24px_80px_rgba(127,29,29,0.28)] backdrop-blur-2xl dark:border-white/10 dark:bg-black/70 dark:text-white">
+          <PulseBurst trigger={achievementToast.value + achievementToast.target} glyph={achievementToast.icon} />
           <p className="text-xs font-black uppercase tracking-wide text-[#dc2626]/65 dark:text-white/60">
             Новое достижение
           </p>

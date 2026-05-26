@@ -109,10 +109,13 @@ export default function QuizzesPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#f1e7ff] to-[#fbf7ff] px-6 pb-28 pt-28 text-[#7c3aed] transition-colors dark:from-[#170525] dark:to-[#09020f] dark:text-[#c084fc]">
+    <main
+      className="min-h-screen bg-gradient-to-b from-[#f1e7ff] to-[#fbf7ff] px-6 pb-28 pt-28 text-[#7c3aed] transition-colors dark:from-[#170525] dark:to-[#09020f] dark:text-[#c084fc]"
+      style={{ ["--scroll-accent" as string]: "#7c3aed" }}
+    >
       <section className="mx-auto max-w-6xl">
         <div className="mb-10 text-center">
-          <p className="mx-auto mb-4 inline-flex rounded-full border border-[#7c3aed]/20 bg-white/55 px-5 py-2 text-sm font-semibold text-[#7c3aed] shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe]">
+          <p className="ui-chip mx-auto mb-4">
             6 категорий · 60 карточек · 600 вопросов
           </p>
 
@@ -125,7 +128,7 @@ export default function QuizzesPage() {
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 rounded-[1.25rem] bg-white/45 p-2 shadow-inner dark:bg-white/5 sm:grid-cols-2 lg:grid-cols-3">
           {quizCategories.map((category) => {
             const items = quizzes.filter((quiz) => quiz.category === category);
             const completed = items.filter((quiz) => progress.mine.has(quiz.id)).length;
@@ -136,10 +139,10 @@ export default function QuizzesPage() {
                 key={category}
                 type="button"
                 onClick={() => setActiveCategory(category)}
-                className={`rounded-3xl border p-5 text-left shadow-lg transition hover:-translate-y-0.5 ${
+                className={`ui-lift rounded-[1rem] border p-4 text-left ${
                   isActive
-                    ? "border-[#7c3aed]/35 bg-[#7c3aed] text-white shadow-[0_20px_60px_rgba(124,58,237,0.28)]"
-                    : "border-white/55 bg-white/45 text-[#6d28d9] hover:bg-violet-50 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
+                    ? "border-[#7c3aed]/35 bg-[#7c3aed] text-white shadow-[0_16px_42px_rgba(124,58,237,0.24)]"
+                    : "border-white/55 bg-white/72 text-[#6d28d9] shadow-inner hover:bg-violet-50 dark:border-white/10 dark:bg-white/8 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
                 }`}
               >
                 <span className="block text-xl font-black">{category}</span>
@@ -154,13 +157,13 @@ export default function QuizzesPage() {
           })}
         </div>
 
-        <section className="mt-8 rounded-[2rem] bg-gradient-to-b from-[#dfc8ff] to-[#eadcff] p-6 shadow-2xl dark:from-[#2b1240] dark:to-[#1b0828]">
+        <section className="ui-card mt-8 p-6">
           <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-[#8b5cf6] dark:text-[#d8b4fe]">
+              <p className="ui-eyebrow">
                 Выбранная категория
               </p>
-              <h2 className="mt-2 text-4xl font-black text-[#6d28d9] dark:text-[#c084fc]">
+              <h2 className="ui-section-title mt-2 text-4xl">
                 {activeCategory}
               </h2>
             </div>
@@ -173,7 +176,7 @@ export default function QuizzesPage() {
               ].map(([label, value]) => (
                 <div
                   key={label}
-                  className="rounded-2xl bg-white/45 p-3 shadow-inner dark:bg-white/8"
+                  className="ui-card-compact p-3"
                 >
                   <span className="block text-2xl font-black text-[#6d28d9] dark:text-[#c084fc]">
                     {value}
@@ -195,10 +198,10 @@ export default function QuizzesPage() {
               return (
                 <article
                   key={quiz.id}
-                  className={`flex min-h-72 flex-col rounded-3xl p-6 shadow-inner transition hover:-translate-y-1 ${
+                  className={`ui-card-compact ui-lift flex min-h-72 flex-col p-6 ${
                     isMineCompleted
-                      ? "bg-slate-300/75 text-slate-700 hover:bg-slate-300/85 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-700/80"
-                      : "bg-white/40 text-[#6d28d9] hover:bg-violet-50/70 dark:bg-white/5 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
+                      ? "bg-slate-200/85 text-slate-700 hover:bg-slate-200 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-700/80"
+                      : "bg-white/72 text-[#6d28d9] hover:bg-violet-50/70 dark:bg-white/8 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
                   }`}
                 >
                   <div className="mb-5 flex items-start justify-between gap-3">
@@ -208,7 +211,7 @@ export default function QuizzesPage() {
                       </p>
                       <h3 className="mt-2 text-2xl font-black">{quiz.title}</h3>
                     </div>
-                    <span className="shrink-0 rounded-full bg-[#7c3aed] px-3 py-1 text-sm font-black text-white shadow-lg">
+                    <span className="ui-chip shrink-0 bg-[#7c3aed] text-white">
                       10
                     </span>
                   </div>
@@ -218,16 +221,16 @@ export default function QuizzesPage() {
                   </p>
 
                   <div className="mt-5 flex flex-wrap gap-2">
-                    <span className="rounded-full bg-white/65 px-3 py-1 text-sm font-bold text-[#6d28d9] dark:bg-white/10 dark:text-[#d8b4fe]">
+                      <span className="ui-chip">
                       {quiz.duration}
                     </span>
                     {isMineCompleted && (
-                      <span className="rounded-full bg-slate-700 px-3 py-1 text-sm font-bold text-white dark:bg-slate-200 dark:text-slate-950">
+                      <span className="ui-chip bg-slate-700 text-white dark:bg-slate-200 dark:text-slate-950">
                         Вы прошли
                       </span>
                     )}
                     {isPartnerCompleted && (
-                      <span className="rounded-full bg-[#7c3aed]/15 px-3 py-1 text-sm font-bold text-[#6d28d9] dark:bg-white/10 dark:text-[#d8b4fe]">
+                      <span className="ui-chip">
                         Партнёр прошёл
                       </span>
                     )}
@@ -239,7 +242,7 @@ export default function QuizzesPage() {
                         ? `/quizzes/result?quiz=${quiz.id}`
                         : `/quizzes/play?quiz=${quiz.id}`
                     }
-                    className={`mt-6 rounded-full px-6 py-3 text-center font-black shadow-lg transition ${
+                    className={`ui-button mt-6 text-center ${
                       isMineCompleted
                         ? "bg-slate-700 text-white hover:bg-slate-800 dark:bg-slate-200 dark:text-slate-950 dark:hover:bg-white"
                         : "bg-[#7c3aed] text-white hover:bg-[#8b5cf6]"

@@ -6,10 +6,16 @@ type AppSkeletonProps = {
 export default function AppSkeleton({ rows = 3, accent = "#be123c" }: AppSkeletonProps) {
   return (
     <div
-      className="app-glass rounded-3xl p-5"
-      style={{ color: accent, borderColor: `${accent}25` }}
+      className="ui-card p-5"
+      style={{ ["--scroll-accent" as string]: accent, color: accent }}
     >
-      <div className="ui-skeleton h-10 w-10 rounded-2xl" />
+      <div className="flex items-center gap-3">
+        <div className="ui-skeleton h-12 w-12 rounded-[1rem]" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="ui-skeleton h-3 w-1/2 rounded-full" />
+          <div className="ui-skeleton h-5 w-3/4 rounded-full" />
+        </div>
+      </div>
       <div className="mt-5 space-y-3">
         {Array.from({ length: rows }).map((_, index) => (
           <div

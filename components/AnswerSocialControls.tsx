@@ -1,6 +1,7 @@
 "use client";
 
 import { createPartnerNotification } from "@/lib/notifications";
+import { PulseBurst } from "@/components/AnimeWidgets";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -57,6 +58,7 @@ export default function AnswerSocialControls<TRecord extends object>({
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
   const [commentText, setCommentText] = useState("");
   const [commentMessage, setCommentMessage] = useState("");
+  const [reactionBurst, setReactionBurst] = useState<{ emoji: string; key: number } | null>(null);
   const socialRecord = record as Record<string, unknown>;
   const userReaction = currentUserId
     ? readMap(socialRecord[reactionColumn])[currentUserId]
@@ -189,6 +191,7 @@ export default function AnswerSocialControls<TRecord extends object>({
 
     const didUpdate = await updateSocial({ [reactionColumn]: nextReactions });
     if (didUpdate && userReaction !== reaction) {
+      setReactionBurst((current) => ({ emoji: reaction, key: (current?.key || 0) + 1 }));
       await notifyPartner("reaction", reaction);
     }
   }
@@ -254,14 +257,16 @@ export default function AnswerSocialControls<TRecord extends object>({
             <button
               key={reaction}
               type="button"
+              data-anime-burst={reaction}
               onClick={() => toggleReaction(reaction)}
               disabled={disabled || isSaving}
-              className={`inline-flex h-10 min-w-10 items-center justify-center gap-1 rounded-full border px-2 text-lg shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
+              className={`relative inline-flex h-10 min-w-10 items-center justify-center gap-1 rounded-full border px-2 text-lg shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
                 userReaction === reaction
                   ? "border-emerald-300 bg-emerald-100 shadow-[0_10px_30px_rgba(21,128,61,0.18)] dark:border-emerald-300/30 dark:bg-emerald-300/18"
                   : "border-white/70 bg-white/62 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/15"
               }`}
             >
+              <PulseBurst trigger={reactionBurst?.emoji === reaction ? reactionBurst.key : 0} glyph={reaction} />
               <span>{reaction}</span>
               {userIds.length > 1 ? (
                 <span className="text-xs font-black text-emerald-700 dark:text-emerald-100">{userIds.length}</span>

@@ -41,12 +41,18 @@ export default function AppToast() {
 
   return (
     <div
-      className="app-toast app-glass fixed right-4 top-24 z-50 max-w-sm rounded-3xl p-4 text-sm font-bold max-sm:inset-x-4 max-sm:top-4"
+      className="app-toast app-glass fixed right-4 top-24 z-50 max-w-sm rounded-3xl p-4 text-sm font-bold shadow-[0_24px_70px_rgba(15,23,42,0.22)] max-sm:inset-x-4 max-sm:top-4"
       style={{ color: toast.accent || "#be123c" }}
       role="status"
+      data-anime-reveal
     >
-      <p className="font-black">{toast.title}</p>
-      {toast.text && <p className="mt-1 opacity-70">{toast.text}</p>}
+      <div className="flex items-start gap-3">
+        <span className="couple-pulse-orb mt-1" style={{ backgroundColor: toast.accent || "#be123c" }} />
+        <div className="min-w-0">
+          <p className="font-black">{toast.title}</p>
+          {toast.text && <p className="mt-1 opacity-70">{toast.text}</p>}
+        </div>
+      </div>
     </div>
   );
 }

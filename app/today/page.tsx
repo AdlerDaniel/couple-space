@@ -1,5 +1,8 @@
 "use client";
 
+import AppSkeleton from "@/components/AppSkeleton";
+import CouplePulse from "@/components/CouplePulse";
+import EmptyState from "@/components/EmptyState";
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { quizzes } from "@/lib/quizzes";
 import { supabase } from "@/lib/supabaseClient";
@@ -93,6 +96,13 @@ export default function TodayPage() {
   const isPartnerOne = state.userId === state.couple?.partner_one_id;
   const myAnswer = isPartnerOne ? state.answer?.answer_one : state.answer?.answer_two;
   const partnerAnswer = isPartnerOne ? state.answer?.answer_two : state.answer?.answer_one;
+  const todayPulseStatus = partnerAnswer
+    ? "new"
+    : myAnswer
+      ? "waiting"
+      : state.watchRemaining || state.goal || state.chat
+        ? "active"
+        : "empty";
 
   useEffect(() => {
     async function loadToday() {
@@ -234,12 +244,18 @@ export default function TodayPage() {
       color: "orange",
     },
   ];
+  const ritualSteps = [
+    { label: "Вопрос", done: Boolean(myAnswer), href: myAnswer ? "/questions/today" : "/questions/answer" },
+    { label: "Цель", done: Boolean(state.goal), href: "/tracker" },
+    { label: "Сообщение", done: Boolean(state.chat), href: "/chat" },
+    { label: "Вечер", done: state.watchRemaining > 0, href: "/watch" },
+  ];
 
   if (state.isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#fff8ed] px-6 text-[#c2410c] dark:bg-[#140b05] dark:text-white">
-        <div className="rounded-3xl bg-white/60 p-8 font-black shadow-xl dark:bg-white/8">
-          Собираем день пары...
+        <div className="w-full max-w-xl">
+          <AppSkeleton rows={5} accent="#ea580c" />
         </div>
       </main>
     );
@@ -270,23 +286,61 @@ export default function TodayPage() {
         </div>
 
         {!state.userId ? (
-          <div className="mt-5 rounded-[2rem] bg-white/62 p-6 text-center shadow-inner dark:bg-white/8">
-            <p className="text-2xl font-black">Войдите, чтобы собрать день пары</p>
-            <p className="mt-2 font-semibold opacity-65">После входа здесь появятся вопрос дня, цель, чат и быстрые действия.</p>
-            <Link href="/login" className="mt-4 inline-flex rounded-full bg-[#ea580c] px-5 py-3 font-black text-white">
-              Войти
-            </Link>
+          <div className="mt-5">
+            <EmptyState
+              icon="◌"
+              title="Войдите, чтобы собрать день пары"
+              text="После входа здесь появятся вопрос дня, цель, чат и быстрые действия."
+              actionHref="/login"
+              actionLabel="Войти"
+              accent="#ea580c"
+            />
           </div>
         ) : !state.couple ? (
-          <div className="mt-5 rounded-[2rem] bg-white/62 p-6 text-center shadow-inner dark:bg-white/8">
-            <p className="text-2xl font-black">Создайте пару</p>
-            <p className="mt-2 font-semibold opacity-65">Пригласите партнёра, чтобы открыть общий день, ответы и цели.</p>
-            <Link href="/profile" className="mt-4 inline-flex rounded-full bg-[#ea580c] px-5 py-3 font-black text-white">
-              Создать пару
-            </Link>
+          <div className="mt-5">
+            <EmptyState
+              icon="♡"
+              title="Создайте пару"
+              text="Пригласите партнёра, чтобы открыть общий день, ответы и цели."
+              actionHref="/profile"
+              actionLabel="Создать пару"
+              accent="#ea580c"
+            />
           </div>
         ) : (
           <>
+            <div className="mt-5">
+              <CouplePulse
+                title="Сегодняшний ритм"
+                status={todayPulseStatus}
+                accent="#ea580c"
+                stats={[
+                  { label: "шагов", value: ritualSteps.filter((step) => step.done).length },
+                  { label: "фильмов", value: state.watchRemaining },
+                  { label: "всего", value: state.watchTotal },
+                ]}
+                actionHref={!myAnswer ? "/questions/answer" : partnerAnswer ? "/questions/today" : "/chat"}
+                actionLabel={!myAnswer ? "Ответить" : partnerAnswer ? "Открыть ответ" : "Написать"}
+              />
+            </div>
+
+            <div className="mt-5 grid gap-2 md:grid-cols-4">
+              {ritualSteps.map((step, index) => (
+                <Link
+                  key={step.label}
+                  href={step.href}
+                  className={`ui-card-compact ui-lift p-4 ${step.done ? "bg-orange-50/90 text-orange-900 dark:bg-orange-500/16 dark:text-white" : ""}`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-black">{step.label}</p>
+                    <span className="grid h-8 w-8 place-items-center rounded-full bg-white/72 text-sm font-black shadow-inner dark:bg-white/10">
+                      {step.done ? "✓" : index + 1}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
             <div className="mt-5 rounded-[2rem] border border-orange-200/60 bg-orange-50/80 p-5 shadow-inner dark:border-orange-200/10 dark:bg-orange-500/10">
               <p className="text-sm font-black uppercase tracking-[0.18em] opacity-55">Лучший следующий шаг</p>
               <h2 className="mt-2 text-3xl font-black">

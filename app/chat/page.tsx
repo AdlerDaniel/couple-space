@@ -2065,7 +2065,7 @@ export default function ChatPage() {
                               );
                               const singleUser = userIds.length === 1 ? getChatUserMeta(userIds[0]) : null;
                               return (
-                              <button key={emoji} onClick={() => toggleReaction(message, emoji)} className={`chat-reaction-pill inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-black shadow-inner ${isMyReaction ? "bg-sky-100 text-sky-700 ring-2 ring-white/70 dark:bg-sky-500/30 dark:text-white" : "bg-white/72 text-sky-700 dark:bg-black/25 dark:text-white"}`}>
+                              <button key={emoji} data-anime-burst={emoji} onClick={() => toggleReaction(message, emoji)} className={`chat-reaction-pill inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-black shadow-inner ${isMyReaction ? "bg-sky-100 text-sky-700 ring-2 ring-white/70 dark:bg-sky-500/30 dark:text-white" : "bg-white/72 text-sky-700 dark:bg-black/25 dark:text-white"}`}>
                                 <span>{emoji}</span>
                                 {userIds.length > 1 ? (
                                   <span className="text-[11px]">{userIds.length}</span>

@@ -1493,7 +1493,7 @@ function YearHeatmap({
             <div
               key={day.dateKey}
               title={title}
-              className="aspect-square rounded-[0.25rem] transition hover:scale-150 hover:ring-2 hover:ring-white"
+              className="anime-heat-cell aspect-square rounded-[0.25rem] transition hover:scale-150 hover:ring-2 hover:ring-white"
               style={{
                 backgroundColor: day.score ? `rgba(202,138,4,${opacity})` : "rgba(255,255,255,0.55)",
               }}

@@ -8,6 +8,7 @@ export type NavIconName =
   | "dashboard"
   | "memories"
   | "tracker"
+  | "calendar"
   | "achievements"
   | "profile"
   | "settings"
@@ -42,6 +43,7 @@ export const secondaryNavLinks: NavLinkItem[] = [
   { label: "Кабинет", href: "/dashboard", icon: "dashboard", description: "Аналитика пары" },
   { label: "Воспоминания", href: "/memories", icon: "memories", description: "Фото и моменты" },
   { label: "Трекер", href: "/tracker", icon: "tracker", description: "Цели и привычки" },
+  { label: "Календарь", href: "/calendar", icon: "calendar", description: "События пары по дням" },
   { label: "Чат", href: "/chat", icon: "chat", description: "Сообщения" },
 ];
 
@@ -120,6 +122,11 @@ export const routeMeta: Record<
     label: "Трекер",
     description: "Цели, привычки и прогресс",
     icon: "tracker",
+  },
+  "/calendar": {
+    label: "Календарь",
+    description: "Вопросы, фильмы, цели и воспоминания по дням",
+    icon: "calendar",
   },
   "/profile": {
     label: "Профиль",

@@ -6,6 +6,7 @@ import {
   normalizeWatchTitle,
   shouldAutoSpinWatch,
 } from "@/lib/watchList";
+import { AnimatedText, CountUp } from "@/components/AnimeWidgets";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -80,6 +81,8 @@ export default function WatchPage() {
   const [eveningModeItem, setEveningModeItem] = useState<WatchItem | null>(null);
   const deleteTimerRef = useRef<number | null>(null);
   const autoSpinDoneRef = useRef(false);
+  const rouletteWheelRef = useRef<HTMLDivElement | null>(null);
+  const rouletteResultRef = useRef<HTMLDivElement | null>(null);
 
   const visibleItems = useMemo(
     () => items.filter((item) => item.id !== pendingDelete?.id),
@@ -349,6 +352,45 @@ export default function WatchPage() {
     return () => window.clearTimeout(timerId);
   }, [isLoading, isSpinning, searchParams, spinRoulette, wishItems.length]);
 
+  useEffect(() => {
+    if (!rouletteWheelRef.current || !isSpinning) return;
+
+    let ignore = false;
+    import("animejs").then(({ animate }) => {
+      if (ignore || !rouletteWheelRef.current) return;
+      animate(rouletteWheelRef.current, {
+        rotate: [0, 1440],
+        scale: [1, 1.08, 1],
+        duration: 1700,
+        ease: "out(3)",
+      });
+    });
+
+    return () => {
+      ignore = true;
+    };
+  }, [isSpinning]);
+
+  useEffect(() => {
+    if (!rouletteResultRef.current || !selectedItem) return;
+
+    let ignore = false;
+    import("animejs").then(({ animate }) => {
+      if (ignore || !rouletteResultRef.current) return;
+      animate(rouletteResultRef.current, {
+        opacity: [0, 1],
+        translateY: [18, 0],
+        scale: [0.92, 1],
+        duration: 620,
+        ease: "out(3)",
+      });
+    });
+
+    return () => {
+      ignore = true;
+    };
+  }, [selectedItem]);
+
   async function saveRoulettePick() {
     if (!selectedItem) return;
 
@@ -378,6 +420,7 @@ export default function WatchPage() {
     return (
       <article
         key={item.id}
+        data-anime-draggable={!item.is_watched ? "true" : undefined}
         className={`group rounded-[1.4rem] border p-4 shadow-[0_18px_45px_rgba(77,124,15,0.12)] transition duration-300 hover:-translate-y-1 dark:shadow-black/20 ${
           item.is_watched
             ? "border-lime-200/60 bg-white/58 opacity-78 dark:border-lime-100/10 dark:bg-white/7"
@@ -415,6 +458,12 @@ export default function WatchPage() {
         </div>
 
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          <Link
+            href={`/watch/${item.id}`}
+            className="min-w-0 rounded-full bg-white/75 px-4 py-2.5 text-center text-sm font-black leading-tight text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
+          >
+            Подробнее
+          </Link>
           {item.is_watched && (
             <button
               type="button"
@@ -492,7 +541,9 @@ export default function WatchPage() {
               key={label}
               className="rounded-[1.35rem] border border-white/60 bg-white/62 p-4 text-center shadow-inner backdrop-blur-xl dark:border-white/10 dark:bg-white/8"
             >
-              <p className="text-3xl font-black text-lime-800 dark:text-white">{value}</p>
+              <p className="text-3xl font-black text-lime-800 dark:text-white">
+                {typeof value === "number" ? <CountUp value={value} /> : value}
+              </p>
               <p className="mt-1 text-xs font-black uppercase tracking-wide text-lime-900/50 dark:text-white/45">
                 {label}
               </p>
@@ -510,17 +561,16 @@ export default function WatchPage() {
             ) : (
               <div className="w-full">
                 <div
-                  className={`mx-auto grid h-36 w-36 place-items-center rounded-full border-[10px] border-lime-300 bg-white text-5xl shadow-[0_20px_70px_rgba(77,124,15,0.2)] transition dark:border-lime-400/35 dark:bg-white/10 ${
-                    isSpinning ? "animate-spin" : ""
-                  }`}
+                  ref={rouletteWheelRef}
+                  className="anime-roulette-wheel mx-auto grid h-36 w-36 place-items-center rounded-full border-[10px] border-lime-300 bg-white text-5xl shadow-[0_20px_70px_rgba(77,124,15,0.2)] transition dark:border-lime-400/35 dark:bg-white/10"
                 >
                   ✦
                 </div>
                 <p className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-lime-800/55 dark:text-white/45">
                   {isSpinning ? "Крутим..." : selectedItem ? "Сегодня выбираем" : "Рулетка вечера"}
                 </p>
-                <h2 className="mx-auto mt-2 max-w-xl break-words text-3xl font-black text-lime-900 dark:text-white md:text-4xl">
-                  {roulettePreview || selectedItem?.title || "Пусть решит случай"}
+                <h2 ref={rouletteResultRef} className="anime-roulette-result mx-auto mt-2 max-w-xl break-words text-3xl font-black text-lime-900 dark:text-white md:text-4xl">
+                  <AnimatedText text={roulettePreview || selectedItem?.title || "Пусть решит случай"} />
                 </h2>
                 {selectedItem && (
                   <p className="mt-2 font-black text-lime-700 dark:text-lime-100">

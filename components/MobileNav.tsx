@@ -312,7 +312,7 @@ export default function MobileNav() {
 
       {isNotificationsOpen && (
         <div
-          className="app-bottom-sheet app-glass fixed inset-x-0 bottom-0 z-40 max-h-[82dvh] overflow-hidden rounded-t-[1.75rem] p-3 pb-24"
+          className="app-bottom-sheet app-glass fixed inset-x-0 bottom-0 z-40 max-h-[82dvh] overflow-hidden rounded-t-[1.35rem] p-3 pb-20"
           style={{
             borderColor: `${accent}55`,
             color: accent,
@@ -338,7 +338,7 @@ export default function MobileNav() {
 
           <div className="max-h-[48vh] overflow-y-auto px-2 pb-2">
             {notifications.length === 0 ? (
-              <div className="rounded-2xl bg-white/70 px-4 py-5 text-sm font-bold opacity-70 shadow-inner dark:bg-white/10">
+              <div className="rounded-[1rem] bg-white/78 px-4 py-5 text-sm font-bold opacity-70 shadow-inner dark:bg-white/10">
                 Пока уведомлений нет.
               </div>
             ) : (
@@ -347,7 +347,7 @@ export default function MobileNav() {
                   key={notification.id}
                   href={notification.href || "/dashboard"}
                   onClick={() => setIsNotificationsOpen(false)}
-                  className="mb-2 block rounded-2xl bg-white/72 px-4 py-3 shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
+                  className="mb-2 block rounded-[1rem] bg-white/78 px-4 py-3 shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
                 >
                   <div className="flex items-start gap-3">
                     <span
@@ -394,14 +394,14 @@ export default function MobileNav() {
 
       {(isMoreOpen || isQuickOpen) && (
         <div
-          className="app-bottom-sheet app-glass fixed inset-x-0 bottom-0 z-40 max-h-[86dvh] overflow-y-auto rounded-t-[1.75rem] p-4 pb-24"
+          className="app-bottom-sheet app-glass fixed inset-x-0 bottom-0 z-40 max-h-[86dvh] overflow-y-auto rounded-t-[1.35rem] p-4 pb-20"
           style={{
             borderColor: `${accent}55`,
             color: accent,
           }}
         >
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-current opacity-25" />
-          <div className="mb-3 rounded-2xl bg-white/72 p-3 shadow-inner dark:bg-white/10">
+          <div className="mb-3 rounded-[1rem] bg-white/82 p-3 shadow-inner dark:bg-white/10">
             <div className="flex items-center gap-3">
               <div
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-xl font-black text-white shadow-lg"
@@ -415,15 +415,15 @@ export default function MobileNav() {
               </div>
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-xl bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
+              <div className="rounded-[0.8rem] bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
                 <p className="text-lg font-black">{unreadNotifications}</p>
                 <p className="truncate text-[10px] font-black uppercase opacity-50">Новых</p>
               </div>
-              <div className="rounded-xl bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
+              <div className="rounded-[0.8rem] bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
                 <p className="text-lg font-black">{quickState.answerStreak}</p>
                 <p className="truncate text-[10px] font-black uppercase opacity-50">Ответов</p>
               </div>
-              <div className="rounded-xl bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
+              <div className="rounded-[0.8rem] bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
                 <p className="truncate text-xs font-black">
                   {quickState.latestGoal?.title || "Нет цели"}
                 </p>
@@ -441,7 +441,7 @@ export default function MobileNav() {
                 key={action.href + action.label}
                 href={action.href}
                 onClick={() => setIsMoreOpen(false)}
-                className="ui-pressable flex min-w-0 flex-col items-center gap-1 rounded-2xl bg-white/72 px-2 py-3 text-center text-xs font-black shadow-inner dark:bg-white/10"
+                className="ui-pressable flex min-w-0 flex-col items-center gap-1 rounded-[1rem] bg-white/78 px-2 py-3 text-center text-xs font-black shadow-inner dark:bg-white/10"
               >
                 <NavIcon name={action.icon} className="h-9 w-9 text-white shadow" />
                 <span className="max-w-full truncate">{action.label}</span>
@@ -456,7 +456,7 @@ export default function MobileNav() {
             <button
               type="button"
               onClick={openNotifications}
-              className="ui-pressable relative flex items-center gap-3 rounded-2xl bg-white/72 px-3 py-3 text-left font-black shadow-inner dark:bg-white/10"
+              className="ui-pressable relative flex items-center gap-3 rounded-[1rem] bg-white/78 px-3 py-3 text-left font-black shadow-inner dark:bg-white/10"
             >
               <NavIcon name="notifications" className="h-8 w-8" />
               <span>Уведомления</span>
@@ -477,8 +477,8 @@ export default function MobileNav() {
                   style={isActive ? { backgroundColor: accent } : undefined}
                   className={
                     isActive
-                      ? "flex min-w-0 items-center gap-3 rounded-2xl px-3 py-3 font-black text-white shadow-lg"
-                      : "ui-pressable flex min-w-0 items-center gap-3 rounded-2xl bg-white/72 px-3 py-3 font-black shadow-inner dark:bg-white/10"
+                      ? "flex min-w-0 items-center gap-3 rounded-[1rem] px-3 py-3 font-black text-white shadow-lg"
+                      : "ui-pressable flex min-w-0 items-center gap-3 rounded-[1rem] bg-white/78 px-3 py-3 font-black shadow-inner dark:bg-white/10"
                   }
                 >
                   <NavIcon name={link.icon} className="h-8 w-8" />
@@ -503,8 +503,8 @@ export default function MobileNav() {
                   style={isActive ? { backgroundColor: accent } : undefined}
                   className={
                     isActive
-                      ? "flex min-w-0 items-center justify-center gap-2 rounded-2xl px-2 py-3 text-sm font-black text-white shadow-lg"
-                      : "ui-pressable flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-white/72 px-2 py-3 text-sm font-black shadow-inner dark:bg-white/10"
+                      ? "flex min-w-0 items-center justify-center gap-2 rounded-[1rem] px-2 py-3 text-sm font-black text-white shadow-lg"
+                      : "ui-pressable flex min-w-0 items-center justify-center gap-2 rounded-[1rem] bg-white/78 px-2 py-3 text-sm font-black shadow-inner dark:bg-white/10"
                   }
                 >
                   <NavIcon name={link.icon} className="h-7 w-7" />
@@ -518,11 +518,11 @@ export default function MobileNav() {
 
       <nav
         style={{
-          background: `linear-gradient(135deg, ${accent}48, ${accent}36 52%, ${accent}2b)`,
-          borderColor: `${accent}85`,
-          boxShadow: `0 18px 48px ${accent}3f`,
+          background: `linear-gradient(135deg, ${accent}30, rgba(255,255,255,0.76))`,
+          borderColor: `${accent}55`,
+          boxShadow: `0 12px 34px ${accent}2f`,
         }}
-        className={`app-glass fixed bottom-2 left-2 right-2 z-40 rounded-[1.1rem] px-1 py-1 transition-transform duration-300 md:hidden ${
+        className={`app-glass fixed bottom-2 left-2 right-2 z-40 rounded-[1rem] px-1 py-1 transition-transform duration-300 md:hidden ${
           isHiddenByScroll ? "translate-y-24" : "translate-y-0"
         }`}
       >
@@ -541,33 +541,16 @@ export default function MobileNav() {
                 }
                 className={
                   isActive
-                    ? "flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 shadow-lg"
-                    : "ui-pressable flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-white/72 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
+                    ? "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[0.8rem] px-0.5 py-1 shadow-lg"
+                    : "ui-pressable flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[0.8rem] bg-white/82 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
                 }
               >
                 <NavIcon name={link.icon} className="h-7 w-7" />
                 <span className="max-w-full truncate whitespace-nowrap">{link.label}</span>
+                {isActive && <span className="mobile-active-glow" />}
               </Link>
             );
           })}
-          <button
-            type="button"
-            onClick={() => {
-              setIsQuickOpen((current) => !current);
-              setIsMoreOpen(false);
-              setIsNotificationsOpen(false);
-            }}
-            style={
-              isQuickOpen
-                ? { color: "#ffffff", backgroundColor: accent }
-                : { color: "#ffffff", backgroundColor: accent }
-            }
-            className="hidden"
-            aria-label="Открыть быстрые действия"
-          >
-            <NavIcon name="plus" className="h-8 w-8" />
-            <span className="max-w-full truncate whitespace-nowrap">Добавить</span>
-          </button>
           <button
             type="button"
             onClick={() => {
@@ -582,13 +565,14 @@ export default function MobileNav() {
             }
             className={
               isMoreOpen
-                ? "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 shadow-lg"
-                : "ui-pressable relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-white/72 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
+                ? "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[0.8rem] px-0.5 py-1 shadow-lg"
+                : "ui-pressable relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[0.8rem] bg-white/82 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
             }
             aria-label="Открыть дополнительные разделы"
           >
             <NavIcon name="settings" className="h-7 w-7" />
             <span className="max-w-full truncate whitespace-nowrap">Ещё</span>
+            {isMoreOpen && <span className="mobile-active-glow" />}
             {unreadNotifications > 0 && (
               <span className="absolute -right-0.5 -top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#ef4444] px-1 text-[9px] font-black leading-none text-white shadow-[0_0_14px_rgba(239,68,68,0.8)] ring-2 ring-white">
                 {unreadNotifications > 9 ? "9+" : unreadNotifications}

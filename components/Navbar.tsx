@@ -113,6 +113,30 @@ export default function Navbar() {
   });
 
   const dashboardAccent = useDashboardAccent();
+  const isLogin = pathname.startsWith("/login");
+  const isHome = pathname === "/";
+  const isMemories = pathname.startsWith("/memories");
+  const isQuestions = pathname.startsWith("/questions");
+  const isQuizzes = pathname.startsWith("/quizzes");
+  const isTracker = pathname.startsWith("/tracker");
+  const isChat = pathname.startsWith("/chat");
+  const isDashboard = pathname.startsWith("/dashboard");
+  const isProfilePage = pathname.startsWith("/profile");
+  const theme = getPageTheme(pathname, dashboardAccent);
+  const accent = isLogin ? "#f3f4f6" : theme.accent;
+  const accentRgb = hexToRgb(accent);
+  const profileAccent = getPageTheme("/profile").accent;
+  const navStyle =
+    !isLogin && theme.nav
+      ? theme.nav
+      : !isLogin
+        ? {
+            background: `linear-gradient(135deg, rgba(${accentRgb}, 0.24), rgba(${accentRgb}, 0.12))`,
+            borderColor: `rgba(${accentRgb}, 0.34)`,
+            boxShadow: `0 16px 52px rgba(${accentRgb}, 0.2)`,
+          }
+        : undefined;
+  const isSecondaryActive = secondaryNavLinks.some((link) => isActivePath(pathname, link.href));
 
   useEffect(() => {
     let ignore = false;
@@ -247,7 +271,7 @@ export default function Navbar() {
           table: "couple_notifications",
           filter: `recipient_id=eq.${currentUserId}`,
         },
-        async () => {
+        async (payload) => {
           const { data } = await supabase
             .from("couple_notifications")
             .select("id, type, title, body, href, read_at, created_at")
@@ -256,6 +280,15 @@ export default function Navbar() {
             .limit(12);
 
           setNotifications((data || []) as CoupleNotification[]);
+
+          if (payload.eventType === "INSERT") {
+            const next = payload.new as CoupleNotification;
+            showAppToast({
+              title: next.title,
+              text: next.body || "Новое событие пары",
+              accent,
+            });
+          }
         }
       )
       .subscribe();
@@ -263,36 +296,11 @@ export default function Navbar() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUserId]);
+  }, [accent, currentUserId]);
 
   useEffect(() => {
     document.body.classList.toggle("app-compact", isCompact);
   }, [isCompact]);
-
-  const isLogin = pathname.startsWith("/login");
-  const isHome = pathname === "/";
-  const isMemories = pathname.startsWith("/memories");
-  const isQuestions = pathname.startsWith("/questions");
-  const isQuizzes = pathname.startsWith("/quizzes");
-  const isTracker = pathname.startsWith("/tracker");
-  const isChat = pathname.startsWith("/chat");
-  const isDashboard = pathname.startsWith("/dashboard");
-  const isProfilePage = pathname.startsWith("/profile");
-  const theme = getPageTheme(pathname, dashboardAccent);
-  const accent = isLogin ? "#f3f4f6" : theme.accent;
-  const accentRgb = hexToRgb(accent);
-  const profileAccent = getPageTheme("/profile").accent;
-  const navStyle =
-    !isLogin && theme.nav
-      ? theme.nav
-      : !isLogin
-        ? {
-            background: `linear-gradient(135deg, rgba(${accentRgb}, 0.24), rgba(${accentRgb}, 0.12))`,
-            borderColor: `rgba(${accentRgb}, 0.34)`,
-            boxShadow: `0 16px 52px rgba(${accentRgb}, 0.2)`,
-          }
-        : undefined;
-  const isSecondaryActive = secondaryNavLinks.some((link) => isActivePath(pathname, link.href));
 
   function toggleCompactMode() {
     const nextCompact = !isCompact;
@@ -351,15 +359,15 @@ export default function Navbar() {
   ).length;
 
   return (
-    <header className="fixed left-0 top-0 z-30 hidden w-full px-5 py-2.5 md:block">
+    <header className="fixed left-0 top-0 z-30 hidden w-full px-4 py-2 md:block">
       <nav
         style={navStyle}
-        className="app-glass mx-auto flex max-w-6xl items-center justify-between gap-2 rounded-2xl px-2.5 py-1.5 transition-colors"
+        className="app-glass mx-auto flex max-w-5xl items-center justify-between gap-2 rounded-[1.15rem] px-2 py-1 transition-colors"
       >
         <Link
           href="/"
           style={!isLogin ? { color: accent } : undefined}
-          className={`ui-pressable flex shrink-0 items-center gap-2 rounded-full bg-white/45 px-3 py-1.5 text-sm font-black opacity-95 shadow-inner dark:bg-white/8 ${
+          className={`ui-pressable flex shrink-0 items-center gap-2 rounded-[0.95rem] bg-white/64 px-2.5 py-1.5 text-sm font-black opacity-95 shadow-inner dark:bg-white/8 ${
             isLogin ? "text-gray-800 dark:text-gray-100" : ""
           }`}
         >
@@ -385,7 +393,7 @@ export default function Navbar() {
                       }
                     : undefined
                 }
-                className={`group ui-pressable relative flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-black ${
+                className={`group ui-pressable relative flex items-center gap-1.5 rounded-[0.95rem] px-2 py-1.5 text-sm font-black ${
                   isLogin ? "text-gray-700 dark:text-gray-200" : ""
                 }`}
               >
@@ -393,7 +401,7 @@ export default function Navbar() {
                 <span className="hidden xl:inline">{link.label}</span>
                 <span className="app-tooltip">{link.label}</span>
                 {isActive && (
-                  <span className="absolute inset-x-4 -bottom-1 h-0.5 rounded-full bg-white/90" />
+                  <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-white/90" />
                 )}
               </Link>
             );
@@ -416,7 +424,7 @@ export default function Navbar() {
                     }
                   : undefined
               }
-              className={`group ui-pressable relative flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-black ${
+              className={`group ui-pressable relative flex items-center gap-1.5 rounded-[0.95rem] px-2 py-1.5 text-sm font-black ${
                 isLogin ? "text-gray-700 dark:text-gray-200" : ""
               }`}
             >
@@ -424,13 +432,13 @@ export default function Navbar() {
               <span className="hidden xl:inline">Ещё</span>
               <span className="app-tooltip">Ещё</span>
               {isSecondaryActive && (
-                <span className="absolute inset-x-4 -bottom-1 h-0.5 rounded-full bg-white/90" />
+                <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-white/90" />
               )}
             </button>
 
             {isMoreOpen && (
               <div
-                className="app-glass absolute left-1/2 top-11 w-72 -translate-x-1/2 overflow-hidden rounded-3xl p-3 text-[#7f1d1d] dark:text-white"
+                className="app-glass absolute left-1/2 top-10 w-72 -translate-x-1/2 overflow-hidden rounded-[1.25rem] p-3 text-[#7f1d1d] dark:text-white"
                 style={{ color: accent }}
               >
                 <p className="px-2 pb-2 text-[10px] font-black uppercase tracking-wide opacity-45">
@@ -449,7 +457,7 @@ export default function Navbar() {
                           ? { backgroundColor: accent, color: "#fff" }
                           : undefined
                       }
-                      className="ui-pressable flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-black hover:bg-black/5 dark:hover:bg-white/10"
+                      className="ui-pressable flex items-center gap-3 rounded-[1rem] px-3 py-2.5 text-sm font-black hover:bg-black/5 dark:hover:bg-white/10"
                     >
                       <NavIcon name={link.icon} className="h-9 w-9 bg-white/55 shadow-inner dark:bg-white/10" />
                       <span className="min-w-0">
@@ -469,7 +477,7 @@ export default function Navbar() {
 
         {isLoadingUser ? (
           <div
-            className="h-11 w-32 animate-pulse rounded-full"
+            className="h-10 w-28 animate-pulse rounded-[1rem]"
             style={{
               backgroundColor: isLogin
                 ? "#f3f4f6"
@@ -514,7 +522,7 @@ export default function Navbar() {
 
               {isActionsOpen && (
                 <div
-                  className="app-glass absolute right-0 top-12 w-72 overflow-hidden rounded-3xl p-3 text-[#7f1d1d] dark:text-white"
+                  className="app-glass absolute right-0 top-11 w-72 overflow-hidden rounded-[1.25rem] p-3 text-[#7f1d1d] dark:text-white"
                   style={{ color: accent }}
                 >
                   <p className="px-2 pb-2 text-[10px] font-black uppercase tracking-wide opacity-45">
@@ -526,7 +534,7 @@ export default function Navbar() {
                         key={action.href + action.label}
                         href={action.href}
                         onClick={() => setIsActionsOpen(false)}
-                        className="ui-pressable flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-black hover:bg-black/5 dark:hover:bg-white/10"
+                        className="ui-pressable flex items-center gap-3 rounded-[1rem] px-3 py-2.5 text-sm font-black hover:bg-black/5 dark:hover:bg-white/10"
                       >
                         <NavIcon
                           name={action.icon}
@@ -550,7 +558,7 @@ export default function Navbar() {
               <button
                 onClick={openNotifications}
                 style={!isLogin ? { backgroundColor: `${accent}18`, color: accent } : undefined}
-                className={`ui-pressable relative grid h-9 w-9 place-items-center rounded-full border border-white/35 text-base font-black shadow-lg backdrop-blur ${
+                className={`ui-pressable relative grid h-9 w-9 place-items-center rounded-[0.95rem] border border-white/35 text-base font-black shadow-lg backdrop-blur ${
                   isLogin
                     ? "bg-white/75 text-[#be123c] dark:bg-white/10 dark:text-white"
                     : ""
@@ -566,7 +574,7 @@ export default function Navbar() {
               </button>
 
               {isNotificationsOpen && (
-                <div className="app-glass absolute right-0 top-12 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-3xl p-2 text-[#7f1d1d] dark:text-white">
+                <div className="app-glass absolute right-0 top-11 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[1.25rem] p-2 text-[#7f1d1d] dark:text-white">
                   <div className="flex items-center justify-between px-4 py-3">
                     <div>
                       <p className="text-xs font-black uppercase tracking-wide opacity-55">
@@ -594,7 +602,7 @@ export default function Navbar() {
                           key={notification.id}
                           href={notification.href || "/dashboard"}
                           onClick={() => setIsNotificationsOpen(false)}
-                          className="mb-2 block rounded-2xl bg-white/72 px-4 py-3 shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
+                          className="mb-2 block rounded-[1rem] bg-white/72 px-4 py-3 shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
                         >
                           <div className="flex items-start gap-3">
                             <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-rose-100 text-lg dark:bg-white/10">
@@ -643,7 +651,7 @@ export default function Navbar() {
                 setIsMoreOpen(false);
               }}
               style={!isLogin ? { backgroundColor: `${accent}22`, color: accent } : undefined}
-              className={`ui-pressable flex items-center gap-2 rounded-full border border-white/35 px-1.5 py-1 pr-3 text-sm font-bold shadow-lg backdrop-blur ${
+              className={`ui-pressable flex items-center gap-2 rounded-[1rem] border border-white/35 px-1.5 py-1 pr-3 text-sm font-bold shadow-lg backdrop-blur ${
                 isLogin
                   ? "bg-white/75 text-[#be123c] dark:bg-white/10 dark:text-white"
                   : ""
@@ -667,7 +675,7 @@ export default function Navbar() {
             </button>
 
             {isProfileOpen && (
-              <div className="app-glass absolute right-0 top-12 w-56 overflow-hidden rounded-3xl p-2 text-[#7f1d1d] dark:text-white">
+              <div className="app-glass absolute right-0 top-11 w-56 overflow-hidden rounded-[1.25rem] p-2 text-[#7f1d1d] dark:text-white">
                 <div className="px-4 py-3">
                   <p className="text-xs font-black uppercase tracking-wide opacity-55">
                     Профиль

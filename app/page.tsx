@@ -3,6 +3,8 @@
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { quizzes } from "@/lib/quizzes";
 import { supabase } from "@/lib/supabaseClient";
+import { AnimatedText, CountUp } from "@/components/AnimeWidgets";
+import CouplePulse from "@/components/CouplePulse";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -437,6 +439,13 @@ export default function Home() {
     primaryAction.tone === "amber"
       ? "from-amber-50 via-white to-orange-50 text-amber-900 dark:from-amber-500/16 dark:via-white/8 dark:to-orange-500/12"
       : "from-orange-50 via-white to-amber-50 text-orange-900 dark:from-orange-500/16 dark:via-white/8 dark:to-amber-500/12";
+  const pulseStatus = state.latestUnreadNotification
+    ? "new"
+    : isWaitingForPartnerAnswer
+      ? "waiting"
+      : totalStats > 0
+        ? "active"
+        : "empty";
 
   useEffect(() => {
     async function loadHome() {
@@ -601,13 +610,16 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="home-main min-h-screen bg-[#fff8ed] px-4 pb-24 pt-3 text-[#7c2d12] transition-colors dark:bg-[#140b05] dark:text-[#ffedd5] md:px-6 md:pt-24">
+    <main
+      className="home-main min-h-screen bg-[#fff8ed] px-4 pb-24 pt-3 text-[#7c2d12] transition-colors dark:bg-[#140b05] dark:text-[#ffedd5] md:px-6 md:pt-24"
+      style={{ ["--scroll-accent" as string]: "#ea580c" }}
+    >
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_8%,rgba(249,115,22,0.22),transparent_28%),radial-gradient(circle_at_88%_14%,rgba(245,158,11,0.18),transparent_30%),radial-gradient(circle_at_50%_88%,rgba(234,88,12,0.12),transparent_34%),linear-gradient(135deg,#fff8ed_0%,#ffedd5_46%,#fff7ed_100%)] dark:bg-[radial-gradient(circle_at_14%_8%,rgba(249,115,22,0.18),transparent_28%),radial-gradient(circle_at_88%_14%,rgba(245,158,11,0.16),transparent_30%),linear-gradient(135deg,#140b05_0%,#271006_48%,#120a04_100%)]" />
       </div>
 
       <section className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-3 rounded-[1.35rem] border border-white/60 bg-white/66 p-4 shadow-[0_18px_58px_rgba(194,65,12,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 sm:flex-row sm:items-center sm:justify-between md:rounded-[1.8rem] md:p-5">
+        <div className="ui-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between md:p-5">
           <div className="min-w-0">
             <p className="truncate text-xl font-black leading-tight text-[#c2410c] dark:text-white md:text-2xl">
               {state.isLoading ? "Загружаем обзор пары..." : state.couple ? coupleName : "Couple Space"}
@@ -618,7 +630,7 @@ export default function Home() {
           </div>
           <Link
             href={state.couple ? "/dashboard" : "/profile"}
-            className="rounded-full bg-[#ea580c] px-4 py-2.5 text-center text-sm font-black text-white shadow-[0_14px_34px_rgba(234,88,12,0.24)] transition hover:-translate-y-0.5 hover:bg-[#f97316] sm:shrink-0"
+            className="ui-button text-center sm:shrink-0"
           >
             {state.couple ? "Кабинет" : "Профиль"}
           </Link>
@@ -633,21 +645,37 @@ export default function Home() {
             ["К просмотру", state.stats.watchRemaining],
             ["Активности", totalStats],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-2xl border border-white/55 bg-white/58 p-3 shadow-inner backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:p-4">
-              <p className="text-[0.68rem] font-black uppercase tracking-[0.08em] text-[#c2410c]/52 dark:text-white/45">{label}</p>
-              <p className="mt-1 text-2xl font-black leading-none text-[#c2410c] dark:text-white md:text-3xl">{value}</p>
+            <div key={label} className="ui-card-compact p-3 md:p-4">
+              <p className="ui-eyebrow text-[0.68rem] opacity-60">{label}</p>
+              <p className="mt-1 text-2xl font-black leading-none text-[#c2410c] dark:text-white md:text-3xl">
+                {typeof value === "number" ? <CountUp value={value} /> : value}
+              </p>
             </div>
           ))}
         </div>
 
+        <div className="mt-3">
+          <CouplePulse
+            status={pulseStatus}
+            accent="#ea580c"
+            stats={[
+              { label: "сегодня", value: state.todayTrackerEvents.length + (myAnswer ? 1 : 0) },
+              { label: "новые", value: state.latestUnreadNotification ? 1 : 0 },
+              { label: "к вечеру", value: state.stats.watchRemaining },
+            ]}
+            actionHref={primaryAction.href}
+            actionLabel={primaryAction.button}
+          />
+        </div>
+
         {hasOnboarding && (
-          <div className="mt-3 rounded-[1.35rem] border border-white/60 bg-white/62 p-4 shadow-[0_18px_58px_rgba(194,65,12,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[1.8rem] md:p-5">
+          <div className="ui-card mt-3 p-4 md:p-5">
             <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ea580c]/58 dark:text-orange-100/55">
+                <p className="ui-eyebrow text-xs opacity-70">
                   Первый запуск
                 </p>
-                <h2 className="mt-1 !text-xl font-black text-[#c2410c] dark:text-white">
+                <h2 className="ui-section-title mt-1 !text-xl">
                   Быстрый путь к живому пространству
                 </h2>
               </div>
@@ -660,7 +688,7 @@ export default function Home() {
                 <Link
                   key={step.title}
                   href={step.href}
-                  className={`rounded-2xl p-3 shadow-inner transition hover:-translate-y-0.5 ${
+                  className={`ui-card-compact ui-lift p-3 ${
                     step.done
                       ? "bg-orange-50 text-orange-900 dark:bg-orange-500/12 dark:text-orange-100"
                       : "bg-orange-50 text-orange-900 dark:bg-orange-500/12 dark:text-orange-100"
@@ -680,19 +708,19 @@ export default function Home() {
         )}
       </section>
 
-      <section className="mx-auto mt-3 max-w-7xl rounded-[1.35rem] border border-orange-200/80 bg-white/88 p-4 shadow-[0_20px_64px_rgba(194,65,12,0.12)] backdrop-blur-2xl dark:border-orange-200/15 dark:bg-[#2a0d05]/86 md:mt-5 md:rounded-[2rem] md:p-6">
+      <section className="ui-card mx-auto mt-3 max-w-7xl p-4 md:mt-5 md:p-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.16em] text-[#c2410c] dark:text-orange-100">
+            <p className="ui-eyebrow">
               Обзор пары
             </p>
-            <h2 className="mt-1 !text-2xl font-black text-[#7c2d12] dark:text-white md:!text-3xl">
+            <h2 className="ui-section-title mt-1 !text-2xl md:!text-3xl">
               Главное состояние и свежие события
             </h2>
           </div>
           <Link
             href="/notifications"
-            className="rounded-full bg-[#ea580c] px-4 py-2 text-center text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#f97316]"
+            className="ui-button text-center"
           >
             Все события
           </Link>
@@ -700,17 +728,17 @@ export default function Home() {
 
         <Link
           href={primaryAction.href}
-          className={`mt-4 block rounded-[1.4rem] border border-orange-200/80 bg-gradient-to-br p-5 shadow-[0_18px_58px_rgba(194,65,12,0.14)] transition hover:-translate-y-0.5 dark:border-orange-200/15 md:rounded-[1.8rem] md:p-6 ${primaryToneClass}`}
+          className={`ui-action-card ui-lift mt-4 block p-5 md:p-6 ${primaryToneClass}`}
         >
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-[#c2410c] dark:text-orange-100">
+              <p className="ui-eyebrow text-xs">
                 {primaryAction.label}
               </p>
-              <h3 className="mt-2 !text-2xl font-black leading-tight text-[#7c2d12] dark:text-white md:!text-4xl">
-                {primaryAction.title}
+              <h3 className="ui-section-title mt-2 !text-2xl md:!text-4xl">
+                <AnimatedText text={primaryAction.title} />
               </h3>
-              <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-[#7c2d12]/90 dark:text-orange-50/88 md:text-base">
+              <p className="ui-muted mt-3 max-w-3xl text-sm leading-6 md:text-base">
                 {primaryAction.text}
               </p>
             </div>
@@ -718,7 +746,7 @@ export default function Home() {
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/72 text-2xl shadow-inner dark:bg-white/10">
                 {primaryAction.icon}
               </span>
-              <span className="rounded-full bg-[#ea580c] px-5 py-3 text-sm font-black text-white shadow-lg">
+              <span className="ui-button">
                 {primaryAction.button}
               </span>
             </div>
@@ -765,7 +793,7 @@ export default function Home() {
               <Link
                 key={item!.label}
                 href={item!.href}
-                className={`rounded-2xl p-4 shadow-inner transition hover:-translate-y-0.5 ${item!.className}`}
+                className={`ui-card-compact ui-lift p-4 ${item!.className}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -848,7 +876,7 @@ export default function Home() {
             <Link
               key={item.label}
               href={item.href}
-              className={`rounded-2xl p-4 shadow-inner transition hover:-translate-y-0.5 ${item.bgClass}`}
+              className={`ui-card-compact ui-lift p-4 ${item.bgClass}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -870,7 +898,7 @@ export default function Home() {
       </section>
 
       <section className="mx-auto mt-3 grid max-w-7xl gap-3 md:mt-5 md:gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <article className="rounded-[1.35rem] border border-orange-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(234,88,12,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+        <article className="ui-card p-4 md:p-7">
           <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.18em] text-orange-600/70 dark:text-orange-100/70">
@@ -882,20 +910,20 @@ export default function Home() {
             </div>
             <Link
               href="/questions/answer"
-              className="shrink-0 rounded-full bg-[#ea580c] px-5 py-3 text-center font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#f97316]"
+              className="ui-button shrink-0 text-center"
             >
               Ответить
             </Link>
           </div>
 
           <div className="mt-4 grid gap-2 md:mt-6 md:grid-cols-2 md:gap-3">
-            <div className="rounded-2xl bg-orange-50 p-4 shadow-inner dark:bg-white/8">
+            <div className="ui-card-compact p-4">
               <p className="text-sm font-black text-orange-700 dark:text-orange-100">Ваш статус</p>
               <p className="mt-2 font-semibold text-orange-950/70 dark:text-white/60">
                 {myAnswer ? "Вы уже ответили сегодня." : "Ответ ещё не сохранён."}
               </p>
             </div>
-            <div className="rounded-2xl bg-orange-50 p-4 shadow-inner dark:bg-white/8">
+            <div className="ui-card-compact p-4">
               <p className="text-sm font-black text-orange-700 dark:text-orange-100">Партнёр</p>
               <p className="mt-2 font-semibold text-orange-950/70 dark:text-white/60">
                 {partnerAnswer ? "Ответ партнёра уже ждёт раскрытия." : "Партнёр ещё отвечает."}
@@ -904,7 +932,7 @@ export default function Home() {
           </div>
         </article>
 
-        <article className="rounded-[1.35rem] border border-orange-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(234,88,12,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+        <article className="ui-card p-4 md:p-7">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.18em] text-orange-600/70 dark:text-orange-100/70">
@@ -914,7 +942,7 @@ export default function Home() {
                 Последние моменты
               </h2>
             </div>
-            <Link href="/memories" className="rounded-full bg-[#ea580c] px-4 py-2 text-sm font-black text-white">
+            <Link href="/memories" className="ui-button">
               Открыть
             </Link>
           </div>
@@ -923,7 +951,7 @@ export default function Home() {
             {state.memories.length === 0 ? (
               <Link
                 href="/memories"
-                className="rounded-2xl bg-orange-50/80 p-5 text-center shadow-inner transition hover:bg-orange-100 dark:bg-white/8 dark:hover:bg-orange-500/15"
+                className="ui-card-compact ui-lift block p-5 text-center"
               >
                 <p className="text-3xl">▣</p>
                 <p className="mt-2 font-black text-orange-950 dark:text-white">
@@ -938,7 +966,7 @@ export default function Home() {
                 <Link
                   key={memory.id}
                   href="/memories"
-                  className="grid grid-cols-[4.5rem_1fr] gap-3 rounded-2xl bg-orange-50/80 p-2 shadow-inner transition hover:bg-orange-100 dark:bg-white/8 dark:hover:bg-orange-500/15"
+                  className="ui-card-compact ui-lift grid grid-cols-[4.5rem_1fr] gap-3 p-2"
                 >
                   <div
                     className="h-16 rounded-xl bg-cover bg-center bg-orange-200"
@@ -968,7 +996,7 @@ export default function Home() {
           <Link
             key={action.href}
             href={action.href}
-            className="group rounded-[1.25rem] border border-white/60 bg-white/62 p-4 shadow-[0_18px_54px_rgba(194,65,12,0.10)] backdrop-blur-xl transition hover:-translate-y-1 dark:border-white/10 dark:bg-white/8 md:rounded-[1.6rem] md:p-5"
+            className="ui-card ui-lift group p-4 md:p-5"
           >
             <div className={`grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br ${action.color} text-xl text-white shadow-lg md:h-13 md:w-13 md:text-2xl`}>
               {action.icon}
@@ -983,7 +1011,7 @@ export default function Home() {
       </section>
 
       <section className="mx-auto mt-3 grid max-w-7xl gap-3 md:mt-5 md:gap-5 lg:grid-cols-[0.85fr_1.15fr]">
-        <article className="rounded-[1.35rem] border border-amber-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(217,119,6,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+        <article className="ui-card p-4 md:p-7">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.18em] text-amber-600/70 dark:text-amber-100/70">
@@ -993,7 +1021,7 @@ export default function Home() {
                 Сегодня
               </h2>
             </div>
-            <Link href="/tracker" className="rounded-full bg-amber-600 px-4 py-2 text-sm font-black text-white">
+            <Link href="/tracker" className="ui-button">
               Отметить
             </Link>
           </div>
@@ -1003,7 +1031,7 @@ export default function Home() {
               <Link
                 key={item.label}
                 href={item.href}
-                className="rounded-2xl bg-amber-50 p-3 text-center shadow-inner transition hover:bg-amber-100 dark:bg-white/8 dark:hover:bg-amber-500/15 md:p-4"
+                className="ui-card-compact ui-lift p-3 text-center md:p-4"
               >
                 <p className="text-2xl">{item.icon}</p>
                 <p className="mt-2 font-black text-amber-900 dark:text-white">{item.label}</p>
@@ -1018,7 +1046,7 @@ export default function Home() {
         </article>
 
         <div className="grid gap-3 md:grid-cols-2 md:gap-5">
-          <article className="rounded-[1.35rem] border border-orange-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(234,88,12,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+          <article className="ui-card p-4 md:p-7">
             <p className="text-sm font-black uppercase tracking-[0.18em] text-orange-600/70 dark:text-orange-100/70">
               Викторина
             </p>
@@ -1038,13 +1066,13 @@ export default function Home() {
             </div>
             <Link
               href={recommendedQuiz ? `/quizzes/play?quiz=${recommendedQuiz.id}` : "/quizzes"}
-              className="mt-6 inline-flex rounded-full bg-[#ea580c] px-5 py-3 font-black text-white shadow-lg transition hover:-translate-y-0.5"
+              className="ui-button mt-6"
             >
               Начать
             </Link>
           </article>
 
-          <article className="rounded-[1.35rem] border border-orange-100/80 bg-white/64 p-4 shadow-[0_20px_64px_rgba(234,88,12,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:rounded-[2rem] md:p-7">
+          <article className="ui-card p-4 md:p-7">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-orange-600/70 dark:text-orange-100/70">
@@ -1054,7 +1082,7 @@ export default function Home() {
                   Последнее
                 </h2>
               </div>
-              <Link href="/chat" className="rounded-full bg-[#ea580c] px-4 py-2 text-sm font-black text-white">
+              <Link href="/chat" className="ui-button">
                 Открыть
               </Link>
             </div>
@@ -1062,7 +1090,7 @@ export default function Home() {
               {state.chats.length === 0 ? (
                 <Link
                   href="/chat"
-                  className="block rounded-2xl bg-orange-50 p-4 text-center shadow-inner transition hover:bg-orange-100 dark:bg-white/8 dark:hover:bg-orange-500/15"
+                  className="ui-card-compact ui-lift block p-4 text-center"
                 >
                   <p className="font-black text-orange-950 dark:text-white">
                     Напишите первое сообщение
@@ -1076,7 +1104,7 @@ export default function Home() {
                   <Link
                     key={message.id}
                     href="/chat"
-                    className="block rounded-2xl bg-orange-50 p-3 shadow-inner transition hover:bg-orange-100 dark:bg-white/8 dark:hover:bg-orange-500/15"
+                    className="ui-card-compact ui-lift block p-3"
                   >
                     <p className="line-clamp-1 font-black text-orange-950 dark:text-white">
                       {getMessagePreview(message)}
@@ -1092,7 +1120,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto mt-3 max-w-7xl rounded-[1.35rem] border border-white/60 bg-white/62 p-4 shadow-[0_20px_64px_rgba(194,65,12,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:mt-5 md:rounded-[2rem] md:p-7">
+      <section className="ui-card mx-auto mt-3 max-w-7xl p-4 md:mt-5 md:p-7">
         <div className="grid gap-3 md:grid-cols-3 md:gap-4">
           {[
             ["Кабинет", "Статус, достижения, активность и таймлайн.", "/dashboard", "❤️"],
@@ -1102,7 +1130,7 @@ export default function Home() {
             <Link
               key={href}
               href={href}
-              className="rounded-2xl bg-white/66 p-4 shadow-inner transition hover:bg-orange-50 dark:bg-white/8 dark:hover:bg-orange-500/15"
+              className="ui-card-compact ui-lift p-4"
             >
               <p className="text-2xl">{icon}</p>
               <h3 className="mt-3 !text-lg font-black text-[#c2410c] dark:text-white md:!text-xl">{title}</h3>

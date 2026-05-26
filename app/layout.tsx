@@ -8,6 +8,7 @@ import MobileNav from "@/components/MobileNav";
 import ThemeToggle from "@/components/ThemeToggle";
 import AppBreadcrumbs from "@/components/AppBreadcrumbs";
 import AppToast from "@/components/AppToast";
+import AnimeRuntime from "@/components/AnimeRuntime";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -57,6 +58,7 @@ export default function RootLayout({
         {children}
         <MobileNav />
         <AppToast />
+        <AnimeRuntime />
       </body>
     </html>
   );

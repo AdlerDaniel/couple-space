@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import EmptyState from "@/components/EmptyState";
+import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import { trackerCategoryColors, trackerDefaultCategories } from "@/lib/trackerCategories";
 import Link from "next/link";
@@ -474,22 +475,14 @@ export default function TrackerPage() {
     setGoals((current) => current.map((goal) => (goal.id === optimisticGoal.id ? data : goal)));
     setGoalTargetCount(1);
 
-    const recipientId =
-      currentUserId === couple.partner_one_id ? couple.partner_two_id : couple.partner_one_id;
-
-    if (recipientId) {
-      await supabase.from("couple_notifications").insert({
-        recipient_id: recipientId,
-        actor_id: currentUserId,
-        couple_id: couple.id,
-        type: "tracker_goal_created",
-        title: "Новая цель пары",
-        body: `${category.name}: ${goalTargetCount} ${
-          goalPeriods.find((item) => item.key === goalPeriod)?.label || "за неделю"
-        }`,
-        href: "/tracker",
-      });
-    }
+    await createPartnerNotification(couple, currentUserId, {
+      type: "tracker_goal_created",
+      title: "Новая цель пары",
+      body: `${category.name}: ${goalTargetCount} ${
+        goalPeriods.find((item) => item.key === goalPeriod)?.label || "за неделю"
+      }`,
+      href: "/tracker",
+    });
   }
 
   async function deleteGoal(goalId: string) {

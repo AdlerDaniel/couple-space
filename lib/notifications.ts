@@ -15,10 +15,34 @@ type NotificationPayload = {
   href?: string;
 };
 
+type BrowserPushPayload = NotificationPayload & {
+  coupleId: string;
+  recipientId: string;
+};
+
 function emitNotificationsUpdated() {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(notificationsUpdatedEventName));
   }
+}
+
+async function sendBrowserPush(payload: BrowserPushPayload) {
+  if (typeof window === "undefined") return;
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) return;
+
+  await fetch("/api/push/send", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(payload),
+  }).catch(() => undefined);
 }
 
 export function getPartnerId(couple: CoupleLike, currentUserId: string) {
@@ -54,6 +78,14 @@ export async function createNotification({
 
   if (!error) {
     emitNotificationsUpdated();
+    await sendBrowserPush({
+      coupleId,
+      recipientId,
+      type,
+      title,
+      body,
+      href,
+    });
   }
 }
 

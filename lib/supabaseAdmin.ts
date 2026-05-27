@@ -6,6 +6,8 @@ type CoupleMembership = {
   partner_two_id: string | null;
 };
 
+let cachedAdminClient: SupabaseClient | null = null;
+
 export function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -14,12 +16,25 @@ export function getAdminClient() {
     return null;
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+  if (!cachedAdminClient) {
+    cachedAdminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+  }
+
+  return cachedAdminClient;
+}
+
+export function requireAdminClient() {
+  const adminSupabase = getAdminClient();
+  if (!adminSupabase) {
+    throw new Error("Supabase admin credentials are not configured.");
+  }
+
+  return adminSupabase;
 }
 
 export function getBearerToken(request: Request) {

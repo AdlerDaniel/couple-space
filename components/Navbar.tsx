@@ -18,6 +18,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import NavIcon from "./NavIcon";
 import { showAppToast } from "./AppToast";
+import PushNotificationButton from "./PushNotificationButton";
 
 type UserProfile = {
   name: string;
@@ -688,6 +689,9 @@ export default function Navbar() {
                 >
                   {isCompact ? "Обычная плотность" : "Компактная плотность"}
                 </button>
+                <div className="mb-2">
+                  <PushNotificationButton accent={accent} />
+                </div>
                 <button
                   onClick={logout}
                   className="w-full rounded-2xl bg-[#dc2626] px-4 py-3 text-left font-black text-white shadow-lg transition hover:bg-[#ef4444]"

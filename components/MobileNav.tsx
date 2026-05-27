@@ -16,6 +16,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 import NavIcon from "./NavIcon";
+import PushNotificationButton from "./PushNotificationButton";
 
 type CoupleNotification = {
   id: string;
@@ -527,6 +528,10 @@ export default function MobileNav() {
               );
             })}
           </div>
+          <PushNotificationButton
+            accent={accent}
+            className="mt-2 w-full rounded-[1rem] bg-white/78 px-3 py-3 text-left text-sm font-black shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
+          />
         </div>
       )}
 

@@ -15,7 +15,7 @@ import type { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import NavIcon from "./NavIcon";
 import { showAppToast } from "./AppToast";
 
@@ -47,6 +47,26 @@ type CoupleNotification = {
   read_at: string | null;
   created_at: string;
 };
+
+const densityStorageKey = "couple-space:density";
+const densityUpdatedEventName = "couple-space:density-updated";
+
+function getDensitySnapshot() {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(densityStorageKey) === "compact";
+}
+
+function subscribeToDensity(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+
+  window.addEventListener(densityUpdatedEventName, onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+
+  return () => {
+    window.removeEventListener(densityUpdatedEventName, onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
+}
 
 function getFallbackName(user: User) {
   const login = user.user_metadata?.login;
@@ -107,10 +127,7 @@ export default function Navbar() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const [isCompact, setIsCompact] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("couple-space:density") === "compact";
-  });
+  const isCompact = useSyncExternalStore(subscribeToDensity, getDensitySnapshot, () => false);
 
   const dashboardAccent = useDashboardAccent();
   const isLogin = pathname.startsWith("/login");
@@ -304,9 +321,9 @@ export default function Navbar() {
 
   function toggleCompactMode() {
     const nextCompact = !isCompact;
-    setIsCompact(nextCompact);
     document.body.classList.toggle("app-compact", nextCompact);
-    localStorage.setItem("couple-space:density", nextCompact ? "compact" : "comfortable");
+    localStorage.setItem(densityStorageKey, nextCompact ? "compact" : "comfortable");
+    window.dispatchEvent(new Event(densityUpdatedEventName));
     showAppToast({
       title: nextCompact ? "Компактный режим включён" : "Обычный режим включён",
       text: nextCompact ? "На десктопе поместится больше данных." : "Интерфейс снова просторнее.",

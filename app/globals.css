@@ -321,7 +321,6 @@ body.app-compact main a {
 
 .anime-burst-particle,
 .anime-inline-particle {
-  position: fixed;
   display: inline-grid;
   height: 1.6rem;
   width: 1.6rem;
@@ -332,11 +331,17 @@ body.app-compact main a {
   color: #ea580c;
   font-size: 0.9rem;
   font-weight: 900;
+  opacity: 0;
   transform: translate(-50%, -50%);
   will-change: transform, opacity;
 }
 
+.anime-burst-particle {
+  position: fixed;
+}
+
 .anime-inline-particle {
+  position: absolute;
   left: 0;
   top: 0;
 }
@@ -384,22 +389,6 @@ body.app-compact main a {
 .anime-heat-cell {
   transform-origin: center;
   will-change: transform, opacity;
-}
-
-.app-route-transition {
-  animation: app-route-in 420ms ease both;
-}
-
-@keyframes app-route-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .app-empty-scene {
@@ -493,7 +482,6 @@ body.app-compact main a {
   .anime-roulette-wheel,
   .anime-roulette-result,
   .anime-heat-cell,
-  .app-route-transition,
   .couple-pulse-orb {
     transition: none !important;
     animation: none !important;

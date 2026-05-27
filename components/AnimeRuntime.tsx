@@ -3,15 +3,13 @@
 import { animate, stagger } from "animejs";
 import { useEffect } from "react";
 
+type IdleWindow = Window & {
+  requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
 function reducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function stopAnimation(animation: unknown) {
-  const controls = animation as { pause?: () => void; revert?: () => void; cancel?: () => void };
-  controls.pause?.();
-  controls.revert?.();
-  controls.cancel?.();
 }
 
 function createBurst(x: number, y: number, glyph: string) {
@@ -23,7 +21,7 @@ function createBurst(x: number, y: number, glyph: string) {
   const particles = Array.from({ length: 9 }, (_, index) => {
     const particle = document.createElement("span");
     particle.className = "anime-burst-particle";
-    particle.textContent = index % 3 === 0 ? glyph : "✦";
+    particle.textContent = index % 3 === 0 ? glyph : "*";
     particle.style.left = `${x}px`;
     particle.style.top = `${y}px`;
     layer.appendChild(particle);
@@ -74,7 +72,9 @@ function initDraggableCard(card: HTMLElement) {
   function endDrag(event: PointerEvent) {
     if (!isDragging) return;
     isDragging = false;
-    card.releasePointerCapture(event.pointerId);
+    if (card.hasPointerCapture(event.pointerId)) {
+      card.releasePointerCapture(event.pointerId);
+    }
     card.classList.remove("anime-dragging");
     currentX = 0;
     currentY = 0;
@@ -94,92 +94,24 @@ function initDraggableCard(card: HTMLElement) {
   card.addEventListener("pointercancel", endDrag);
 }
 
+function scheduleIdle(callback: () => void) {
+  const idleWindow = window as IdleWindow;
+  if (idleWindow.requestIdleCallback && idleWindow.cancelIdleCallback) {
+    const id = idleWindow.requestIdleCallback(callback, { timeout: 1400 });
+    return () => idleWindow.cancelIdleCallback?.(id);
+  }
+
+  const id = window.setTimeout(callback, 900);
+  return () => window.clearTimeout(id);
+}
+
 export default function AnimeRuntime() {
   useEffect(() => {
     if (reducedMotion()) return undefined;
 
-    const runningAnimations = new Set<unknown>();
-    const animatedElements = new WeakSet<Element>();
-    const animatedHeatCells = new WeakSet<Element>();
-    let scanTimer: number | null = null;
-    let lastPath = window.location.pathname + window.location.search;
-
-    function reveal(elements: Element[]) {
-      const targets = elements.filter((element) => !animatedElements.has(element)).slice(0, 80);
-      if (!targets.length) return;
-
-      targets.forEach((element) => animatedElements.add(element));
-      const animation = animate(targets, {
-        opacity: [0, 1],
-        translateY: [14, 0],
-        scale: [0.985, 1],
-        duration: 620,
-        ease: "out(3)",
-        delay: stagger(26),
-        onComplete: () => runningAnimations.delete(animation),
-      });
-      runningAnimations.add(animation);
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        reveal(entries.filter((entry) => entry.isIntersecting).map((entry) => entry.target));
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) observer.unobserve(entry.target);
-        });
-      },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.08 },
-    );
-
-    function scan() {
-      const revealTargets = Array.from(
-        document.querySelectorAll(
-          ".ui-card, .ui-card-compact, .ui-action-card, [data-anime-reveal]",
-        ),
-      );
-      revealTargets.forEach((element) => observer.observe(element));
-
+    const cancelIdle = scheduleIdle(() => {
       document.querySelectorAll<HTMLElement>("[data-anime-draggable]").forEach(initDraggableCard);
-
-      const heatCells = Array.from(document.querySelectorAll(".anime-heat-cell")).filter(
-        (element) => !animatedHeatCells.has(element),
-      );
-      if (heatCells.length) {
-        heatCells.forEach((element) => animatedHeatCells.add(element));
-        animate(heatCells, {
-          opacity: [0, 1],
-          scale: [0.35, 1],
-          duration: 360,
-          ease: "out(3)",
-          delay: stagger(4, { grid: [53, 7], from: "center" }),
-        });
-      }
-    }
-
-    function scheduleScan() {
-      if (scanTimer) window.clearTimeout(scanTimer);
-      scanTimer = window.setTimeout(scan, 80);
-    }
-
-    function animateRouteChange() {
-      const currentPath = window.location.pathname + window.location.search;
-      if (currentPath === lastPath) return;
-      lastPath = currentPath;
-
-      const main = document.querySelector("main");
-      if (!main) return;
-      main.classList.remove("app-route-transition");
-      window.requestAnimationFrame(() => {
-        main.classList.add("app-route-transition");
-        window.setTimeout(() => main.classList.remove("app-route-transition"), 520);
-      });
-    }
-
-    scan();
-    const mutationObserver = new MutationObserver(scheduleScan);
-    mutationObserver.observe(document.body, { childList: true, subtree: true });
-    window.addEventListener("popstate", animateRouteChange);
-    const routeTimer = window.setInterval(animateRouteChange, 180);
+    });
 
     const handleClick = (event: MouseEvent) => {
       const target = (event.target as HTMLElement).closest<HTMLElement>(
@@ -188,16 +120,13 @@ export default function AnimeRuntime() {
       if (!target) return;
 
       animate(target, {
-        scale: [1, 0.96, 1],
-        duration: 260,
+        scale: [1, 0.97, 1],
+        duration: 180,
         ease: "out(3)",
       });
 
       if (target.matches("[data-anime-burst], .chat-reaction-pill")) {
-        const glyph =
-          target.dataset.animeBurst ||
-          target.textContent?.trim().slice(0, 4) ||
-          "✦";
+        const glyph = target.dataset.animeBurst || target.textContent?.trim().slice(0, 4) || "*";
         createBurst(event.clientX, event.clientY, glyph);
       }
     };
@@ -205,13 +134,8 @@ export default function AnimeRuntime() {
     document.addEventListener("click", handleClick, true);
 
     return () => {
+      cancelIdle();
       document.removeEventListener("click", handleClick, true);
-      window.removeEventListener("popstate", animateRouteChange);
-      window.clearInterval(routeTimer);
-      mutationObserver.disconnect();
-      observer.disconnect();
-      if (scanTimer) window.clearTimeout(scanTimer);
-      runningAnimations.forEach(stopAnimation);
     };
   }, []);
 

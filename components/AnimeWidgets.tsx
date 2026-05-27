@@ -197,6 +197,8 @@ export function PulseBurst({ trigger, glyph = "✦" }: PulseBurstProps) {
     };
   }, [glyph, trigger]);
 
+  if (trigger === 0) return null;
+
   return (
     <div ref={ref} className="pointer-events-none absolute inset-1/2 z-20 h-0 w-0" aria-hidden="true">
       {Array.from({ length: 8 }, (_, index) => (

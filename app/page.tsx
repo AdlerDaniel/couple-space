@@ -802,7 +802,7 @@ export default function Home() {
                     </p>
                     <h3 className="mt-2 line-clamp-1 !text-lg font-black text-[#7c2d12] dark:text-white">{item!.title}</h3>
                   </div>
-                  <span className="text-2xl text-[#c2410c] dark:text-orange-100">{item!.icon}</span>
+                  <span className="shrink-0 text-2xl text-[#c2410c] dark:text-orange-100">{item!.icon}</span>
                 </div>
                 <p className="mt-2 line-clamp-2 text-sm font-semibold text-[#7c2d12]/88 dark:text-orange-50/82">{item!.text}</p>
               </Link>
@@ -887,7 +887,7 @@ export default function Home() {
                     {item.title}
                   </h3>
                 </div>
-                <span className={`text-2xl ${item.accentClass}`}>{item.icon}</span>
+                <span className={`shrink-0 text-2xl ${item.accentClass}`}>{item.icon}</span>
               </div>
               <p className="mt-3 line-clamp-2 text-sm font-semibold text-[#7c2d12]/88 dark:text-orange-50/82">
                 {item.text}
@@ -1074,11 +1074,11 @@ export default function Home() {
 
           <article className="ui-card p-4 md:p-7">
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-orange-600/70 dark:text-orange-100/70">
                   Чат
                 </p>
-                <h2 className="mt-2 !text-2xl font-black text-orange-900 dark:text-white md:!text-3xl">
+                <h2 className="mt-2 break-words !text-2xl font-black text-orange-900 dark:text-white xl:!text-3xl">
                   Последнее
                 </h2>
               </div>

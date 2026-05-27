@@ -131,18 +131,9 @@ export default function Navbar() {
 
   const dashboardAccent = useDashboardAccent();
   const isLogin = pathname.startsWith("/login");
-  const isHome = pathname === "/";
-  const isMemories = pathname.startsWith("/memories");
-  const isQuestions = pathname.startsWith("/questions");
-  const isQuizzes = pathname.startsWith("/quizzes");
-  const isTracker = pathname.startsWith("/tracker");
-  const isChat = pathname.startsWith("/chat");
-  const isDashboard = pathname.startsWith("/dashboard");
-  const isProfilePage = pathname.startsWith("/profile");
   const theme = getPageTheme(pathname, dashboardAccent);
   const accent = isLogin ? "#f3f4f6" : theme.accent;
   const accentRgb = hexToRgb(accent);
-  const profileAccent = getPageTheme("/profile").accent;
   const navStyle =
     !isLogin && theme.nav
       ? theme.nav
@@ -316,11 +307,13 @@ export default function Navbar() {
   }, [accent, currentUserId]);
 
   useEffect(() => {
+    document.documentElement.classList.toggle("app-compact", isCompact);
     document.body.classList.toggle("app-compact", isCompact);
   }, [isCompact]);
 
   function toggleCompactMode() {
     const nextCompact = !isCompact;
+    document.documentElement.classList.toggle("app-compact", nextCompact);
     document.body.classList.toggle("app-compact", nextCompact);
     localStorage.setItem(densityStorageKey, nextCompact ? "compact" : "comfortable");
     window.dispatchEvent(new Event(densityUpdatedEventName));
@@ -416,7 +409,7 @@ export default function Navbar() {
               >
                 <NavIcon name={link.icon} className="h-7 w-7" />
                 <span className="hidden xl:inline">{link.label}</span>
-                <span className="app-tooltip">{link.label}</span>
+                <span className="app-tooltip" aria-hidden="true">{link.label}</span>
                 {isActive && (
                   <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-white/90" />
                 )}
@@ -447,7 +440,7 @@ export default function Navbar() {
             >
               <NavIcon name="settings" className="h-7 w-7" />
               <span className="hidden xl:inline">Ещё</span>
-              <span className="app-tooltip">Ещё</span>
+              <span className="app-tooltip" aria-hidden="true">Ещё</span>
               {isSecondaryActive && (
                 <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-white/90" />
               )}
@@ -496,25 +489,7 @@ export default function Navbar() {
           <div
             className="h-10 w-28 animate-pulse rounded-[1rem]"
             style={{
-              backgroundColor: isLogin
-                ? "#f3f4f6"
-                : isHome
-                  ? theme.accent
-                  : isMemories
-                    ? "#2563eb"
-                    : isQuestions
-                      ? "#27ae60"
-                    : isQuizzes
-                      ? "#7c3aed"
-                      : isTracker
-                        ? "#ca8a04"
-                        : isChat
-                          ? "#0284c7"
-                          : isDashboard
-                            ? dashboardAccent
-                            : isProfilePage
-                              ? profileAccent
-                              : "#1c8b59",
+              backgroundColor: isLogin ? "#f3f4f6" : accent,
             }}
           />
         ) : profile ? (

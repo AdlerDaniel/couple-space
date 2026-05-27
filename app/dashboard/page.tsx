@@ -207,7 +207,7 @@ function AvatarBubble({
   const sizeClass = size === "large" ? "h-24 w-24 text-4xl" : "h-14 w-14 text-xl";
 
   return (
-    <div className="relative">
+    <div className={size === "large" ? "relative w-[112px] shrink-0 sm:w-[142px]" : "relative w-14 shrink-0"}>
       {image ? (
         <NextImage
           src={image}
@@ -215,11 +215,11 @@ function AvatarBubble({
           width={size === "large" ? 96 : 56}
           height={size === "large" ? 96 : 56}
           sizes={size === "large" ? "96px" : "56px"}
-          className={`${sizeClass} rounded-full object-cover shadow-xl ring-4 ring-white/60`}
+          className={`${sizeClass} mx-auto rounded-full object-cover shadow-xl ring-4 ring-white/60`}
         />
       ) : (
         <div
-          className={`${sizeClass} flex items-center justify-center rounded-full bg-white/55 font-bold shadow-xl ring-4 ring-white/50 backdrop-blur dark:bg-white/10`}
+          className={`${sizeClass} mx-auto flex items-center justify-center rounded-full bg-white/55 font-bold shadow-xl ring-4 ring-white/50 backdrop-blur dark:bg-white/10`}
         >
           {initials(name)}
         </div>
@@ -230,7 +230,7 @@ function AvatarBubble({
           <div className="absolute -top-3 left-1/2 grid h-8 w-8 -translate-x-1/2 place-items-center rounded-full bg-white/90 text-base shadow-xl ring-2 ring-white/75 backdrop-blur dark:bg-black/55 dark:ring-white/10">
             {status.emoji}
           </div>
-          <div className="absolute -bottom-5 left-1/2 w-max max-w-[142px] -translate-x-1/2 rounded-2xl bg-white/88 px-2.5 py-1.5 text-center text-xs font-black leading-tight text-[#dc2626] shadow-xl ring-1 ring-white/70 backdrop-blur dark:bg-black/50 dark:text-white dark:ring-white/10">
+          <div className="absolute -bottom-5 left-1/2 w-max max-w-full -translate-x-1/2 rounded-2xl bg-white/88 px-2.5 py-1.5 text-center text-xs font-black leading-tight text-[#dc2626] shadow-xl ring-1 ring-white/70 backdrop-blur dark:bg-black/50 dark:text-white dark:ring-white/10">
             <span className="line-clamp-2 whitespace-normal break-words">
               {status.text}
             </span>
@@ -1444,7 +1444,7 @@ export default function DashboardPage() {
             </div>
 
             <div>
-              <div className="mb-8 flex items-center justify-center gap-4 md:justify-start">
+              <div className="mb-8 flex items-center justify-center gap-3 sm:gap-4 md:justify-start">
                 <AvatarBubble
                   name={profile.partner_one}
                   image={avatarOneUrl}
@@ -1617,10 +1617,10 @@ export default function DashboardPage() {
               ].map(([icon, label, value]) => (
                 <div
                   key={label}
-                  className="ui-card-compact p-4"
+                  className="ui-card-compact min-w-0 overflow-hidden p-4 text-center"
                 >
                   <p className="text-2xl">{icon}</p>
-                  <p className={`mt-3 text-xs font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
+                  <p className={`mt-3 break-words text-[11px] font-black uppercase leading-tight tracking-normal ${theme.muted} dark:text-white/60 sm:text-xs sm:tracking-wide`}>
                     {label}
                   </p>
                   <p className="mt-1 text-3xl font-black">

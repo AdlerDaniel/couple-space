@@ -1572,15 +1572,17 @@ function BarChart({
   return (
     <div className="rounded-3xl bg-white/55 p-4 shadow-inner dark:bg-white/8">
       <p className="font-black">{title}</p>
-      <div className={`mt-4 flex items-end gap-2 ${compact ? "h-32" : "h-40"}`}>
+      <div className={`mt-4 flex items-end ${compact ? "h-32 gap-1" : "h-40 gap-2"}`}>
         {items.map((item) => (
-          <div key={item.label} className="flex h-full flex-1 flex-col justify-end gap-2 text-center">
+          <div key={item.label} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-2 text-center">
             <div
               className="mx-auto w-full rounded-t-xl bg-gradient-to-t from-[#ca8a04] to-[#facc15] transition-all"
               style={{ height: `${Math.max(6, (item.value / max) * 100)}%` }}
               title={`${item.label}: ${item.value}`}
             />
-            <span className="text-[10px] font-black opacity-55">{item.label}</span>
+            <span className="truncate text-[10px] font-black opacity-55" title={item.label}>
+              {compact ? item.label.slice(0, 1) : item.label}
+            </span>
           </div>
         ))}
       </div>

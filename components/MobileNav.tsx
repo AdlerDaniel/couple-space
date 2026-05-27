@@ -14,7 +14,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useDashboardAccent } from "@/lib/useDashboardAccent";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import NavIcon from "./NavIcon";
 
 type CoupleNotification = {
@@ -78,10 +78,20 @@ function getReadableName(value?: string | null, fallback = "Партнёр") {
   return name;
 }
 
+function hexToRgb(hex: string) {
+  const value = hex.replace("#", "");
+  if (value.length !== 6) return "234, 88, 12";
+  const red = Number.parseInt(value.slice(0, 2), 16);
+  const green = Number.parseInt(value.slice(2, 4), 16);
+  const blue = Number.parseInt(value.slice(4, 6), 16);
+  return `${red}, ${green}, ${blue}`;
+}
+
 export default function MobileNav() {
   const pathname = usePathname();
   const dashboardAccent = useDashboardAccent();
   const accent = getPageTheme(pathname, dashboardAccent).accent;
+  const accentRgb = hexToRgb(accent);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<CoupleNotification[]>([]);
   const [quickState, setQuickState] = useState<QuickState>({
@@ -268,6 +278,10 @@ export default function MobileNav() {
     : quickState.couple
       ? "Пригласите партнёра"
       : "Создайте пару в профиле";
+  const mobileNavStyle = {
+    "--mobile-nav-accent": accent,
+    "--mobile-nav-accent-rgb": accentRgb,
+  } as CSSProperties & Record<"--mobile-nav-accent" | "--mobile-nav-accent-rgb", string>;
 
   async function openNotifications() {
     const nextIsOpen = !isNotificationsOpen;
@@ -517,12 +531,8 @@ export default function MobileNav() {
       )}
 
       <nav
-        style={{
-          background: `linear-gradient(135deg, ${accent}30, rgba(255,255,255,0.76))`,
-          borderColor: `${accent}55`,
-          boxShadow: `0 12px 34px ${accent}2f`,
-        }}
-        className={`app-glass fixed bottom-2 left-2 right-2 z-40 rounded-[1rem] px-1 py-1 transition-transform duration-300 md:hidden ${
+        style={mobileNavStyle}
+        className={`mobile-nav-shell fixed bottom-2 left-2 right-2 z-40 rounded-[1rem] px-1 py-1 transition-transform duration-300 md:hidden ${
           isHiddenByScroll ? "translate-y-24" : "translate-y-0"
         }`}
       >

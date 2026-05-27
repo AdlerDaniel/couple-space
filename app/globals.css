@@ -170,6 +170,31 @@ body > main {
   box-shadow: 0 14px 42px rgba(0, 0, 0, 0.32);
 }
 
+.mobile-nav-shell {
+  border: 1px solid rgba(var(--mobile-nav-accent-rgb, 234, 88, 12), 0.36);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--mobile-nav-accent-rgb, 234, 88, 12), 0.18),
+      rgba(var(--mobile-nav-accent-rgb, 234, 88, 12), 0.14)
+    ),
+    rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 36px rgba(var(--mobile-nav-accent-rgb, 234, 88, 12), 0.24);
+  backdrop-filter: blur(22px);
+}
+
+.dark .mobile-nav-shell {
+  border-color: rgba(var(--mobile-nav-accent-rgb, 234, 88, 12), 0.34);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--mobile-nav-accent-rgb, 234, 88, 12), 0.22),
+      rgba(var(--mobile-nav-accent-rgb, 234, 88, 12), 0.16)
+    ),
+    rgba(8, 8, 10, 0.88);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.36);
+}
+
 .nav-icon {
   height: 1.75rem;
   width: 1.75rem;

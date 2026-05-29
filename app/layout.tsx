@@ -8,6 +8,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import AppBreadcrumbs from "@/components/AppBreadcrumbs";
 import AppToast from "@/components/AppToast";
 import AnimeRuntime from "@/components/AnimeRuntime";
+import ClientRouteRecovery from "@/components/ClientRouteRecovery";
 
 const initialAppearanceScript = `
   (function () {
@@ -88,6 +89,7 @@ export default function RootLayout({
         <MobileNav />
         <AppToast />
         <AnimeRuntime />
+        <ClientRouteRecovery />
       </body>
     </html>
   );

@@ -138,7 +138,8 @@ export default function QuizResultClient() {
     const rawAnswers = localStorage.getItem(localAnswersKey(activeCouple.id, activeQuiz.id));
     if (rawAnswers) {
       try {
-        queueMicrotask(() => setAnswersByUser(JSON.parse(rawAnswers) as StoredAnswers));
+        const storedAnswers = JSON.parse(rawAnswers) as StoredAnswers;
+        queueMicrotask(() => setAnswersByUser(storedAnswers));
       } catch {
         queueMicrotask(() => setAnswersByUser({}));
       }
@@ -147,7 +148,8 @@ export default function QuizResultClient() {
     const rawComments = localStorage.getItem(localCommentsKey(activeCouple.id, activeQuiz.id));
     if (rawComments) {
       try {
-        queueMicrotask(() => setComments(JSON.parse(rawComments) as DiscussionComment[]));
+        const storedComments = JSON.parse(rawComments) as DiscussionComment[];
+        queueMicrotask(() => setComments(storedComments));
       } catch {
         queueMicrotask(() => setComments([]));
       }

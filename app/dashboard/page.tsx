@@ -110,6 +110,37 @@ function localKey(coupleId: string, key: string) {
   return `couple-space:dashboard:${coupleId}:${key}`;
 }
 
+function readLocalJson<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    localStorage.removeItem(key);
+    return fallback;
+  }
+}
+
+function readLocalStringArray(key: string) {
+  const value = readLocalJson<unknown>(key, []);
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function readLocalStringRecord(key: string) {
+  const value = readLocalJson<unknown>(key, {});
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string"
+    )
+  );
+}
+
 function initials(name?: string | null) {
   return (name || "?").trim().slice(0, 1).toUpperCase();
 }
@@ -1090,18 +1121,13 @@ export default function DashboardPage() {
     const unlockedKey = localKey(couple.id, "achievements-unlocked");
     const datesKey = localKey(couple.id, "achievements-dates");
     const notifiedKey = localKey(couple.id, `achievements-notified-${currentUserId}`);
-    const previousRaw = localStorage.getItem(unlockedKey);
-    const previousIds = previousRaw ? (JSON.parse(previousRaw) as string[]) : [];
-    const notifiedRaw = localStorage.getItem(notifiedKey);
-    const notifiedIds = notifiedRaw ? (JSON.parse(notifiedRaw) as string[]) : [];
+    const previousIds = readLocalStringArray(unlockedKey);
+    const notifiedIds = readLocalStringArray(notifiedKey);
     const newIds = unlockedIds.filter((id) => !previousIds.includes(id));
-    const notificationIds = previousRaw
+    const notificationIds = previousIds.length > 0
       ? unlockedIds.filter((id) => !notifiedIds.includes(id))
       : [];
-    const savedDates = JSON.parse(localStorage.getItem(datesKey) || "{}") as Record<
-      string,
-      string
-    >;
+    const savedDates = readLocalStringRecord(datesKey);
     const today = new Date().toISOString();
 
     newIds.forEach((id) => {

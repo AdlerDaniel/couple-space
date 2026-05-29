@@ -14,6 +14,15 @@ function reloadPage() {
   window.location.reload();
 }
 
+function getErrorCode(error: Error & { digest?: string }) {
+  return (
+    error.digest ||
+    error.message ||
+    error.name ||
+    "client-runtime-error"
+  ).slice(0, 160);
+}
+
 export default function AppRouteErrorFallback({
   error,
   unstable_retry,
@@ -25,6 +34,7 @@ export default function AppRouteErrorFallback({
   }, [error]);
 
   const retry = unstable_retry || reset;
+  const errorCode = getErrorCode(error);
 
   const content = (
     <main className="flex min-h-screen items-center justify-center bg-[#fff8ed] px-5 py-12 text-[#7c2d12] dark:bg-[#140b05] dark:text-[#ffedd5]">
@@ -37,6 +47,9 @@ export default function AppRouteErrorFallback({
         </h1>
         <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-6 opacity-70 md:text-base">
           Обычно это происходит после обновления сайта, когда открытая вкладка ещё держит старую версию интерфейса.
+        </p>
+        <p className="mx-auto mt-4 max-w-md break-words rounded-2xl bg-orange-50 px-4 py-3 text-xs font-bold text-[#9a3412] shadow-inner dark:bg-white/10 dark:text-orange-100">
+          Код ошибки: {errorCode}
         </p>
 
         <div className="mt-6 grid gap-2 sm:grid-cols-2">

@@ -104,7 +104,13 @@ function getMemoryImagePath(imageUrl?: string | null) {
 
   if (markerIndex === -1) return null;
 
-  return decodeURIComponent(imageUrl.slice(markerIndex + marker.length));
+  const storagePath = imageUrl.slice(markerIndex + marker.length);
+
+  try {
+    return decodeURIComponent(storagePath);
+  } catch {
+    return storagePath;
+  }
 }
 
 function getSafeImagePath(coupleId: string, file: File) {

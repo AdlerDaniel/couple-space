@@ -234,11 +234,11 @@ function getReadableName(value?: string | null, fallback = "Партнёр") {
 
 export default function Home() {
   const [state, setState] = useState<HomeState>(emptyState);
-  const [dailyQuestionState, setDailyQuestionState] = useState(() => ({
-    question: getDailyQuestion(),
-    date: getDailyQuestionDate(),
-  }));
-  const todayQuestion = dailyQuestionState.question;
+  const [dailyQuestionState, setDailyQuestionState] = useState<{
+    question: string;
+    date: string;
+  } | null>(null);
+  const todayQuestion = dailyQuestionState?.question || "Готовим вопрос дня...";
   const recommendedQuiz = quizzes[0];
 
   const coupleName = useMemo(() => {
@@ -449,6 +449,13 @@ export default function Home() {
 
   useEffect(() => {
     async function loadHome() {
+      const defaultTimeZone = "Europe/Moscow";
+      const now = new Date();
+      setDailyQuestionState({
+        question: getDailyQuestion(now, defaultTimeZone),
+        date: getDailyQuestionDate(now, defaultTimeZone),
+      });
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -477,9 +484,10 @@ export default function Home() {
         .limit(1)
         .maybeSingle<CoupleProfile>();
 
-      const timeZone = profileData?.time_zone || "Europe/Moscow";
-      const activeQuestion = getDailyQuestion(new Date(), timeZone);
-      const activeQuestionDate = getDailyQuestionDate(new Date(), timeZone);
+      const timeZone = profileData?.time_zone || defaultTimeZone;
+      const activeDate = new Date();
+      const activeQuestion = getDailyQuestion(activeDate, timeZone);
+      const activeQuestionDate = getDailyQuestionDate(activeDate, timeZone);
       setDailyQuestionState({ question: activeQuestion, date: activeQuestionDate });
 
       const todayKey = getTodayKey();

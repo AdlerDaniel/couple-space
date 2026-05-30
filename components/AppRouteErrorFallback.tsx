@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { isRecoverableRouteError } from "@/lib/routeRecovery";
 
 type AppRouteErrorFallbackProps = {
   error: Error & { digest?: string };
@@ -23,6 +24,19 @@ function getErrorCode(error: Error & { digest?: string }) {
   ).slice(0, 160);
 }
 
+function reloadRecoverableErrorOnce(error: Error & { digest?: string }) {
+  if (!isRecoverableRouteError(error)) return;
+
+  const storageKey = "couple-space:error-fallback-recovery";
+  const now = Date.now();
+  const lastRecovery = Number(sessionStorage.getItem(storageKey) || 0);
+
+  if (now - lastRecovery < 15000) return;
+
+  sessionStorage.setItem(storageKey, String(now));
+  window.location.reload();
+}
+
 export default function AppRouteErrorFallback({
   error,
   unstable_retry,
@@ -31,6 +45,7 @@ export default function AppRouteErrorFallback({
 }: AppRouteErrorFallbackProps) {
   useEffect(() => {
     console.error(error);
+    reloadRecoverableErrorOnce(error);
   }, [error]);
 
   const retry = unstable_retry || reset;

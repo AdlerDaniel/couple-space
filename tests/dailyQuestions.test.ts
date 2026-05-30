@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { dailyQuestions, getDailyQuestion } from "../lib/dailyQuestions.ts";
+import { isRecoverableRouteError } from "../lib/routeRecovery.ts";
 
 test("dailyQuestions contains 300 unique questions", () => {
   assert.equal(dailyQuestions.length, 300);
@@ -18,4 +19,8 @@ test("getDailyQuestion rotates beyond the day of month", () => {
     getDailyQuestion(new Date("2026-01-01T12:00:00.000Z"), "Europe/Moscow"),
     getDailyQuestion(new Date("2026-02-01T12:00:00.000Z"), "Europe/Moscow"),
   );
+});
+
+test("route recovery treats stack overflow during stale client runtime as recoverable", () => {
+  assert.equal(isRecoverableRouteError(new RangeError("Maximum call stack size exceeded")), true);
 });

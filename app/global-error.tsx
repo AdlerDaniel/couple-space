@@ -4,10 +4,10 @@ import AppRouteErrorFallback from "@/components/AppRouteErrorFallback";
 
 export default function GlobalError({
   error,
-  unstable_retry,
+  reset,
 }: {
   error: Error & { digest?: string };
-  unstable_retry: () => void;
+  reset: () => void;
 }) {
-  return <AppRouteErrorFallback error={error} unstable_retry={unstable_retry} global />;
+  return <AppRouteErrorFallback error={error} reset={reset} global />;
 }

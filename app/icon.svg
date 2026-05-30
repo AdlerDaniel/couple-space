@@ -1,0 +1,29 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Couple Space logo icon</title>
+  <desc>Two soft green heart-leaf shapes overlapping into a central leaf, symbolizing a couple and shared space.</desc>
+  <defs>
+    <linearGradient id="leftGradient" x1="192" y1="236" x2="527" y2="777" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A9D7A7"/>
+      <stop offset="1" stop-color="#5EAA62"/>
+    </linearGradient>
+    <linearGradient id="rightGradient" x1="828" y1="236" x2="497" y2="777" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#BBDCC0"/>
+      <stop offset="1" stop-color="#6EAF75"/>
+    </linearGradient>
+    <linearGradient id="centerGradient" x1="512" y1="220" x2="512" y2="842" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4C9B56"/>
+      <stop offset="1" stop-color="#1F6F39"/>
+    </linearGradient>
+    <filter id="softShadow" x="130" y="155" width="764" height="724" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#123D22" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#softShadow)">
+    <path d="M507.5 804.7C363.6 694.8 244.7 594.7 200.5 484.4C156.2 374 212.9 255 324.9 233.8C407.1 218.3 471.3 260.3 512 332.9C552.7 260.3 616.9 218.3 699.1 233.8C811.1 255 867.8 374 823.5 484.4C779.3 594.7 660.4 694.8 516.5 804.7C513.8 806.8 510.2 806.8 507.5 804.7Z" fill="#DDEEDF"/>
+    <path d="M512 330C470.4 255.8 404.4 213.1 320 229C204.9 250.8 146.4 373.1 191.9 486.7C235.7 595.9 350.2 694.7 490 802.2C494.4 805.6 500.7 802.5 500.7 796.9V439.4C500.7 400.7 504.6 363.5 512 330Z" fill="url(#leftGradient)"/>
+    <path d="M512 330C553.6 255.8 619.6 213.1 704 229C819.1 250.8 877.6 373.1 832.1 486.7C788.3 595.9 673.8 694.7 534 802.2C529.6 805.6 523.3 802.5 523.3 796.9V439.4C523.3 400.7 519.4 363.5 512 330Z" fill="url(#rightGradient)"/>
+    <path d="M512 249C582.8 322.4 626.7 421.5 626.7 531.1C626.7 641.1 582.5 740.6 510.9 814C439.7 740.6 397.3 641.6 397.3 532.1C397.3 421.9 441.2 322.5 512 249Z" fill="url(#centerGradient)"/>
+    <path d="M512 249C582.8 322.4 626.7 421.5 626.7 531.1C626.7 641.1 582.5 740.6 510.9 814C439.7 740.6 397.3 641.6 397.3 532.1C397.3 421.9 441.2 322.5 512 249Z" fill="white" opacity="0.06"/>
+  </g>
+</svg>

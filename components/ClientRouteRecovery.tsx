@@ -1,23 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+import { isRecoverableRouteError } from "@/lib/routeRecovery";
 
 const recoveryStorageKey = "couple-space:last-route-recovery";
-
-function isRecoverableRouteError(value: unknown) {
-  const message =
-    value instanceof Error
-      ? value.message
-      : typeof value === "string"
-        ? value
-        : value && typeof value === "object" && "message" in value
-          ? String((value as { message?: unknown }).message || "")
-          : "";
-
-  return /chunk|dynamically imported module|loading css chunk|failed to fetch|rsc|couldn.?t load/i.test(
-    message,
-  );
-}
 
 function recoverOnce() {
   const now = Date.now();

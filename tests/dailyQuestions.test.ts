@@ -8,6 +8,11 @@ test("dailyQuestions contains 300 unique questions", () => {
   assert.equal(new Set(dailyQuestions).size, 300);
 });
 
+test("dailyQuestions uses the supplied Couple Space question set", () => {
+  assert.equal(dailyQuestions[0], "Что ты хочешь построить вместе с партнёром?");
+  assert.equal(dailyQuestions[299], "В какой ситуации ты чувствуешь себя максимально уверенно?");
+});
+
 test("getDailyQuestion rotates beyond the day of month", () => {
   assert.notEqual(
     getDailyQuestion(new Date("2026-01-01T12:00:00.000Z"), "Europe/Moscow"),

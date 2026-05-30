@@ -373,7 +373,7 @@ export default function Navbar() {
     <header className="fixed left-0 top-0 z-30 hidden w-full px-4 py-2 md:block">
       <nav
         style={navStyle}
-        className="app-glass mx-auto flex max-w-5xl items-center justify-between gap-2 rounded-[1.15rem] px-2 py-1 transition-colors"
+        className="desktop-navbar-shell mx-auto flex max-w-5xl items-center justify-between gap-2 rounded-[1.15rem] px-2 py-1 transition-colors"
       >
         <Link
           href="/"

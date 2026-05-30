@@ -154,6 +154,16 @@ body {
   box-shadow: 0 14px 42px rgba(0, 0, 0, 0.32);
 }
 
+.desktop-navbar-shell {
+  border: 1px solid transparent;
+  overflow: visible;
+  backdrop-filter: blur(22px);
+}
+
+.dark .desktop-navbar-shell {
+  border-color: transparent;
+}
+
 .mobile-nav-shell {
   border: 1px solid rgba(var(--mobile-nav-accent-rgb, 234, 88, 12), 0.36);
   background:

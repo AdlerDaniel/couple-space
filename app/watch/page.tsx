@@ -8,6 +8,7 @@ import {
 } from "@/lib/watchList";
 import { AnimatedText, CountUp } from "@/components/AnimeWidgets";
 import { supabase } from "@/lib/supabaseClient";
+import type { WatchSearchResult } from "@/lib/watchSearch";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -78,7 +79,10 @@ export default function WatchPage() {
   const [selectedItem, setSelectedItem] = useState<WatchItem | null>(null);
   const [savedPickId, setSavedPickId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<WatchItem | null>(null);
-  const [eveningModeItem, setEveningModeItem] = useState<WatchItem | null>(null);
+  const [searchResults, setSearchResults] = useState<WatchSearchResult[]>([]);
+  const [selectedSearchResult, setSelectedSearchResult] = useState<WatchSearchResult | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const deleteTimerRef = useRef<number | null>(null);
   const autoSpinDoneRef = useRef(false);
   const rouletteWheelRef = useRef<HTMLDivElement | null>(null);
@@ -204,6 +208,39 @@ export default function WatchPage() {
     };
   }, [couple?.id]);
 
+  useEffect(() => {
+    const normalizedTitle = normalizeWatchTitle(title);
+
+    if (normalizedTitle.length < 2) {
+      return;
+    }
+
+    let ignore = false;
+    const timerId = window.setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const response = await fetch(`/api/watch/search?q=${encodeURIComponent(title.trim())}`);
+        const data = (await response.json().catch(() => null)) as {
+          results?: WatchSearchResult[];
+        } | null;
+
+        if (!ignore) {
+          setSearchResults(data?.results || []);
+          setIsSearchOpen(true);
+        }
+      } catch {
+        if (!ignore) setSearchResults([]);
+      } finally {
+        if (!ignore) setIsSearching(false);
+      }
+    }, 320);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timerId);
+    };
+  }, [title]);
+
   function getAddedByName(userId: string) {
     if (!couple || !currentUserId) return "Партнёр";
     if (userId === currentUserId) return "Вы";
@@ -232,10 +269,10 @@ export default function WatchPage() {
         {
           couple_id: couple.id,
           title: trimmedTitle,
-          content_type: contentType,
+          content_type: selectedSearchResult?.contentType || contentType,
           added_by: currentUserId,
-          external_url: null,
-          poster_url: null,
+          external_url: selectedSearchResult?.externalUrl || null,
+          poster_url: selectedSearchResult?.posterUrl || null,
         },
       ])
       .select("*")
@@ -253,6 +290,9 @@ export default function WatchPage() {
 
     setItems((current) => [data as WatchItem, ...current]);
     setTitle("");
+    setSelectedSearchResult(null);
+    setSearchResults([]);
+    setIsSearchOpen(false);
     setMessage("Добавлено в список на просмотр.");
     setIsSaving(false);
   }
@@ -307,7 +347,6 @@ export default function WatchPage() {
     }
 
     setSelectedItem((current) => (current?.id === item.id ? null : current));
-    setEveningModeItem((current) => (current?.id === item.id ? null : current));
     setPendingDelete(item);
     setMessage("");
     deleteTimerRef.current = window.setTimeout(() => {
@@ -410,10 +449,6 @@ export default function WatchPage() {
     setMessage(`${selectedItem.title} сохранено в список на просмотр.`);
   }
 
-  function openEveningMode(item: WatchItem) {
-    setEveningModeItem(item);
-  }
-
   function renderCard(item: WatchItem) {
     const isSelected = selectedItem?.id === item.id;
 
@@ -464,15 +499,6 @@ export default function WatchPage() {
           >
             Подробнее
           </Link>
-          {item.is_watched && (
-            <button
-              type="button"
-              onClick={() => openEveningMode(item)}
-              className="min-w-0 rounded-full bg-white/75 px-4 py-2.5 text-center text-sm font-black leading-tight text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
-            >
-              Вечерний режим
-            </button>
-          )}
           {!item.is_watched && (
             <button
               type="button"
@@ -600,32 +626,91 @@ export default function WatchPage() {
                 {savedPickId === selectedItem.id ? "Сохранено" : "Сохранить"}
               </button>
             )}
-            {selectedItem && (
-              <button
-                type="button"
-                onClick={() => openEveningMode(selectedItem)}
-                className="rounded-full bg-lime-100 px-7 py-3.5 text-base font-black text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-lime-400/12 dark:text-lime-100"
-              >
-                Вечерний режим
-              </button>
-            )}
           </div>
         </section>
 
         <section className="mt-6 rounded-[1.7rem] border border-white/70 bg-white/64 p-4 shadow-inner backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:p-5">
           <div className="grid gap-3 lg:grid-cols-[1fr_220px_auto]">
-            <input
-              value={title}
-              onChange={(event) => {
-                setTitle(event.target.value);
-                if (message) setMessage("");
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") void addItem();
-              }}
-              placeholder="Название фильма, сериала, мультфильма..."
-              className="h-13 rounded-2xl border border-lime-200/70 bg-white/82 px-4 font-semibold text-lime-950 outline-none transition placeholder:text-lime-900/35 focus:border-lime-500 dark:border-white/10 dark:bg-black/20 dark:text-white"
-            />
+            <div className="relative">
+              <input
+                value={title}
+                onChange={(event) => {
+                  const nextTitle = event.target.value;
+                  const nextNormalizedTitle = normalizeWatchTitle(nextTitle);
+                  setTitle(nextTitle);
+                  if (
+                    selectedSearchResult &&
+                    normalizeWatchTitle(selectedSearchResult.title) !== nextNormalizedTitle
+                  ) {
+                    setSelectedSearchResult(null);
+                  }
+                  if (nextNormalizedTitle.length < 2) {
+                    setSearchResults([]);
+                    setIsSearching(false);
+                  }
+                  setIsSearchOpen(true);
+                  if (message) setMessage("");
+                }}
+                onFocus={() => {
+                  if (searchResults.length > 0) setIsSearchOpen(true);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") void addItem();
+                  if (event.key === "Escape") setIsSearchOpen(false);
+                }}
+                placeholder="Название фильма, сериала, мультфильма..."
+                className="h-13 w-full rounded-2xl border border-lime-200/70 bg-white/82 px-4 font-semibold text-lime-950 outline-none transition placeholder:text-lime-900/35 focus:border-lime-500 dark:border-white/10 dark:bg-black/20 dark:text-white"
+              />
+              {(isSearchOpen || isSearching) && normalizeWatchTitle(title).length >= 2 && (
+                <div className="absolute left-0 right-0 top-15 z-30 overflow-hidden rounded-[1.25rem] border border-lime-200/70 bg-white/96 p-2 shadow-[0_24px_70px_rgba(77,124,15,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-[#101906]/96">
+                  {isSearching && (
+                    <div className="rounded-2xl px-3 py-3 text-sm font-black text-lime-800/70 dark:text-white/60">
+                      Ищем варианты...
+                    </div>
+                  )}
+                  {!isSearching && searchResults.length === 0 && (
+                    <div className="rounded-2xl px-3 py-3 text-sm font-black text-lime-800/70 dark:text-white/60">
+                      Ничего не нашли. Можно добавить вручную.
+                    </div>
+                  )}
+                  {!isSearching &&
+                    searchResults.map((result) => (
+                      <button
+                        key={`${result.contentType}-${result.id}`}
+                        type="button"
+                        onClick={() => {
+                          setTitle(result.title);
+                          setContentType(result.contentType);
+                          setSelectedSearchResult(result);
+                          setIsSearchOpen(false);
+                          setMessage("");
+                        }}
+                        className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left transition hover:bg-lime-50 dark:hover:bg-white/10"
+                      >
+                        {result.posterUrl ? (
+                          <span
+                            className="h-16 w-11 shrink-0 rounded-lg bg-lime-100 bg-cover bg-center shadow-inner dark:bg-white/8"
+                            style={{ backgroundImage: `url("${result.posterUrl}")` }}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <span className="grid h-16 w-11 shrink-0 place-items-center rounded-lg bg-lime-100 text-lime-700 shadow-inner dark:bg-white/8 dark:text-lime-100">
+                            {getContentTypeIcon(result.contentType)}
+                          </span>
+                        )}
+                        <span className="min-w-0">
+                          <span className="block truncate font-black text-lime-950 dark:text-white">
+                            {result.title}
+                          </span>
+                          <span className="mt-1 block truncate text-xs font-bold text-lime-800/55 dark:text-white/50">
+                            {result.subtitle || getContentTypeLabel(result.contentType)}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
             <select
               value={contentType}
               onChange={(event) => setContentType(event.target.value as ContentType)}
@@ -649,6 +734,12 @@ export default function WatchPage() {
           {message && (
             <p className="mt-3 text-sm font-black text-lime-800 dark:text-lime-100">
               {message}
+            </p>
+          )}
+          {selectedSearchResult && (
+            <p className="mt-3 text-sm font-black text-lime-800/70 dark:text-lime-100/70">
+              Выбрано: {selectedSearchResult.title}
+              {selectedSearchResult.year ? ` · ${selectedSearchResult.year}` : ""}. Постер добавится автоматически.
             </p>
           )}
         </section>
@@ -727,73 +818,6 @@ export default function WatchPage() {
           >
             Вернуть
           </button>
-        </div>
-      )}
-
-      {eveningModeItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-lime-950/72 px-4 py-8 backdrop-blur-xl">
-          <section className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-white/50 bg-[#f7fee7] p-5 text-lime-950 shadow-[0_40px_120px_rgba(0,0,0,0.42)] dark:border-white/10 dark:bg-[#101906] dark:text-white md:p-7">
-            <button
-              type="button"
-              onClick={() => setEveningModeItem(null)}
-              className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/80 font-black text-lime-900 shadow-inner dark:bg-white/10 dark:text-white"
-            >
-              ×
-            </button>
-
-            {eveningModeItem.poster_url ? (
-              <div
-                className="aspect-[16/9] rounded-[1.4rem] bg-lime-100 bg-cover bg-center shadow-inner dark:bg-white/8"
-                style={{ backgroundImage: `url("${eveningModeItem.poster_url}")` }}
-              />
-            ) : (
-              <div className="grid aspect-[16/9] place-items-center rounded-[1.4rem] bg-lime-100 text-6xl shadow-inner dark:bg-white/8">
-                {getContentTypeIcon(eveningModeItem.content_type)}
-              </div>
-            )}
-
-            <p className="mt-5 text-sm font-black uppercase tracking-[0.2em] text-lime-700/60 dark:text-lime-100/60">
-              Вечерний режим
-            </p>
-            <h2 className="mt-2 break-words text-4xl font-black text-lime-900 dark:text-white">
-              {eveningModeItem.title}
-            </h2>
-            <p className="mt-3 font-black text-lime-800/70 dark:text-white/60">
-              {getContentTypeLabel(eveningModeItem.content_type)} · добавил {getAddedByName(eveningModeItem.added_by)}
-            </p>
-
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              {!eveningModeItem.is_watched && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    void markWatched(eveningModeItem);
-                    setEveningModeItem({ ...eveningModeItem, is_watched: true, watched_at: new Date().toISOString() });
-                  }}
-                  className="rounded-full bg-lime-600 px-6 py-3 font-black text-white shadow-lg transition hover:-translate-y-0.5"
-                >
-                  Отметить как просмотрено
-                </button>
-              )}
-              {eveningModeItem.external_url && (
-                <a
-                  href={eveningModeItem.external_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-full bg-white/82 px-6 py-3 text-center font-black text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
-                >
-                  Открыть ссылку
-                </a>
-              )}
-              <button
-                type="button"
-                onClick={() => setEveningModeItem(null)}
-                className="rounded-full bg-lime-100 px-6 py-3 font-black text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-lime-400/12 dark:text-lime-100"
-              >
-                Закрыть
-              </button>
-            </div>
-          </section>
         </div>
       )}
     </main>

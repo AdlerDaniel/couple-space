@@ -113,13 +113,13 @@ export default function PushNotificationButton({
         accent,
       });
     } catch (error) {
+      setState(await getPushPermissionState());
       showAppToast({
         title: "Тест не отправился",
         text: error instanceof Error ? error.message : "Попробуйте ещё раз.",
         accent,
       });
     } finally {
-      setState(await getPushPermissionState());
       setIsBusy(false);
     }
   }

@@ -65,6 +65,27 @@ async function hasBrowserPushSubscription() {
   return Boolean(subscription);
 }
 
+async function saveBrowserPushSubscription(subscription: PushSubscription, token: string) {
+  const response = await fetch("/api/push/subscribe", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(subscription),
+  });
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Не удалось сохранить push-подписку.");
+  }
+}
+
+async function getBrowserPushSubscription() {
+  const registration = await navigator.serviceWorker.getRegistration("/");
+  return registration?.pushManager.getSubscription() || null;
+}
+
 export async function getPushPermissionState(): Promise<PushSupportState> {
   if (getPushUnsupportedReason()) return "unsupported";
 
@@ -78,6 +99,14 @@ export async function getPushPermissionState(): Promise<PushSupportState> {
 
   const hasSubscription =
     Notification.permission === "granted" ? await hasBrowserPushSubscription() : false;
+
+  if (hasSubscription) {
+    const token = await getAccessToken();
+    const subscription = token ? await getBrowserPushSubscription() : null;
+    if (subscription && token) {
+      await saveBrowserPushSubscription(subscription, token).catch(() => undefined);
+    }
+  }
 
   return resolvePushPermissionState({
     isSupported: true,
@@ -132,19 +161,7 @@ export async function subscribeToBrowserPush() {
       applicationServerKey: urlBase64ToUint8Array(publicKey),
     }));
 
-  const response = await fetch("/api/push/subscribe", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(subscription),
-  });
-
-  if (!response.ok) {
-    const data = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(data?.error || "Не удалось сохранить push-подписку.");
-  }
+  await saveBrowserPushSubscription(subscription, token);
 
   return subscription;
 }

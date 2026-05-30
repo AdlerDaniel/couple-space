@@ -148,6 +148,25 @@ function assertResponse(response: Response) {
   }
 }
 
+export function normalizeSupabaseRestStatus(
+  status: DiagnosticStatus,
+  message?: string,
+): DiagnosticStatus {
+  if (status === "failed" && message === "HTTP 401") return "ok";
+  return status;
+}
+
+function normalizeSupabaseRestCheck(check: NetworkDiagnosticCheck): NetworkDiagnosticCheck {
+  const status = normalizeSupabaseRestStatus(check.status, check.message);
+  if (status === check.status) return check;
+
+  return {
+    ...check,
+    status,
+    message: "REST endpoint отвечает HTTP 401, значит сеть до Supabase работает.",
+  };
+}
+
 function getRealtimeUrl() {
   if (!supabaseUrl || !supabaseAnonKey) return "";
   const url = new URL("/realtime/v1/websocket", supabaseUrl);
@@ -224,7 +243,7 @@ export function getDiagnosticSummary(classification: NetworkDiagnosticClassifica
     return "Не открываются базовые ресурсы сайта. Проверьте VPN, DNS или блокировку домена.";
   }
   if (classification === "chunk-failed") {
-    return "Не загружается часть интерфейса Next.js. Обычно помогает очистка кеша вкладки или другой VPN-маршрут.";
+    return "Не загружаются файлы интерфейса из /_next/static. Это похоже на кеш вкладки, расширение браузера или VPN-маршрут, который режет часть ресурсов Vercel.";
   }
   if (classification === "supabase-blocked") {
     return "Сайт открылся, но браузер не может достучаться до Supabase. Вход и данные пары будут ломаться.";
@@ -262,7 +281,7 @@ export async function runNetworkDiagnostics(lastError?: string | null) {
 
   const restUrl = supabaseUrl ? new URL("/rest/v1/", supabaseUrl).toString() : "";
   const authUrl = supabaseUrl ? new URL("/auth/v1/health", supabaseUrl).toString() : "";
-  const restCheck = await timedCheck("Supabase REST", restUrl, async (signal) => {
+  const rawRestCheck = await timedCheck("Supabase REST", restUrl, async (signal) => {
     const response = await fetch(restUrl, {
       cache: "no-store",
       headers: {
@@ -273,6 +292,7 @@ export async function runNetworkDiagnostics(lastError?: string | null) {
     });
     assertResponse(response);
   });
+  const restCheck = normalizeSupabaseRestCheck(rawRestCheck);
   const authCheck = await timedCheck("Supabase Auth", authUrl, async (signal) => {
     const response = await fetch(authUrl, {
       cache: "no-store",

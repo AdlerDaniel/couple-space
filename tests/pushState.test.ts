@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolvePushPermissionState } from "../lib/pushState.ts";
+import { getPushUnsupportedMessage, resolvePushPermissionState } from "../lib/pushState.ts";
 
 test("push state asks to enable when permission is granted but no subscription exists", () => {
   assert.equal(
@@ -46,4 +46,8 @@ test("push state keeps blocked and unsupported states", () => {
     }),
     "unsupported",
   );
+});
+
+test("push unsupported message explains iOS browser tab limitation", () => {
+  assert.match(getPushUnsupportedMessage("ios-browser-tab"), /экран Домой/);
 });

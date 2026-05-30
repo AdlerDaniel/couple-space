@@ -2,6 +2,7 @@
 
 import {
   getPushPermissionState,
+  getPushUnavailableMessage,
   subscribeToBrowserPush,
   unsubscribeFromBrowserPush,
   type PushSupportState,
@@ -47,11 +48,18 @@ export default function PushNotificationButton({
   async function handleClick() {
     if (state === "unsupported" || state === "blocked" || state === "not-configured") {
       showAppToast({
-        title: state === "blocked" ? "Уведомления заблокированы" : "Push недоступны",
+        title:
+          state === "blocked"
+            ? "Уведомления заблокированы"
+            : state === "not-configured"
+              ? "Push не настроены"
+              : "Push недоступны",
         text:
           state === "blocked"
             ? "Разрешите уведомления в настройках браузера."
-            : "Этот браузер не может получать push-уведомления.",
+            : state === "not-configured"
+              ? "На сервере ещё не применились push-ключи."
+              : getPushUnavailableMessage(),
         accent,
       });
       return;
@@ -92,7 +100,7 @@ export default function PushNotificationButton({
     <button
       type="button"
       onClick={handleClick}
-      disabled={isBusy || state === "unsupported"}
+      disabled={isBusy}
       className={
         className ||
         "w-full rounded-2xl bg-white/70 px-4 py-3 text-left font-black shadow-inner transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-55 dark:bg-white/10 dark:hover:bg-white/15"

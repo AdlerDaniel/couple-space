@@ -1,7 +1,12 @@
 import { supabase } from "@/lib/supabaseClient";
-import { resolvePushPermissionState, type PushSupportState } from "@/lib/pushState";
+import {
+  getPushUnsupportedMessage,
+  resolvePushPermissionState,
+  type PushSupportState,
+  type PushUnsupportedReason,
+} from "@/lib/pushState";
 
-export type { PushSupportState };
+export type { PushSupportState, PushUnsupportedReason };
 
 function urlBase64ToUint8Array(value: string) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
@@ -11,12 +16,46 @@ function urlBase64ToUint8Array(value: string) {
 }
 
 export function canUsePushNotifications() {
+  if (typeof window === "undefined") return false;
+
   return (
-    typeof window !== "undefined" &&
+    window.isSecureContext &&
     "serviceWorker" in navigator &&
     "PushManager" in window &&
     "Notification" in window
   );
+}
+
+function isProbablyIos() {
+  const userAgent = navigator.userAgent || "";
+
+  return /iPad|iPhone|iPod/.test(userAgent) || (/Macintosh/.test(userAgent) && navigator.maxTouchPoints > 1);
+}
+
+function isStandaloneWebApp() {
+  const navigatorWithStandalone = navigator as Navigator & { standalone?: boolean };
+
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    navigatorWithStandalone.standalone === true
+  );
+}
+
+export function getPushUnsupportedReason(): PushUnsupportedReason | null {
+  if (typeof window === "undefined") return "unknown";
+  if (!window.isSecureContext) return "insecure-context";
+  if (!("serviceWorker" in navigator)) return "service-worker-missing";
+  if (!("PushManager" in window)) {
+    return isProbablyIos() && !isStandaloneWebApp() ? "ios-browser-tab" : "push-manager-missing";
+  }
+  if (!("Notification" in window)) return "notification-missing";
+
+  return null;
+}
+
+export function getPushUnavailableMessage() {
+  return getPushUnsupportedMessage(getPushUnsupportedReason() || "unknown");
 }
 
 async function hasBrowserPushSubscription() {
@@ -29,7 +68,7 @@ async function hasBrowserPushSubscription() {
 }
 
 export async function getPushPermissionState(): Promise<PushSupportState> {
-  if (!canUsePushNotifications()) return "unsupported";
+  if (getPushUnsupportedReason()) return "unsupported";
 
   let isConfigured = false;
   try {

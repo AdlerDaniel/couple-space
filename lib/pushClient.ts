@@ -166,34 +166,6 @@ export async function subscribeToBrowserPush() {
   return subscription;
 }
 
-export async function sendTestBrowserPush() {
-  const token = await getAccessToken();
-  if (!token) {
-    throw new Error("Нужно войти в аккаунт.");
-  }
-
-  const response = await fetch("/api/push/test", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  const data = (await response.json().catch(() => null)) as
-    | { error?: string; sent?: number; skipped?: boolean }
-    | null;
-
-  if (!response.ok) {
-    throw new Error(data?.error || "Не удалось отправить тестовое push-уведомление.");
-  }
-
-  if (!data?.sent) {
-    throw new Error("Сервер не нашёл активную push-подписку для этого аккаунта.");
-  }
-
-  return data;
-}
-
 export async function unsubscribeFromBrowserPush() {
   if (!canUsePushNotifications()) return;
 

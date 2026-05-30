@@ -143,6 +143,11 @@ export const routeMeta: Record<
     description: "Новые события пары",
     icon: "notifications",
   },
+  "/diagnostics": {
+    label: "Диагностика",
+    description: "Проверка загрузки сайта и Supabase",
+    icon: "settings",
+  },
 };
 
 export function isActivePath(pathname: string, href: string) {

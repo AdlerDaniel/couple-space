@@ -1,8 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { isRecoverableRouteError } from "@/lib/routeRecovery";
+import {
+  formatNetworkDiagnosticReport,
+  getDiagnosticSummary,
+  lastRouteErrorStorageKey,
+  type NetworkDiagnosticReport,
+  runNetworkDiagnostics,
+} from "@/lib/networkDiagnostics";
 
 type AppRouteErrorFallbackProps = {
   error: Error & { digest?: string };
@@ -24,17 +31,24 @@ function getErrorCode(error: Error & { digest?: string }) {
   ).slice(0, 160);
 }
 
+function rememberFallbackError(error: Error & { digest?: string }) {
+  try {
+    sessionStorage.setItem(lastRouteErrorStorageKey, `${error.name}: ${error.message}`);
+  } catch {}
+}
+
 function reloadRecoverableErrorOnce(error: Error & { digest?: string }) {
-  if (!isRecoverableRouteError(error)) return;
+  if (!isRecoverableRouteError(error)) return false;
 
   const storageKey = "couple-space:error-fallback-recovery";
   const now = Date.now();
   const lastRecovery = Number(sessionStorage.getItem(storageKey) || 0);
 
-  if (now - lastRecovery < 15000) return;
+  if (now - lastRecovery < 15000) return false;
 
   sessionStorage.setItem(storageKey, String(now));
   window.location.reload();
+  return true;
 }
 
 export default function AppRouteErrorFallback({
@@ -43,13 +57,43 @@ export default function AppRouteErrorFallback({
   reset,
   global = false,
 }: AppRouteErrorFallbackProps) {
+  const [report, setReport] = useState<NetworkDiagnosticReport | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
+  const isRecoverable = isRecoverableRouteError(error);
+
+  async function checkConnection() {
+    setIsChecking(true);
+    setCopyMessage("");
+    try {
+      setReport(await runNetworkDiagnostics(`${error.name}: ${error.message}`));
+    } finally {
+      setIsChecking(false);
+    }
+  }
+
+  async function copyReport() {
+    const activeReport = report || (await runNetworkDiagnostics(`${error.name}: ${error.message}`));
+    const text = formatNetworkDiagnosticReport(activeReport);
+    setReport(activeReport);
+    await navigator.clipboard.writeText(text);
+    setCopyMessage("Отчёт скопирован.");
+  }
+
   useEffect(() => {
     console.error(error);
-    reloadRecoverableErrorOnce(error);
+    rememberFallbackError(error);
+    const didReload = reloadRecoverableErrorOnce(error);
+    if (!didReload && isRecoverableRouteError(error)) {
+      runNetworkDiagnostics(`${error.name}: ${error.message}`).then(setReport).catch(() => {});
+    }
   }, [error]);
 
   const retry = unstable_retry || reset;
   const errorCode = getErrorCode(error);
+  const helperText = isRecoverable
+    ? "Похоже, браузер или VPN не загрузил часть интерфейса, Supabase или realtime-соединение. Если автообновление не помогло, запустите проверку соединения и скопируйте отчёт."
+    : "Обычно это происходит после обновления сайта, когда открытая вкладка ещё держит старую версию интерфейса.";
 
   const content = (
     <main className="flex min-h-screen items-center justify-center bg-[#fff8ed] px-5 py-12 text-[#7c2d12] dark:bg-[#140b05] dark:text-[#ffedd5]">
@@ -61,11 +105,17 @@ export default function AppRouteErrorFallback({
           Страница не загрузилась
         </h1>
         <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-6 opacity-70 md:text-base">
-          Обычно это происходит после обновления сайта, когда открытая вкладка ещё держит старую версию интерфейса.
+          {helperText}
         </p>
         <p className="mx-auto mt-4 max-w-md break-words rounded-2xl bg-orange-50 px-4 py-3 text-xs font-bold text-[#9a3412] shadow-inner dark:bg-white/10 dark:text-orange-100">
           Код ошибки: {errorCode}
         </p>
+        {report && (
+          <div className="mx-auto mt-4 max-w-md rounded-2xl bg-white/70 px-4 py-3 text-left text-xs font-bold leading-5 text-[#7c2d12] shadow-inner dark:bg-white/10 dark:text-orange-100">
+            <p className="font-black">Проверка: {report.classification}</p>
+            <p className="mt-1 opacity-75">{getDiagnosticSummary(report.classification)}</p>
+          </div>
+        )}
 
         <div className="mt-6 grid gap-2 sm:grid-cols-2">
           <button
@@ -82,7 +132,27 @@ export default function AppRouteErrorFallback({
           >
             Повторить
           </button>
+          <button
+            type="button"
+            onClick={checkConnection}
+            disabled={isChecking}
+            className="rounded-full bg-white px-5 py-3 font-black text-[#c2410c] shadow-inner transition hover:bg-orange-50 disabled:opacity-60 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+          >
+            {isChecking ? "Проверяем..." : "Проверить соединение"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              copyReport().catch(() => setCopyMessage("Не удалось скопировать отчёт."));
+            }}
+            className="rounded-full bg-[#7c2d12] px-5 py-3 font-black text-white shadow-lg transition hover:bg-[#9a3412]"
+          >
+            Скопировать отчёт
+          </button>
         </div>
+        {copyMessage && (
+          <p className="mt-3 text-xs font-bold opacity-70">{copyMessage}</p>
+        )}
 
         <Link
           href="/"

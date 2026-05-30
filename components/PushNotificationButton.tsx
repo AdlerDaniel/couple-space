@@ -31,11 +31,17 @@ export default function PushNotificationButton({
   const [isBusy, setIsBusy] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     const timerId = window.setTimeout(() => {
-      setState(getPushPermissionState());
+      getPushPermissionState().then((nextState) => {
+        if (isMounted) setState(nextState);
+      });
     }, 0);
 
-    return () => window.clearTimeout(timerId);
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timerId);
+    };
   }, []);
 
   async function handleClick() {
@@ -55,7 +61,7 @@ export default function PushNotificationButton({
     try {
       if (state === "enabled") {
         await unsubscribeFromBrowserPush();
-        setState(getPushPermissionState());
+        setState(await getPushPermissionState());
         showAppToast({
           title: "Push выключены",
           text: "Этот браузер больше не будет получать системные уведомления.",
@@ -71,7 +77,7 @@ export default function PushNotificationButton({
         });
       }
     } catch (error) {
-      setState(getPushPermissionState());
+      setState(await getPushPermissionState());
       showAppToast({
         title: "Не удалось включить push",
         text: error instanceof Error ? error.message : "Попробуйте ещё раз.",

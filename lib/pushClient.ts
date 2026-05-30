@@ -1,11 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
+import { resolvePushPermissionState, type PushSupportState } from "@/lib/pushState";
 
-export type PushSupportState =
-  | "unsupported"
-  | "not-configured"
-  | "default"
-  | "blocked"
-  | "enabled";
+export type { PushSupportState };
 
 function urlBase64ToUint8Array(value: string) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
@@ -23,11 +19,35 @@ export function canUsePushNotifications() {
   );
 }
 
-export function getPushPermissionState(): PushSupportState {
+async function hasBrowserPushSubscription() {
+  const registration =
+    (await navigator.serviceWorker.getRegistration("/")) ||
+    (await navigator.serviceWorker.ready.catch(() => null));
+  const subscription = await registration?.pushManager.getSubscription();
+
+  return Boolean(subscription);
+}
+
+export async function getPushPermissionState(): Promise<PushSupportState> {
   if (!canUsePushNotifications()) return "unsupported";
-  if (Notification.permission === "granted") return "enabled";
-  if (Notification.permission === "denied") return "blocked";
-  return "default";
+
+  let isConfigured = false;
+  try {
+    await getVapidPublicKey();
+    isConfigured = true;
+  } catch {
+    isConfigured = false;
+  }
+
+  const hasSubscription =
+    Notification.permission === "granted" ? await hasBrowserPushSubscription() : false;
+
+  return resolvePushPermissionState({
+    isSupported: true,
+    isConfigured,
+    permission: Notification.permission,
+    hasSubscription,
+  });
 }
 
 async function getAccessToken() {

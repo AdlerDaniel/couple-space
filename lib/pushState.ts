@@ -1,4 +1,5 @@
 export type PushSupportState =
+  | "checking"
   | "unsupported"
   | "not-configured"
   | "default"

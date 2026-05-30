@@ -59,9 +59,7 @@ export function getPushUnavailableMessage() {
 }
 
 async function hasBrowserPushSubscription() {
-  const registration =
-    (await navigator.serviceWorker.getRegistration("/")) ||
-    (await navigator.serviceWorker.ready.catch(() => null));
+  const registration = await navigator.serviceWorker.getRegistration("/");
   const subscription = await registration?.pushManager.getSubscription();
 
   return Boolean(subscription);

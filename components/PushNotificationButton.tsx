@@ -16,6 +16,7 @@ type PushNotificationButtonProps = {
 };
 
 function getButtonText(state: PushSupportState, isBusy: boolean) {
+  if (state === "checking") return "Проверяем push...";
   if (isBusy) return "Настраиваем...";
   if (state === "enabled") return "Push включены";
   if (state === "blocked") return "Push заблокированы";
@@ -28,7 +29,7 @@ export default function PushNotificationButton({
   accent,
   className,
 }: PushNotificationButtonProps) {
-  const [state, setState] = useState<PushSupportState>("unsupported");
+  const [state, setState] = useState<PushSupportState>("checking");
   const [isBusy, setIsBusy] = useState(false);
 
   useEffect(() => {
@@ -46,6 +47,11 @@ export default function PushNotificationButton({
   }, []);
 
   async function handleClick() {
+    if (state === "checking") {
+      setState(await getPushPermissionState());
+      return;
+    }
+
     if (state === "unsupported" || state === "blocked" || state === "not-configured") {
       showAppToast({
         title:
@@ -100,7 +106,7 @@ export default function PushNotificationButton({
     <button
       type="button"
       onClick={handleClick}
-      disabled={isBusy}
+      disabled={isBusy || state === "checking"}
       className={
         className ||
         "w-full rounded-2xl bg-white/70 px-4 py-3 text-left font-black shadow-inner transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-55 dark:bg-white/10 dark:hover:bg-white/15"

@@ -3,6 +3,7 @@
 import {
   getPushPermissionState,
   getPushUnavailableMessage,
+  sendTestBrowserPush,
   subscribeToBrowserPush,
   unsubscribeFromBrowserPush,
   type PushSupportState,
@@ -102,17 +103,50 @@ export default function PushNotificationButton({
     }
   }
 
+  async function handleTestClick() {
+    setIsBusy(true);
+    try {
+      const result = await sendTestBrowserPush();
+      showAppToast({
+        title: "Тест отправлен",
+        text: `Сервер отправил push на устройств: ${result.sent}.`,
+        accent,
+      });
+    } catch (error) {
+      showAppToast({
+        title: "Тест не отправился",
+        text: error instanceof Error ? error.message : "Попробуйте ещё раз.",
+        accent,
+      });
+    } finally {
+      setState(await getPushPermissionState());
+      setIsBusy(false);
+    }
+  }
+
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isBusy || state === "checking"}
-      className={
-        className ||
-        "w-full rounded-2xl bg-white/70 px-4 py-3 text-left font-black shadow-inner transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-55 dark:bg-white/10 dark:hover:bg-white/15"
-      }
-    >
-      {getButtonText(state, isBusy)}
-    </button>
+    <div className="grid gap-2">
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={isBusy || state === "checking"}
+        className={
+          className ||
+          "w-full rounded-2xl bg-white/70 px-4 py-3 text-left font-black shadow-inner transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-55 dark:bg-white/10 dark:hover:bg-white/15"
+        }
+      >
+        {getButtonText(state, isBusy)}
+      </button>
+      {state === "enabled" && (
+        <button
+          type="button"
+          onClick={handleTestClick}
+          disabled={isBusy}
+          className="w-full rounded-2xl bg-white/70 px-4 py-3 text-left text-sm font-black shadow-inner transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-55 dark:bg-white/10 dark:hover:bg-white/15"
+        >
+          Отправить тест
+        </button>
+      )}
+    </div>
   );
 }

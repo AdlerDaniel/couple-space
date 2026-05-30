@@ -411,9 +411,6 @@ export default function Navbar() {
                 <NavIcon name={link.icon} className="h-7 w-7" />
                 <span className="hidden xl:inline">{link.label}</span>
                 <span className="app-tooltip" aria-hidden="true">{link.label}</span>
-                {isActive && (
-                  <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-white/90" />
-                )}
               </Link>
             );
           })}
@@ -442,9 +439,6 @@ export default function Navbar() {
               <NavIcon name="settings" className="h-7 w-7" />
               <span className="hidden xl:inline">Ещё</span>
               <span className="app-tooltip" aria-hidden="true">Ещё</span>
-              {isSecondaryActive && (
-                <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-white/90" />
-              )}
             </button>
 
             {isMoreOpen && (

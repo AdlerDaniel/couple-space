@@ -6,7 +6,7 @@ import { createPartnerNotification } from "@/lib/notifications";
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { quizzes } from "@/lib/quizzes";
 import { supabase } from "@/lib/supabaseClient";
-import { getTodayNextStep } from "@/lib/today";
+import { formatRuDate, formatRuTime, getDateTimestamp, getTodayNextStep } from "@/lib/today";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
@@ -139,21 +139,6 @@ function getWatchTypeLabel(type: string) {
   return "фильм";
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return "дата не указана";
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-  }).format(new Date(value));
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
 function getReadableName(value?: string | null, fallback = "Партнёр") {
   const name = value?.trim();
   if (!name) return fallback;
@@ -168,7 +153,7 @@ function getUnreadItem(state: TodayState): UnreadItem | null {
   if (!notification && !chat) return null;
   if (
     chat &&
-    (!notification || new Date(chat.created_at).getTime() > new Date(notification.created_at).getTime())
+    (!notification || getDateTimestamp(chat.created_at) > getDateTimestamp(notification.created_at))
   ) {
     return {
       title: "Новое сообщение",
@@ -521,7 +506,7 @@ export default function TodayPage() {
                   {[
                     ["Вы", myAnswer ? "Ответ сохранён" : "Ждёт ответа", Boolean(myAnswer)],
                     [partnerName, partnerAnswer ? "Ответ готов" : "Пока ждём", Boolean(partnerAnswer)],
-                    ["Дата", formatDate(state.questionDate), true],
+                    ["Дата", formatRuDate(state.questionDate), true],
                   ].map(([label, text, done]) => (
                     <div
                       key={String(label)}
@@ -573,7 +558,7 @@ export default function TodayPage() {
                           {unreadItem.text}
                         </p>
                         <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] opacity-55">
-                          {formatTime(unreadItem.createdAt)}
+                          {formatRuTime(unreadItem.createdAt) || "только что"}
                         </p>
                       </div>
                     </div>
@@ -667,7 +652,7 @@ export default function TodayPage() {
                     </h2>
                     <p className="mt-2 font-semibold leading-6 opacity-65">
                       {state.nextEvent
-                        ? formatDate(state.nextEvent.event_date)
+                        ? formatRuDate(state.nextEvent.event_date)
                         : "Если в календаре нет дат, главным событием остаётся вопрос дня."}
                     </p>
                   </Link>

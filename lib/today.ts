@@ -46,6 +46,44 @@ export type DailyQuestionAnswer = {
   answer_two: string | null;
 } | null;
 
+export function getSafeDate(value?: string | null) {
+  if (!value) return null;
+
+  const directDate = new Date(value);
+  if (Number.isFinite(directDate.getTime())) return directDate;
+
+  const ruDateMatch = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(value.trim());
+  if (!ruDateMatch) return null;
+
+  const [, day, month, year] = ruDateMatch;
+  const parsedDate = new Date(Number(year), Number(month) - 1, Number(day));
+  return Number.isFinite(parsedDate.getTime()) ? parsedDate : null;
+}
+
+export function formatRuDate(value?: string | null) {
+  const date = getSafeDate(value);
+  if (!date) return "дата не указана";
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+  }).format(date);
+}
+
+export function formatRuTime(value?: string | null) {
+  const date = getSafeDate(value);
+  if (!date) return "";
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+export function getDateTimestamp(value?: string | null) {
+  return getSafeDate(value)?.getTime() || 0;
+}
+
 export function getTodayNextStep(input: TodayNextStepInput): TodayNextStep {
   if (!input.isAuthenticated) {
     return {

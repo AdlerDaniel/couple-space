@@ -3,7 +3,11 @@ import test from "node:test";
 
 import { isAuthorizedCronRequest } from "../lib/cronAuth.ts";
 import {
+  formatRuDate,
+  formatRuTime,
+  getDateTimestamp,
   getDailyQuestionReminderRecipients,
+  getSafeDate,
   getTodayNextStep,
 } from "../lib/today.ts";
 
@@ -93,6 +97,14 @@ test("daily question reminder targets only users without today's answer", () => 
     }),
     [],
   );
+});
+
+test("today date helpers handle Russian question dates and invalid values safely", () => {
+  assert.equal(getSafeDate("31.05.2026")?.getFullYear(), 2026);
+  assert.equal(formatRuDate("31.05.2026"), "31 мая");
+  assert.equal(formatRuDate("not-a-date"), "дата не указана");
+  assert.equal(formatRuTime("not-a-date"), "");
+  assert.equal(getDateTimestamp("not-a-date"), 0);
 });
 
 test("cron auth rejects missing or invalid secret", () => {

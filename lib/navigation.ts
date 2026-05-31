@@ -39,7 +39,6 @@ export const mobileMainLinks: NavLinkItem[] = [
 ];
 
 export const secondaryNavLinks: NavLinkItem[] = [
-  { label: "Главная", href: "/", icon: "home", description: "Общий обзор" },
   { label: "Кабинет", href: "/dashboard", icon: "dashboard", description: "Аналитика пары" },
   { label: "Воспоминания", href: "/memories", icon: "memories", description: "Фото и моменты" },
   { label: "Трекер", href: "/tracker", icon: "tracker", description: "Цели и привычки" },
@@ -69,9 +68,9 @@ export const routeMeta: Record<
   }
 > = {
   "/": {
-    label: "Главная",
-    description: "Обзор пары и быстрый вход в разделы",
-    icon: "home",
+    label: "Сегодня",
+    description: "Лучший следующий шаг на день",
+    icon: "today",
   },
   "/today": {
     label: "Сегодня",

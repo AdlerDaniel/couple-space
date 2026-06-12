@@ -274,66 +274,77 @@ export default function MemoriesPage() {
 
     setIsSubmitting(true);
     setMessage("");
-    let imageUrl: string | null = null;
 
-    if (memoryImageFile) {
-      const compressedImage = await compressImageFile(memoryImageFile, {
-        maxWidth: 1800,
-        maxHeight: 1800,
-        quality: 0.78,
-      });
-      const filePath = getSafeImagePath(couple.id, compressedImage);
-      const { error: uploadError } = await supabase.storage
-        .from("memory-images")
-        .upload(filePath, compressedImage, { upsert: true });
+    try {
+      let imageUrl: string | null = null;
 
-      if (uploadError) {
-        setMessage(`Не удалось загрузить фото: ${uploadError.message}`);
-        setIsSubmitting(false);
-        return;
+      if (memoryImageFile) {
+        const compressedImage = await compressImageFile(memoryImageFile, {
+          maxWidth: 1800,
+          maxHeight: 1800,
+          quality: 0.78,
+        });
+        const filePath = getSafeImagePath(couple.id, compressedImage);
+        const { error: uploadError } = await supabase.storage
+          .from("memory-images")
+          .upload(filePath, compressedImage, { upsert: true });
+
+        if (uploadError) {
+          setMessage(`Не удалось загрузить фото: ${uploadError.message}`);
+          return;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("memory-images")
+          .getPublicUrl(filePath);
+        imageUrl = publicUrlData.publicUrl;
       }
 
-      const { data: publicUrlData } = supabase.storage
-        .from("memory-images")
-        .getPublicUrl(filePath);
-      imageUrl = publicUrlData.publicUrl;
+      const { data, error } = await supabase
+        .from("memories")
+        .insert([
+          {
+            title: title.trim() || "Без названия",
+            caption: caption.trim() || null,
+            text: caption.trim() || null,
+            event_date: eventDate || null,
+            image: imageUrl,
+            user_id: currentUserId,
+            couple_id: couple.id,
+          },
+        ])
+        .select()
+        .single();
+
+      if (!error && data) {
+        setMemories((current) => [data as Memory, ...current]);
+        setTitle("");
+        setCaption("");
+        setEventDate("");
+        setMemoryImage(null);
+        setMemoryImageFile(null);
+        setMessage("Воспоминание добавлено");
+        await createPartnerNotification(couple, currentUserId, {
+          type: "memory_added",
+          title: "Новое воспоминание",
+          body: title.trim() || caption.trim() || "Партнёр добавил воспоминание.",
+          href: "/memories",
+        }).catch((notificationError) => {
+          console.error(notificationError);
+        });
+      } else if (error) {
+        setMessage(`Не удалось добавить воспоминание: ${error.message}`);
+      }
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        error instanceof Error
+          ? `Не удалось добавить воспоминание: ${error.message}`
+          : "Не удалось добавить воспоминание. Попробуйте ещё раз."
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const { data, error } = await supabase
-      .from("memories")
-      .insert([
-        {
-          title: title.trim() || "Без названия",
-          caption: caption.trim() || null,
-          text: caption.trim() || null,
-          event_date: eventDate || null,
-          image: imageUrl,
-          user_id: currentUserId,
-          couple_id: couple.id,
-        },
-      ])
-      .select()
-      .single();
-
-    if (!error && data) {
-      setMemories((current) => [data as Memory, ...current]);
-      setTitle("");
-      setCaption("");
-      setEventDate("");
-      setMemoryImage(null);
-      setMemoryImageFile(null);
-      setMessage("Воспоминание добавлено");
-      await createPartnerNotification(couple, currentUserId, {
-        type: "memory_added",
-        title: "Новое воспоминание",
-        body: title.trim() || caption.trim() || "Партнёр добавил воспоминание.",
-        href: "/memories",
-      });
-    } else if (error) {
-      setMessage(`Не удалось добавить воспоминание: ${error.message}`);
-    }
-
-    setIsSubmitting(false);
   }
 
   async function togglePinned(memory: Memory) {

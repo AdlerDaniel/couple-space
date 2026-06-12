@@ -36,6 +36,16 @@ function canvasToBlob(canvas: HTMLCanvasElement, quality: number) {
   });
 }
 
+async function createImageSource(file: File) {
+  if (typeof createImageBitmap !== "function") return null;
+
+  try {
+    return await createImageBitmap(file);
+  } catch {
+    return null;
+  }
+}
+
 export async function compressImageFile(
   file: File,
   {
@@ -47,7 +57,9 @@ export async function compressImageFile(
 ) {
   if (!file.type.startsWith("image/")) return file;
 
-  const image = await createImageBitmap(file);
+  const image = await createImageSource(file);
+  if (!image) return file;
+
   const size = getScaledSize(image.width, image.height, maxWidth, maxHeight);
   const canvas = document.createElement("canvas");
   canvas.width = size.width;
@@ -56,13 +68,19 @@ export async function compressImageFile(
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     image.close();
-    throw new Error("Canvas не поддерживается");
+    return file;
   }
 
   ctx.drawImage(image, 0, 0, size.width, size.height);
   image.close();
 
-  const blob = await canvasToBlob(canvas, quality);
+  let blob: Blob;
+  try {
+    blob = await canvasToBlob(canvas, quality);
+  } catch {
+    return file;
+  }
+
   const compressedName =
     fileName || `${file.name.replace(/\.[^.]+$/, "") || crypto.randomUUID()}.webp`;
 

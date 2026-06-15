@@ -17,6 +17,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 import NavIcon from "./NavIcon";
 import PushNotificationButton from "./PushNotificationButton";
+import { LiquidGlassButton, LiquidGlassSurface } from "./LiquidGlass";
 
 type CoupleNotification = {
   id: string;
@@ -319,19 +320,19 @@ export default function MobileNav() {
       {isNotificationsOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[1px] md:hidden"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] md:hidden"
           aria-label="Закрыть уведомления"
           onClick={() => setIsNotificationsOpen(false)}
         />
       )}
 
       {isNotificationsOpen && (
-        <div
-          className="app-bottom-sheet app-glass fixed inset-x-0 bottom-0 z-40 max-h-[82dvh] overflow-hidden rounded-t-[1.35rem] p-3 pb-20"
-          style={{
-            borderColor: `${accent}55`,
-            color: accent,
-          }}
+        <LiquidGlassSurface
+          tone="menu"
+          accent={accent}
+          accentRgb={accentRgb}
+          className="liquid-glass-readable app-bottom-sheet fixed inset-x-0 bottom-0 z-50 max-h-[82dvh] rounded-t-[1.35rem] p-3 pb-20"
+          style={{ color: accent }}
         >
           <div className="mx-auto mb-2 h-1.5 w-12 rounded-full bg-current opacity-25" />
           <div className="flex items-center justify-between px-4 py-3">
@@ -362,7 +363,7 @@ export default function MobileNav() {
                   key={notification.id}
                   href={notification.href || "/dashboard"}
                   onClick={() => setIsNotificationsOpen(false)}
-                  className="mb-2 block rounded-[1rem] bg-white/78 px-4 py-3 shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
+                  className="mb-2 block rounded-[1rem] border border-white/32 bg-white/52 px-4 py-3 shadow-inner backdrop-blur transition hover:bg-white/68 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/14"
                 >
                   <div className="flex items-start gap-3">
                     <span
@@ -392,13 +393,13 @@ export default function MobileNav() {
               ))
             )}
           </div>
-        </div>
+        </LiquidGlassSurface>
       )}
 
       {(isMoreOpen || isQuickOpen) && (
         <button
           type="button"
-          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[1px] md:hidden"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] md:hidden"
           aria-label="Закрыть меню"
           onClick={() => {
             setIsMoreOpen(false);
@@ -408,15 +409,15 @@ export default function MobileNav() {
       )}
 
       {(isMoreOpen || isQuickOpen) && (
-        <div
-          className="app-bottom-sheet app-glass fixed inset-x-0 bottom-0 z-40 max-h-[86dvh] overflow-y-auto rounded-t-[1.35rem] p-4 pb-20"
-          style={{
-            borderColor: `${accent}55`,
-            color: accent,
-          }}
+        <LiquidGlassSurface
+          tone="menu"
+          accent={accent}
+          accentRgb={accentRgb}
+          className="liquid-glass-readable app-bottom-sheet fixed inset-x-0 bottom-0 z-50 max-h-[86dvh] overflow-y-auto rounded-t-[1.35rem] p-4 pb-20"
+          style={{ color: accent }}
         >
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-current opacity-25" />
-          <div className="mb-3 rounded-[1rem] bg-white/82 p-3 shadow-inner dark:bg-white/10">
+          <div className="mb-3 rounded-[1rem] border border-white/36 bg-white/50 p-3 shadow-inner backdrop-blur dark:border-white/10 dark:bg-white/8">
             <div className="flex items-center gap-3">
               <div
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-xl font-black text-white shadow-lg"
@@ -430,15 +431,15 @@ export default function MobileNav() {
               </div>
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-[0.8rem] bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
+              <div className="rounded-[0.8rem] border border-white/32 bg-white/42 px-2 py-2 shadow-inner dark:border-white/10 dark:bg-black/18">
                 <p className="text-lg font-black">{unreadNotifications}</p>
                 <p className="truncate text-[10px] font-black uppercase opacity-50">Новых</p>
               </div>
-              <div className="rounded-[0.8rem] bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
+              <div className="rounded-[0.8rem] border border-white/32 bg-white/42 px-2 py-2 shadow-inner dark:border-white/10 dark:bg-black/18">
                 <p className="text-lg font-black">{quickState.answerStreak}</p>
                 <p className="truncate text-[10px] font-black uppercase opacity-50">Ответов</p>
               </div>
-              <div className="rounded-[0.8rem] bg-white/72 px-2 py-2 shadow-inner dark:bg-black/18">
+              <div className="rounded-[0.8rem] border border-white/32 bg-white/42 px-2 py-2 shadow-inner dark:border-white/10 dark:bg-black/18">
                 <p className="truncate text-xs font-black">
                   {quickState.latestGoal?.title || "Нет цели"}
                 </p>
@@ -452,15 +453,24 @@ export default function MobileNav() {
           </p>
           <div className="mb-3 grid grid-cols-4 gap-2">
             {quickNavActions.map((action) => (
-              <Link
+              <LiquidGlassButton
+                asChild
                 key={action.href + action.label}
+                accent={accent}
+                accentRgb={accentRgb}
+                tone="subtle"
+                size="mobile"
+                shape="rounded"
+                className="mobile-glass-tab min-w-0 px-2 py-3 text-center text-xs"
+              >
+              <Link
                 href={action.href}
                 onClick={() => setIsMoreOpen(false)}
-                className="ui-pressable flex min-w-0 flex-col items-center gap-1 rounded-[1rem] bg-white/78 px-2 py-3 text-center text-xs font-black shadow-inner dark:bg-white/10"
               >
                 <NavIcon name={action.icon} className="h-9 w-9 text-white shadow" />
                 <span className="max-w-full truncate">{action.label}</span>
               </Link>
+              </LiquidGlassButton>
             ))}
           </div>
 
@@ -468,10 +478,15 @@ export default function MobileNav() {
             Основные разделы
           </p>
           <div className="grid grid-cols-2 gap-2">
-            <button
+            <LiquidGlassButton
               type="button"
               onClick={openNotifications}
-              className="ui-pressable relative flex items-center gap-3 rounded-[1rem] bg-white/78 px-3 py-3 text-left font-black shadow-inner dark:bg-white/10"
+              accent={accent}
+              accentRgb={accentRgb}
+              tone="subtle"
+              size="lg"
+              shape="rounded"
+              className="mobile-glass-row relative justify-start px-3 py-3 text-left text-xs font-black"
             >
               <NavIcon name="notifications" className="h-8 w-8" />
               <span>Уведомления</span>
@@ -480,25 +495,29 @@ export default function MobileNav() {
                   {unreadNotifications > 9 ? "9+" : unreadNotifications}
                 </span>
               )}
-            </button>
+            </LiquidGlassButton>
             {secondaryNavLinks.map((link) => {
               const isActive = isActivePath(pathname, link.href);
 
               return (
-                <Link
+                <LiquidGlassButton
+                  asChild
                   key={link.href}
+                  accent={accent}
+                  accentRgb={accentRgb}
+                  tone={isActive ? "active" : "subtle"}
+                  size="lg"
+                  shape="rounded"
+                  className="mobile-glass-row min-w-0 justify-start px-3 py-3 text-xs font-black"
+                >
+                <Link
                   href={link.href}
                   onClick={() => setIsMoreOpen(false)}
-                  style={isActive ? { backgroundColor: accent } : undefined}
-                  className={
-                    isActive
-                      ? "flex min-w-0 items-center gap-3 rounded-[1rem] px-3 py-3 font-black text-white shadow-lg"
-                      : "ui-pressable flex min-w-0 items-center gap-3 rounded-[1rem] bg-white/78 px-3 py-3 font-black shadow-inner dark:bg-white/10"
-                  }
                 >
                   <NavIcon name={link.icon} className="h-8 w-8" />
                   <span className="truncate">{link.label}</span>
                 </Link>
+                </LiquidGlassButton>
               );
             })}
           </div>
@@ -511,20 +530,24 @@ export default function MobileNav() {
               const isActive = isActivePath(pathname, link.href);
 
               return (
-                <Link
+                <LiquidGlassButton
+                  asChild
                   key={link.href}
+                  accent={accent}
+                  accentRgb={accentRgb}
+                  tone={isActive ? "active" : "subtle"}
+                  size="lg"
+                  shape="rounded"
+                  className="mobile-glass-tab min-w-0 px-2 py-3 text-xs font-black"
+                >
+                <Link
                   href={link.href}
                   onClick={() => setIsMoreOpen(false)}
-                  style={isActive ? { backgroundColor: accent } : undefined}
-                  className={
-                    isActive
-                      ? "flex min-w-0 items-center justify-center gap-2 rounded-[1rem] px-2 py-3 text-sm font-black text-white shadow-lg"
-                      : "ui-pressable flex min-w-0 items-center justify-center gap-2 rounded-[1rem] bg-white/78 px-2 py-3 text-sm font-black shadow-inner dark:bg-white/10"
-                  }
                 >
                   <NavIcon name={link.icon} className="h-7 w-7" />
                   <span className="truncate">{link.label}</span>
                 </Link>
+                </LiquidGlassButton>
               );
             })}
           </div>
@@ -532,57 +555,54 @@ export default function MobileNav() {
             accent={accent}
             className="mt-2 w-full rounded-[1rem] bg-white/78 px-3 py-3 text-left text-sm font-black shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
           />
-        </div>
+        </LiquidGlassSurface>
       )}
 
-      <nav
+      <LiquidGlassSurface
+        as="nav"
+        accent={accent}
+        accentRgb={accentRgb}
         style={mobileNavStyle}
-        className={`mobile-nav-shell fixed bottom-2 left-2 right-2 z-40 rounded-[1rem] px-1 py-1 transition-transform duration-300 md:hidden ${
+        className={`mobile-nav-shell fixed bottom-2 left-2 right-2 z-40 px-1 py-1.5 transition-transform duration-300 md:hidden ${
           isHiddenByScroll ? "translate-y-24" : "translate-y-0"
         }`}
       >
-        <div className="grid grid-cols-5 items-stretch gap-1 text-center text-[9px] font-black leading-tight min-[380px]:text-[10px]">
+        <div className="grid grid-cols-5 items-stretch gap-0.5 text-center text-[9px] font-black leading-tight">
           {mobileMainLinks.map((link) => {
             const isActive = isActivePath(pathname, link.href);
 
             return (
-              <Link
+              <LiquidGlassButton
+                asChild
                 key={link.href}
-                href={link.href}
-                style={
-                  isActive
-                    ? { color: "#ffffff", backgroundColor: accent }
-                    : { color: accent }
-                }
-                className={
-                  isActive
-                    ? "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[0.8rem] px-0.5 py-1 shadow-lg"
-                    : "ui-pressable flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[0.8rem] bg-white/82 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
-                }
+                accent={accent}
+                accentRgb={accentRgb}
+                tone={isActive ? "active" : "subtle"}
+                size="mobile"
+                shape="mobile"
+                className="mobile-glass-tab relative min-w-0 px-0.5 py-1"
               >
-                <NavIcon name={link.icon} className="h-7 w-7" />
-                <span className="max-w-full truncate whitespace-nowrap">{link.label}</span>
-                {isActive && <span className="mobile-active-glow" />}
-              </Link>
+                <Link href={link.href}>
+                  <NavIcon name={link.icon} className="h-7 w-7" />
+                  <span className="max-w-full truncate whitespace-nowrap">{link.label}</span>
+                  {isActive && <span className="mobile-active-glow" />}
+                </Link>
+              </LiquidGlassButton>
             );
           })}
-          <button
+          <LiquidGlassButton
             type="button"
             onClick={() => {
               setIsMoreOpen((current) => !current);
               setIsQuickOpen(false);
               setIsNotificationsOpen(false);
             }}
-            style={
-              isMoreOpen
-                ? { color: "#ffffff", backgroundColor: accent }
-                : { color: accent }
-            }
-            className={
-              isMoreOpen
-                ? "relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[0.8rem] px-0.5 py-1 shadow-lg"
-                : "ui-pressable relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[0.8rem] bg-white/82 px-0.5 py-1 opacity-100 shadow-inner dark:bg-black/30"
-            }
+            accent={accent}
+            accentRgb={accentRgb}
+            tone={isMoreOpen ? "active" : "subtle"}
+            size="mobile"
+            shape="mobile"
+            className="mobile-glass-tab relative min-w-0 px-0.5 py-1"
             aria-label="Открыть дополнительные разделы"
           >
             <NavIcon name="settings" className="h-7 w-7" />
@@ -593,9 +613,9 @@ export default function MobileNav() {
                 {unreadNotifications > 9 ? "9+" : unreadNotifications}
               </span>
             )}
-          </button>
+          </LiquidGlassButton>
         </div>
-      </nav>
+      </LiquidGlassSurface>
     </>
   );
 }

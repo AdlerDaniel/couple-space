@@ -19,6 +19,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import NavIcon from "./NavIcon";
 import { showAppToast } from "./AppToast";
 import PushNotificationButton from "./PushNotificationButton";
+import { LiquidGlassButton, LiquidGlassSurface } from "./LiquidGlass";
 
 type UserProfile = {
   name: string;
@@ -135,16 +136,6 @@ export default function Navbar() {
   const theme = getPageTheme(pathname, dashboardAccent);
   const accent = isLogin ? "#f3f4f6" : theme.accent;
   const accentRgb = hexToRgb(accent);
-  const navStyle =
-    !isLogin && theme.nav
-      ? theme.nav
-      : !isLogin
-        ? {
-            background: `linear-gradient(135deg, rgba(${accentRgb}, 0.24), rgba(${accentRgb}, 0.12))`,
-            borderColor: `rgba(${accentRgb}, 0.34)`,
-            boxShadow: `0 16px 52px rgba(${accentRgb}, 0.2)`,
-          }
-        : undefined;
   const isSecondaryActive = secondaryNavLinks.some((link) => isActivePath(pathname, link.href));
 
   useEffect(() => {
@@ -371,80 +362,79 @@ export default function Navbar() {
 
   return (
     <header className="fixed left-0 top-0 z-30 hidden w-full px-4 py-2 md:block">
-      <nav
-        style={navStyle}
-        className="desktop-navbar-shell mx-auto flex max-w-5xl items-center justify-between gap-2 rounded-[1.15rem] px-2 py-1 transition-colors"
+      <LiquidGlassSurface
+        as="nav"
+        accent={accent}
+        accentRgb={accentRgb}
+        className="desktop-navbar-shell mx-auto flex max-w-6xl items-center justify-between gap-2 overflow-visible px-2 py-1.5 transition-colors"
       >
+        <LiquidGlassButton
+          asChild
+          accent={accent}
+          accentRgb={accentRgb}
+          tone="subtle"
+          size="md"
+          className="px-3 opacity-95"
+        >
         <Link
           href="/"
-          style={!isLogin ? { color: accent } : undefined}
-          className={`ui-pressable flex shrink-0 items-center gap-2 rounded-[0.95rem] bg-white/64 px-2.5 py-1.5 text-sm font-black opacity-95 shadow-inner dark:bg-white/8 ${
-            isLogin ? "text-gray-800 dark:text-gray-100" : ""
-          }`}
         >
           <NavIcon name="home" className="h-7 w-7" />
           <span className="hidden lg:inline">Couple Space</span>
           <span className="lg:hidden">CS</span>
         </Link>
+        </LiquidGlassButton>
 
         <div className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex">
           {primaryNavLinks.map((link) => {
             const isActive = isActivePath(pathname, link.href);
             return (
-              <Link
+              <LiquidGlassButton
+                asChild
                 key={link.href}
+                accent={accent}
+                accentRgb={accentRgb}
+                tone={isActive ? "active" : "default"}
+                size="md"
+                className="group relative px-3"
+              >
+              <Link
                 href={link.href}
                 title={link.description || link.label}
-                style={
-                  !isLogin
-                    ? {
-                        color: isActive ? "#fff" : accent,
-                        backgroundColor: isActive ? accent : `rgba(${accentRgb}, 0.09)`,
-                        boxShadow: isActive ? `0 10px 28px rgba(${accentRgb}, 0.26)` : undefined,
-                      }
-                    : undefined
-                }
-                className={`group ui-pressable relative flex items-center gap-1.5 rounded-[0.95rem] px-2 py-1.5 text-sm font-black ${
-                  isLogin ? "text-gray-700 dark:text-gray-200" : ""
-                }`}
               >
                 <NavIcon name={link.icon} className="h-7 w-7" />
                 <span className="hidden xl:inline">{link.label}</span>
                 <span className="app-tooltip" aria-hidden="true">{link.label}</span>
               </Link>
+              </LiquidGlassButton>
             );
           })}
 
           <div className="relative">
-            <button
+            <LiquidGlassButton
               type="button"
               onClick={() => {
                 setIsMoreOpen((current) => !current);
                 setIsProfileOpen(false);
                 setIsNotificationsOpen(false);
               }}
-              style={
-                !isLogin
-                  ? {
-                      color: isSecondaryActive ? "#fff" : accent,
-                      backgroundColor: isSecondaryActive ? accent : `rgba(${accentRgb}, 0.09)`,
-                      boxShadow: isSecondaryActive ? `0 10px 28px rgba(${accentRgb}, 0.26)` : undefined,
-                    }
-                  : undefined
-              }
-              className={`group ui-pressable relative flex items-center gap-1.5 rounded-[0.95rem] px-2 py-1.5 text-sm font-black ${
-                isLogin ? "text-gray-700 dark:text-gray-200" : ""
-              }`}
+              accent={accent}
+              accentRgb={accentRgb}
+              tone={isSecondaryActive ? "active" : "default"}
+              size="md"
+              className="group relative px-3"
             >
               <NavIcon name="settings" className="h-7 w-7" />
               <span className="hidden xl:inline">Ещё</span>
               <span className="app-tooltip" aria-hidden="true">Ещё</span>
-            </button>
+            </LiquidGlassButton>
 
             {isMoreOpen && (
-              <div
-                className="app-glass absolute left-1/2 top-10 w-72 -translate-x-1/2 overflow-hidden rounded-[1.25rem] p-3 text-[#7f1d1d] dark:text-white"
-                style={{ color: accent }}
+              <LiquidGlassSurface
+                tone="menu"
+                accent={accent}
+                accentRgb={accentRgb}
+                className="liquid-glass-readable absolute left-1/2 top-12 z-50 w-72 -translate-x-1/2 rounded-[1.25rem] p-3 text-[#7f1d1d] dark:text-white"
               >
                 <p className="px-2 pb-2 text-[10px] font-black uppercase tracking-wide opacity-45">
                   Разделы
@@ -453,16 +443,19 @@ export default function Navbar() {
                 {secondaryNavLinks.map((link) => {
                   const isActive = isActivePath(pathname, link.href);
                   return (
-                    <Link
+                    <LiquidGlassButton
+                      asChild
                       key={link.href}
+                      accent={accent}
+                      accentRgb={accentRgb}
+                      tone={isActive ? "active" : "subtle"}
+                      size="lg"
+                      shape="rounded"
+                      className="w-full justify-start px-3 text-sm"
+                    >
+                    <Link
                       href={link.href}
                       onClick={() => setIsMoreOpen(false)}
-                      style={
-                        !isLogin && isActive
-                          ? { backgroundColor: accent, color: "#fff" }
-                          : undefined
-                      }
-                      className="ui-pressable flex items-center gap-3 rounded-[1rem] px-3 py-2.5 text-sm font-black hover:bg-black/5 dark:hover:bg-white/10"
                     >
                       <NavIcon name={link.icon} className="h-9 w-9 bg-white/55 shadow-inner dark:bg-white/10" />
                       <span className="min-w-0">
@@ -472,10 +465,11 @@ export default function Navbar() {
                         </span>
                       </span>
                     </Link>
+                    </LiquidGlassButton>
                   );
                 })}
                 </div>
-              </div>
+              </LiquidGlassSurface>
             )}
           </div>
         </div>
@@ -508,20 +502,30 @@ export default function Navbar() {
               </button>
 
               {isActionsOpen && (
-                <div
-                  className="app-glass absolute right-0 top-11 w-72 overflow-hidden rounded-[1.25rem] p-3 text-[#7f1d1d] dark:text-white"
-                  style={{ color: accent }}
+                <LiquidGlassSurface
+                  tone="menu"
+                  accent={accent}
+                  accentRgb={accentRgb}
+                  className="liquid-glass-readable absolute right-0 top-12 z-50 w-72 rounded-[1.25rem] p-3 text-[#7f1d1d] dark:text-white"
                 >
                   <p className="px-2 pb-2 text-[10px] font-black uppercase tracking-wide opacity-45">
                     Быстро добавить
                   </p>
                   <div className="grid gap-1">
                     {quickNavActions.map((action) => (
-                      <Link
+                      <LiquidGlassButton
+                        asChild
                         key={action.href + action.label}
+                        accent={accent}
+                        accentRgb={accentRgb}
+                        tone="subtle"
+                        size="lg"
+                        shape="rounded"
+                        className="w-full justify-start px-3 text-sm"
+                      >
+                      <Link
                         href={action.href}
                         onClick={() => setIsActionsOpen(false)}
-                        className="ui-pressable flex items-center gap-3 rounded-[1rem] px-3 py-2.5 text-sm font-black hover:bg-black/5 dark:hover:bg-white/10"
                       >
                         <NavIcon
                           name={action.icon}
@@ -535,21 +539,20 @@ export default function Navbar() {
                           </span>
                         </span>
                       </Link>
+                      </LiquidGlassButton>
                     ))}
                   </div>
-                </div>
+                </LiquidGlassSurface>
               )}
             </div>
 
             <div className="relative">
-              <button
+              <LiquidGlassButton
                 onClick={openNotifications}
-                style={!isLogin ? { backgroundColor: `${accent}18`, color: accent } : undefined}
-                className={`ui-pressable relative grid h-9 w-9 place-items-center rounded-[0.95rem] border border-white/35 text-base font-black shadow-lg backdrop-blur ${
-                  isLogin
-                    ? "bg-white/75 text-[#be123c] dark:bg-white/10 dark:text-white"
-                    : ""
-                }`}
+                accent={accent}
+                accentRgb={accentRgb}
+                tone="default"
+                size="icon"
                 aria-label="Уведомления"
               >
                 <NavIcon name="notifications" className="h-7 w-7" />
@@ -558,10 +561,15 @@ export default function Navbar() {
                     {unreadNotifications > 9 ? "9+" : unreadNotifications}
                   </span>
                 )}
-              </button>
+              </LiquidGlassButton>
 
               {isNotificationsOpen && (
-                <div className="app-glass absolute right-0 top-11 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[1.25rem] p-2 text-[#7f1d1d] dark:text-white">
+                <LiquidGlassSurface
+                  tone="menu"
+                  accent={accent}
+                  accentRgb={accentRgb}
+                  className="liquid-glass-readable absolute right-0 top-12 z-50 w-[22rem] max-w-[calc(100vw-2rem)] rounded-[1.25rem] p-2 text-[#7f1d1d] dark:text-white"
+                >
                   <div className="flex items-center justify-between px-4 py-3">
                     <div>
                       <p className="text-xs font-black uppercase tracking-wide opacity-55">
@@ -589,7 +597,7 @@ export default function Navbar() {
                           key={notification.id}
                           href={notification.href || "/dashboard"}
                           onClick={() => setIsNotificationsOpen(false)}
-                          className="mb-2 block rounded-[1rem] bg-white/72 px-4 py-3 shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
+                          className="mb-2 block rounded-[1rem] border border-white/32 bg-white/52 px-4 py-3 shadow-inner backdrop-blur transition hover:bg-white/68 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/14"
                         >
                           <div className="flex items-start gap-3">
                             <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-rose-100 text-lg dark:bg-white/10">
@@ -626,23 +634,22 @@ export default function Navbar() {
                       ))
                     )}
                   </div>
-                </div>
+                </LiquidGlassSurface>
               )}
             </div>
 
             <div className="relative">
-            <button
+            <LiquidGlassButton
               onClick={() => {
                 setIsProfileOpen((current) => !current);
                 setIsNotificationsOpen(false);
                 setIsMoreOpen(false);
               }}
-              style={!isLogin ? { backgroundColor: `${accent}22`, color: accent } : undefined}
-              className={`ui-pressable flex items-center gap-2 rounded-[1rem] border border-white/35 px-1.5 py-1 pr-3 text-sm font-bold shadow-lg backdrop-blur ${
-                isLogin
-                  ? "bg-white/75 text-[#be123c] dark:bg-white/10 dark:text-white"
-                  : ""
-              }`}
+              accent={accent}
+              accentRgb={accentRgb}
+              tone="default"
+              size="md"
+              className="gap-2 py-1 pl-1.5 pr-3 text-sm"
             >
               {profile.avatar ? (
                 <Image
@@ -659,10 +666,15 @@ export default function Navbar() {
                 </span>
               )}
               <span className="hidden max-w-28 truncate sm:block">{profile.name}</span>
-            </button>
+            </LiquidGlassButton>
 
             {isProfileOpen && (
-              <div className="app-glass absolute right-0 top-11 w-56 overflow-hidden rounded-[1.25rem] p-2 text-[#7f1d1d] dark:text-white">
+              <LiquidGlassSurface
+                tone="menu"
+                accent={accent}
+                accentRgb={accentRgb}
+                className="liquid-glass-readable absolute right-0 top-12 z-50 w-56 rounded-[1.25rem] p-2 text-[#7f1d1d] dark:text-white"
+              >
                 <div className="px-4 py-3">
                   <p className="text-xs font-black uppercase tracking-wide opacity-55">
                     Профиль
@@ -672,14 +684,14 @@ export default function Navbar() {
                 <Link
                   href="/profile"
                   onClick={() => setIsProfileOpen(false)}
-                  className="mb-2 block rounded-2xl bg-white/70 px-4 py-3 font-black shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
+                  className="mb-2 block rounded-2xl border border-white/32 bg-white/52 px-4 py-3 font-black shadow-inner backdrop-blur transition hover:bg-white/68 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/14"
                 >
                   Открыть профиль
                 </Link>
                 <button
                   type="button"
                   onClick={toggleCompactMode}
-                  className="mb-2 w-full rounded-2xl bg-white/70 px-4 py-3 text-left font-black shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
+                  className="mb-2 w-full rounded-2xl border border-white/32 bg-white/52 px-4 py-3 text-left font-black shadow-inner backdrop-blur transition hover:bg-white/68 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/14"
                 >
                   {isCompact ? "Обычная плотность" : "Компактная плотность"}
                 </button>
@@ -692,24 +704,26 @@ export default function Navbar() {
                 >
                   Выйти
                 </button>
-              </div>
+              </LiquidGlassSurface>
             )}
           </div>
           </div>
         ) : (
+          <LiquidGlassButton
+            asChild
+            accent={isLogin ? "#be123c" : accent}
+            accentRgb={isLogin ? "190, 18, 60" : accentRgb}
+            tone="active"
+            size="md"
+          >
           <Link
             href="/login"
-            style={!isLogin ? { backgroundColor: accent } : undefined}
-            className={`rounded-full px-5 py-2 font-semibold shadow-lg transition hover:-translate-y-0.5 hover:opacity-90 ${
-              isLogin
-                ? "bg-black text-white dark:bg-white dark:text-black"
-                : "text-white"
-            }`}
           >
             Войти
           </Link>
+          </LiquidGlassButton>
         )}
-      </nav>
+      </LiquidGlassSurface>
     </header>
   );
 }

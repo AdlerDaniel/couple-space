@@ -15,6 +15,7 @@ const iconPaths: Record<NavIconName, string> = {
   profile: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0",
   settings: "M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm0-4v2m0 11v2m7.5-7.5h-2m-11 0h-2m12.1-5.1-1.4 1.4m-7.8 7.8-1.4 1.4m0-10.6 1.4 1.4m7.8 7.8 1.4 1.4",
   notifications: "M7 17h10l-1.2-2.4V11a3.8 3.8 0 0 0-7.6 0v3.6L7 17Zm3 0a2 2 0 0 0 4 0",
+  more: "M6.5 12h.01m5.49 0h.01m5.49 0h.01",
   plus: "M12 5v14m-7-7h14",
   logout: "M10 5H6v14h4m4-10 3 3-3 3m-7-3h10",
 };

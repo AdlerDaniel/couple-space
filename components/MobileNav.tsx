@@ -5,9 +5,9 @@ import {
   accountNavLinks,
   isActivePath,
   mobileMainLinks,
+  mobileMoreLinks,
   type NavIconName,
   quickNavActions,
-  secondaryNavLinks,
 } from "@/lib/navigation";
 import { getPageTheme } from "@/lib/pageThemes";
 import { supabase } from "@/lib/supabaseClient";
@@ -105,7 +105,6 @@ export default function MobileNav() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isQuickOpen, setIsQuickOpen] = useState(false);
-  const [isHiddenByScroll, setIsHiddenByScroll] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -246,21 +245,6 @@ export default function MobileNav() {
     };
   }, [currentUserId]);
 
-  useEffect(() => {
-    let lastScrollY = window.scrollY;
-
-    function handleScroll() {
-      const currentScrollY = window.scrollY;
-      const isGoingDown = currentScrollY > lastScrollY && currentScrollY > 120;
-      setIsHiddenByScroll(isGoingDown && !isMoreOpen && !isQuickOpen && !isNotificationsOpen);
-      lastScrollY = currentScrollY;
-    }
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [isMoreOpen, isQuickOpen, isNotificationsOpen]);
-
   if (
     pathname.startsWith("/chat") ||
     pathname.startsWith("/login") ||
@@ -284,6 +268,8 @@ export default function MobileNav() {
     "--mobile-nav-accent": accent,
     "--mobile-nav-accent-rgb": accentRgb,
   } as CSSProperties & Record<"--mobile-nav-accent" | "--mobile-nav-accent-rgb", string>;
+  const isMoreActive =
+    isMoreOpen || !mobileMainLinks.some((link) => isActivePath(pathname, link.href));
 
   async function openNotifications() {
     const nextIsOpen = !isNotificationsOpen;
@@ -496,7 +482,7 @@ export default function MobileNav() {
                 </span>
               )}
             </LiquidGlassButton>
-            {secondaryNavLinks.map((link) => {
+            {mobileMoreLinks.map((link) => {
               const isActive = isActivePath(pathname, link.href);
 
               return (
@@ -558,64 +544,54 @@ export default function MobileNav() {
         </LiquidGlassSurface>
       )}
 
-      <LiquidGlassSurface
-        as="nav"
-        accent={accent}
-        accentRgb={accentRgb}
+      <nav
+        aria-label="Основная мобильная навигация"
         style={mobileNavStyle}
-        className={`mobile-nav-shell fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-2 right-2 z-40 px-1 py-1.5 transition-transform duration-300 md:hidden ${
-          isHiddenByScroll ? "translate-y-24" : "translate-y-0"
-        }`}
+        className="mobile-matte-dock fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-2 right-2 z-40 p-1.5 md:hidden"
       >
-        <div className="grid grid-cols-5 items-stretch gap-0.5 text-center text-[9px] font-black leading-tight">
+        <div className="grid grid-cols-5 items-stretch gap-0.5 text-center">
           {mobileMainLinks.map((link) => {
             const isActive = isActivePath(pathname, link.href);
 
             return (
-              <LiquidGlassButton
-                asChild
+              <Link
                 key={link.href}
-                accent={accent}
-                accentRgb={accentRgb}
-                tone={isActive ? "active" : "subtle"}
-                size="mobile"
-                shape="mobile"
-                className="mobile-glass-tab relative min-w-0 px-0.5 py-1"
+                href={link.href}
+                aria-current={isActive ? "page" : undefined}
+                className={`mobile-matte-tab relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 py-1.5 ${
+                  isActive ? "mobile-matte-tab-active" : ""
+                }`}
               >
-                <Link href={link.href}>
-                  <NavIcon name={link.icon} className="h-7 w-7" />
-                  <span className="max-w-full truncate whitespace-nowrap">{link.label}</span>
-                  {isActive && <span className="mobile-active-glow" />}
-                </Link>
-              </LiquidGlassButton>
+                <NavIcon name={link.icon} className="h-7 w-7" />
+                <span className="mobile-matte-label max-w-full truncate whitespace-nowrap">
+                  {link.label}
+                </span>
+              </Link>
             );
           })}
-          <LiquidGlassButton
+          <button
             type="button"
             onClick={() => {
               setIsMoreOpen((current) => !current);
               setIsQuickOpen(false);
               setIsNotificationsOpen(false);
             }}
-            accent={accent}
-            accentRgb={accentRgb}
-            tone={isMoreOpen ? "active" : "subtle"}
-            size="mobile"
-            shape="mobile"
-            className="mobile-glass-tab relative min-w-0 px-0.5 py-1"
+            className={`mobile-matte-tab relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 py-1.5 ${
+              isMoreActive ? "mobile-matte-tab-active" : ""
+            }`}
             aria-label="Открыть дополнительные разделы"
+            aria-expanded={isMoreOpen}
           >
-            <NavIcon name="settings" className="h-7 w-7" />
-            <span className="max-w-full truncate whitespace-nowrap">Ещё</span>
-            {isMoreOpen && <span className="mobile-active-glow" />}
+            <NavIcon name="more" className="h-7 w-7" />
+            <span className="mobile-matte-label max-w-full truncate whitespace-nowrap">Ещё</span>
             {unreadNotifications > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#ef4444] px-1 text-[9px] font-black leading-none text-white shadow-[0_0_14px_rgba(239,68,68,0.8)] ring-2 ring-white">
+              <span className="absolute right-1 top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#ef4444] px-1 text-[9px] font-black leading-none text-white shadow-md ring-2 ring-white dark:ring-slate-950">
                 {unreadNotifications > 9 ? "9+" : unreadNotifications}
               </span>
             )}
-          </LiquidGlassButton>
+          </button>
         </div>
-      </LiquidGlassSurface>
+      </nav>
     </>
   );
 }

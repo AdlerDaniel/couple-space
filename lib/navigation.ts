@@ -13,6 +13,7 @@ export type NavIconName =
   | "profile"
   | "settings"
   | "notifications"
+  | "more"
   | "plus"
   | "logout";
 
@@ -32,10 +33,18 @@ export const primaryNavLinks: NavLinkItem[] = [
 ];
 
 export const mobileMainLinks: NavLinkItem[] = [
-  { label: "Сегодня", href: "/today", icon: "today" },
-  { label: "Вопросы", href: "/questions", icon: "questions" },
-  { label: "Викторины", href: "/quizzes", icon: "quizzes" },
+  { label: "Моменты", href: "/memories", icon: "memories" },
+  { label: "Вопрос дня", href: "/questions", icon: "questions" },
+  { label: "Трекер", href: "/tracker", icon: "tracker" },
   { label: "Смотреть", href: "/watch", icon: "watch" },
+];
+
+export const mobileMoreLinks: NavLinkItem[] = [
+  { label: "Сегодня", href: "/today", icon: "today", description: "Лучший следующий шаг" },
+  { label: "Кабинет", href: "/dashboard", icon: "dashboard", description: "Аналитика пары" },
+  { label: "Викторины", href: "/quizzes", icon: "quizzes", description: "Тесты для пары" },
+  { label: "Чат", href: "/chat", icon: "chat", description: "Сообщения" },
+  { label: "Календарь", href: "/calendar", icon: "calendar", description: "События пары" },
 ];
 
 export const secondaryNavLinks: NavLinkItem[] = [

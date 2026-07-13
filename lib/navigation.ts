@@ -14,6 +14,8 @@ export type NavIconName =
   | "settings"
   | "notifications"
   | "more"
+  | "close"
+  | "chevronRight"
   | "plus"
   | "logout";
 

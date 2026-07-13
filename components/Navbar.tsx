@@ -10,6 +10,7 @@ import {
   primaryNavLinks,
   quickNavActions,
   secondaryNavLinks,
+  type NavIconName,
 } from "@/lib/navigation";
 import type { User } from "@supabase/supabase-js";
 import Image from "next/image";
@@ -49,6 +50,15 @@ type CoupleNotification = {
   read_at: string | null;
   created_at: string;
 };
+
+function getNotificationIcon(type: string): NavIconName {
+  if (type === "achievement_unlocked") return "achievements";
+  if (type.includes("question")) return "questions";
+  if (type.includes("quiz")) return "quizzes";
+  if (type.includes("chat")) return "chat";
+  if (type.includes("memory")) return "memories";
+  return "notifications";
+}
 
 const densityStorageKey = "couple-space:density";
 const densityUpdatedEventName = "couple-space:density-updated";
@@ -600,18 +610,8 @@ export default function Navbar() {
                           className="mb-2 block rounded-[1rem] border border-white/32 bg-white/52 px-4 py-3 shadow-inner backdrop-blur transition hover:bg-white/68 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/14"
                         >
                           <div className="flex items-start gap-3">
-                            <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-rose-100 text-lg dark:bg-white/10">
-                              {notification.type === "achievement_unlocked"
-                                ? "🏆"
-                                : notification.type.includes("question")
-                                  ? "💌"
-                                  : notification.type.includes("quiz")
-                                    ? "✨"
-                                    : notification.type.includes("chat")
-                                      ? "💬"
-                                      : notification.type.includes("memory")
-                                        ? "📸"
-                                        : "❤️"}
+                            <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-700 dark:bg-white/10 dark:text-rose-100">
+                              <NavIcon name={getNotificationIcon(notification.type)} className="h-7 w-7 bg-transparent shadow-none" />
                             </span>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">

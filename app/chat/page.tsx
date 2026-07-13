@@ -22,6 +22,32 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  ExternalLink,
+  FileText,
+  ImageIcon,
+  List,
+  Maximize2,
+  MessageCircle,
+  Mic,
+  MoreHorizontal,
+  Music2,
+  Paperclip,
+  Pause,
+  Pin,
+  Play,
+  Send,
+  Smile,
+  Square,
+  Star,
+  Sticker,
+  X,
+} from "lucide-react";
 
 type Couple = {
   id: string;
@@ -1625,7 +1651,7 @@ export default function ChatPage() {
             className="absolute left-3 top-2.5 grid h-10 w-10 place-items-center rounded-full bg-white/72 text-xl font-black text-[#0284c7] shadow-inner backdrop-blur transition hover:bg-sky-50 dark:bg-white/10 dark:text-white md:hidden"
             aria-label="В кабинет"
           >
-            ‹
+            <ArrowLeft aria-hidden="true" size={22} />
           </Link>
           <div className="flex min-w-0 items-center justify-center gap-2 md:justify-between">
             <button
@@ -1686,7 +1712,7 @@ export default function ChatPage() {
                   }}
                   className="min-w-0 flex-1 text-left"
                 >
-                  <span className="mr-2">📌</span>
+                  <Pin aria-hidden="true" className="mr-2 inline" size={15} />
                   <span className="opacity-60">
                     {safePinnedIndex + 1}/{pinnedMessages.length}
                   </span>{" "}
@@ -1701,7 +1727,7 @@ export default function ChatPage() {
                   className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/75 text-base shadow-inner transition hover:bg-white dark:bg-black/25"
                   aria-label="Открыть список закреплённых"
                 >
-                  ☰
+                  <List aria-hidden="true" size={18} />
                 </button>
               </div>
 
@@ -1736,7 +1762,7 @@ export default function ChatPage() {
                         className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-700 shadow-inner dark:bg-white/10 dark:text-white"
                         aria-label="Показать сообщение в чате"
                       >
-                        ↗
+                        <ExternalLink aria-hidden="true" size={16} />
                       </button>
                     </div>
                   ))}
@@ -1756,7 +1782,7 @@ export default function ChatPage() {
           {visibleMessages.length === 0 ? (
             <div className="grid h-full place-items-center text-center">
               <div className="max-w-sm rounded-[2rem] bg-white/55 p-7 shadow-inner backdrop-blur dark:bg-white/8">
-                <p className="text-5xl">💬</p>
+                <MessageCircle aria-hidden="true" className="mx-auto h-12 w-12" />
                 <h2 className="mt-4 text-2xl font-black">Начните ваш чат</h2>
                 <p className="mt-3 font-semibold text-[#075985]/60 dark:text-white/55">
                   Сообщения, фото и голосовые появятся здесь.
@@ -1977,7 +2003,7 @@ export default function ChatPage() {
                                         {formatFileSize(attachment.size)}
                                       </span>
                                     </span>
-                                    <span className="text-lg">↗</span>
+                                    <ExternalLink aria-hidden="true" size={17} />
                                   </a>
                                 ))}
                               </div>
@@ -1998,7 +2024,7 @@ export default function ChatPage() {
                                       : "Воспроизвести"
                                   }
                                 >
-                                  {playingAudioId === message.id ? "Ⅱ" : "▶"}
+                                  {playingAudioId === message.id ? <Pause aria-hidden="true" size={15} fill="currentColor" /> : <Play aria-hidden="true" size={15} fill="currentColor" />}
                                 </button>
 
                                 <div className="min-w-0 flex-1">
@@ -2133,7 +2159,7 @@ export default function ChatPage() {
                           onClick={() => setMenuMessageId(message.id)}
                           className={`absolute top-1/2 hidden -translate-y-1/2 rounded-full bg-white/90 px-2 py-1 text-xs font-black text-sky-600 shadow-lg group-hover:block dark:bg-black/70 dark:text-white ${isMine ? "-left-9" : "-right-9"}`}
                         >
-                          ⋯
+                          <MoreHorizontal aria-hidden="true" size={18} />
                         </button>
                       </div>
                     </div>
@@ -2150,7 +2176,7 @@ export default function ChatPage() {
             onClick={scrollToBottom}
             className="absolute bottom-28 right-5 z-20 grid h-11 w-11 place-items-center rounded-full bg-white/88 text-xl font-black text-sky-600 shadow-xl backdrop-blur transition hover:-translate-y-0.5 dark:bg-black/70 dark:text-white"
           >
-            ↓
+            <ArrowDown aria-hidden="true" size={20} />
           </button>
         )}
 
@@ -2165,7 +2191,9 @@ export default function ChatPage() {
                     "Вложение"}
                 </p>
               </div>
-              <button type="button" onClick={() => { setReplyToId(null); setEditingId(null); setDraft(""); }} className="text-xl">×</button>
+              <button type="button" onClick={() => { setReplyToId(null); setEditingId(null); setDraft(""); }} className="grid h-8 w-8 place-items-center rounded-full" aria-label="Закрыть ответ">
+                <X aria-hidden="true" size={18} />
+              </button>
             </div>
           )}
           {!partnerId && (
@@ -2185,7 +2213,7 @@ export default function ChatPage() {
                     onClick={() => removePendingAttachment(attachment.id)}
                     className="absolute right-1 top-1 z-10 grid h-6 w-6 place-items-center rounded-full bg-black/55 text-sm font-black text-white"
                   >
-                    ×
+                    <X aria-hidden="true" size={14} />
                   </button>
                   {attachment.previewUrl ? (
                     attachment.type === "video" ? (
@@ -2399,7 +2427,7 @@ export default function ChatPage() {
                               }`}
                               aria-label="Избранное"
                             >
-                              ★
+                              <Star aria-hidden="true" size={14} fill={favoriteStickerIds.includes(sticker.id) ? "currentColor" : "none"} />
                             </button>
                             <button
                               type="button"
@@ -2407,7 +2435,7 @@ export default function ChatPage() {
                               className="absolute bottom-1 left-1 hidden rounded-full bg-black/45 px-2 py-1 text-[10px] font-black text-white opacity-0 shadow transition group-hover:opacity-100 md:block"
                               aria-label="Предпросмотр"
                             >
-                              ⤢
+                              <Maximize2 aria-hidden="true" size={13} />
                             </button>
                           </div>
                         ))}
@@ -2415,8 +2443,8 @@ export default function ChatPage() {
                     )}
                   </div>
                   <div className="mt-3 flex items-center gap-1 overflow-x-auto rounded-2xl bg-sky-50 p-1 dark:bg-white/8">
-                    <button type="button" onClick={() => setActiveStickerPack("recent")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "recent" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="Недавние" aria-label="Недавние стикеры">🕘</button>
-                    <button type="button" onClick={() => setActiveStickerPack("favorites")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "favorites" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="Избранные" aria-label="Избранные стикеры">★</button>
+                    <button type="button" onClick={() => setActiveStickerPack("recent")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "recent" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="Недавние" aria-label="Недавние стикеры"><Clock3 aria-hidden="true" size={18} /></button>
+                    <button type="button" onClick={() => setActiveStickerPack("favorites")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "favorites" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="Избранные" aria-label="Избранные стикеры"><Star aria-hidden="true" size={18} /></button>
                     {stickerPacks.map((pack) => (
                       <button key={pack.id} type="button" onClick={() => setActiveStickerPack(pack.id)} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg transition ${activeStickerPack === pack.id ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title={pack.name}>
                         {pack.icon}
@@ -2473,7 +2501,7 @@ export default function ChatPage() {
               }`}
               aria-label="Emoji"
             >
-              😊
+              <Smile aria-hidden="true" size={20} />
             </button>
             <button
               type="button"
@@ -2487,25 +2515,25 @@ export default function ChatPage() {
               }`}
               aria-label="Стикеры"
             >
-              🧸
+              <Sticker aria-hidden="true" size={20} />
             </button>
             <div className="relative order-4">
               <button type="button" onClick={() => setIsAttachMenuOpen((current) => !current)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-white/85 text-lg shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl" aria-label="Прикрепить файл">
-              📎
+              <Paperclip aria-hidden="true" size={20} />
               </button>
               {isAttachMenuOpen && (
                 <div className="chat-menu-in absolute bottom-14 left-0 z-30 w-52 overflow-hidden rounded-2xl bg-white/95 p-2 text-[#075985] shadow-[0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl dark:bg-black/90 dark:text-white">
-                  <button type="button" onClick={() => { mediaInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
-                    🖼 Фото/Видео
+                  <button type="button" onClick={() => { mediaInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
+                    <ImageIcon aria-hidden="true" size={18} /> Фото/Видео
                   </button>
-                  <button type="button" onClick={() => { fileInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
-                    📄 Файл
+                  <button type="button" onClick={() => { fileInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
+                    <FileText aria-hidden="true" size={18} /> Файл
                   </button>
-                  <button type="button" onClick={() => { audioInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
-                    🎵 Аудиофайл
+                  <button type="button" onClick={() => { audioInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
+                    <Music2 aria-hidden="true" size={18} /> Аудиофайл
                   </button>
-                  <button type="button" onClick={() => { if (isRecording) { stopRecording(); } else { startRecording(); } setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
-                    🎙 Голосовое
+                  <button type="button" onClick={() => { if (isRecording) { stopRecording(); } else { startRecording(); } setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
+                    <Mic aria-hidden="true" size={18} /> Голосовое
                   </button>
                 </div>
               )}
@@ -2534,11 +2562,11 @@ export default function ChatPage() {
             />
             {draft.trim() || editingId || pendingAttachments.length > 0 ? (
               <button type="submit" disabled={isSending} aria-label="Отправить сообщение" className={`order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-xl font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.34)] transition hover:-translate-y-0.5 disabled:opacity-45 md:h-12 md:w-12 md:rounded-[1rem] md:text-2xl ${isSending ? "chat-send-pulse" : ""}`}>
-                ↑
+                <Send aria-hidden="true" size={20} />
               </button>
             ) : (
               <button type="button" onClick={isRecording ? stopRecording : startRecording} aria-label={isRecording ? "Остановить запись" : "Записать голосовое"} className={`order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.28)] transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${isRecording ? "bg-sky-600 animate-pulse" : "bg-[#0284c7]"}`}>
-                {isRecording ? "■" : "🎙"}
+                {isRecording ? <Square aria-hidden="true" size={18} fill="currentColor" /> : <Mic aria-hidden="true" size={20} />}
               </button>
             )}
           </div>
@@ -2597,13 +2625,13 @@ export default function ChatPage() {
                   onClick={() => setIsProfilePanelOpen(false)}
                   className="grid h-10 w-10 place-items-center rounded-full bg-white/65 text-xl font-black shadow-inner backdrop-blur dark:bg-black/30"
                 >
-                  ‹
+                  <ArrowLeft aria-hidden="true" size={20} />
                 </button>
                 <button
                   onClick={() => setIsProfilePanelOpen(false)}
                   className="hidden h-10 w-10 place-items-center rounded-full bg-white/65 text-xl font-black shadow-inner backdrop-blur dark:bg-black/30 md:grid"
                 >
-                  ×
+                  <X aria-hidden="true" size={20} />
                 </button>
               </div>
 
@@ -2696,7 +2724,7 @@ export default function ChatPage() {
                               <Image src={attachment.url} alt={attachment.name} width={180} height={180} sizes="25vw" className="h-full w-full object-cover transition group-hover:scale-105" />
                             )}
                             {attachment.type === "video" && (
-                              <span className="absolute inset-0 grid place-items-center bg-black/20 text-2xl text-white">▶</span>
+                              <span className="absolute inset-0 grid place-items-center bg-black/20 text-white"><Play aria-hidden="true" size={24} fill="currentColor" /></span>
                             )}
                             <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/18" />
                           </button>
@@ -2721,8 +2749,8 @@ export default function ChatPage() {
                           <p className="truncate font-black">{attachment.name}</p>
                           <p className="text-xs font-semibold opacity-55">{formatFileSize(attachment.size)} · {formatDay(item.createdAt)}</p>
                         </div>
-                        <a href={attachment.url} target="_blank" rel="noreferrer" className="rounded-full bg-white px-3 py-2 text-sm font-black text-[#0284c7] shadow dark:bg-black/30">↗</a>
-                        <button onClick={() => scrollToMessage(item.messageId)} className="rounded-full bg-sky-100 px-3 py-2 text-sm font-black text-[#0284c7] shadow-inner dark:bg-white/10 dark:text-white">↓</button>
+                        <a href={attachment.url} target="_blank" rel="noreferrer" aria-label="Открыть файл" className="grid h-9 w-9 place-items-center rounded-full bg-white text-[#0284c7] shadow dark:bg-black/30"><ExternalLink aria-hidden="true" size={16} /></a>
+                        <button onClick={() => scrollToMessage(item.messageId)} aria-label="Перейти к сообщению" className="grid h-9 w-9 place-items-center rounded-full bg-sky-100 text-[#0284c7] shadow-inner dark:bg-white/10 dark:text-white"><ArrowDown aria-hidden="true" size={16} /></button>
                       </div>
                     );
                   })}
@@ -2754,7 +2782,7 @@ export default function ChatPage() {
                     if (!attachment) return null;
                     return (
                       <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-white/65 p-3 shadow-inner dark:bg-white/8">
-                        <button onClick={() => toggleAudio(item.id)} className="grid h-11 w-11 place-items-center rounded-full bg-[#0284c7] text-white shadow">{playingAudioId === item.id ? "Ⅱ" : "▶"}</button>
+                        <button onClick={() => toggleAudio(item.id)} aria-label={playingAudioId === item.id ? "Пауза" : "Воспроизвести"} className="grid h-11 w-11 place-items-center rounded-full bg-[#0284c7] text-white shadow">{playingAudioId === item.id ? <Pause aria-hidden="true" size={17} fill="currentColor" /> : <Play aria-hidden="true" size={17} fill="currentColor" />}</button>
                         <div className="min-w-0 flex-1">
                           <div className="flex h-7 items-center gap-[2px]">
                             {Array.from({ length: 32 }).map((_, index) => (
@@ -2764,7 +2792,7 @@ export default function ChatPage() {
                           <p className="text-xs font-semibold opacity-55">{formatDay(item.createdAt)}</p>
                         </div>
                         <audio ref={(node) => { audioRefs.current[item.id] = node; }} src={attachment.url} className="hidden" onEnded={() => setPlayingAudioId(null)} />
-                        <button onClick={() => scrollToMessage(item.messageId)} className="rounded-full bg-sky-100 px-3 py-2 text-sm font-black text-[#0284c7] shadow-inner dark:bg-white/10 dark:text-white">↓</button>
+                        <button onClick={() => scrollToMessage(item.messageId)} aria-label="Перейти к сообщению" className="grid h-9 w-9 place-items-center rounded-full bg-sky-100 text-[#0284c7] shadow-inner dark:bg-white/10 dark:text-white"><ArrowDown aria-hidden="true" size={16} /></button>
                       </div>
                     );
                   })}
@@ -2786,7 +2814,7 @@ export default function ChatPage() {
 
       {viewerMessage?.attachment_url && (
         <div className="chat-viewer-in fixed inset-0 z-[70] grid place-items-center bg-black/88 p-4" onClick={() => setViewerMessage(null)}>
-          <button className="absolute right-5 top-5 rounded-full bg-white/12 px-4 py-2 text-2xl font-black text-white">×</button>
+          <button className="absolute right-5 top-5 grid h-11 w-11 place-items-center rounded-full bg-white/12 text-white" aria-label="Закрыть просмотр"><X aria-hidden="true" size={22} /></button>
           {profileMediaItems.length > 1 && profileMediaItems.some((item) => item.attachment?.url === viewerMessage.attachment_url) && (
             <>
               <button
@@ -2797,7 +2825,7 @@ export default function ChatPage() {
                 }}
                 className="absolute left-4 top-1/2 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/14 text-3xl font-black text-white backdrop-blur transition hover:bg-white/24"
               >
-                ‹
+                <ChevronLeft aria-hidden="true" size={28} />
               </button>
               <button
                 type="button"
@@ -2807,7 +2835,7 @@ export default function ChatPage() {
                 }}
                 className="absolute right-4 top-1/2 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/14 text-3xl font-black text-white backdrop-blur transition hover:bg-white/24"
               >
-                ›
+                <ChevronRight aria-hidden="true" size={28} />
               </button>
             </>
           )}
@@ -2818,7 +2846,7 @@ export default function ChatPage() {
       )}
       {stickerPreview && (
         <div className="chat-viewer-in fixed inset-0 z-[70] grid place-items-center bg-black/88 p-4" onClick={() => setStickerPreview(null)}>
-          <button className="absolute right-5 top-5 rounded-full bg-white/12 px-4 py-2 text-2xl font-black text-white">×</button>
+          <button className="absolute right-5 top-5 grid h-11 w-11 place-items-center rounded-full bg-white/12 text-white" aria-label="Закрыть просмотр"><X aria-hidden="true" size={22} /></button>
           <div
             className="h-[min(70vw,26rem)] w-[min(70vw,26rem)] bg-contain bg-center bg-no-repeat drop-shadow-[0_28px_80px_rgba(255,255,255,0.18)]"
             style={{ backgroundImage: `url("${stickerPreview.url}")` }}

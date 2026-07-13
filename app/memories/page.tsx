@@ -15,6 +15,7 @@ import { decodeMemoryMedia, encodeMemoryMedia } from "@/lib/memoryMedia";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 12;
 const memoryEmojis = [
@@ -1073,13 +1074,13 @@ export default function MemoriesPage() {
             onClick={() => showNextMemory(-1)}
             className="absolute left-5 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/15 px-5 py-4 text-3xl text-white backdrop-blur md:block"
           >
-            ‹
+            <ChevronLeft aria-hidden="true" size={30} />
           </button>
           <button
             onClick={() => showNextMemory(1)}
             className="absolute right-5 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/15 px-5 py-4 text-3xl text-white backdrop-blur md:block"
           >
-            ›
+            <ChevronRight aria-hidden="true" size={30} />
           </button>
           <div className="max-h-[86dvh] w-full max-w-5xl overflow-y-auto rounded-[1.35rem] bg-white/10 p-2 pt-14 text-white shadow-2xl backdrop-blur-xl sm:rounded-[2rem] sm:p-4 sm:pt-4">
             {selectedMedia.photoUrl && (

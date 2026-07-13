@@ -1,6 +1,8 @@
 "use client";
 
 import EmptyState from "@/components/EmptyState";
+import NavIcon from "@/components/NavIcon";
+import type { NavIconName } from "@/lib/navigation";
 import { getPageTheme } from "@/lib/pageThemes";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
@@ -47,14 +49,14 @@ function formatTime(date: string) {
   }).format(new Date(date));
 }
 
-function getIcon(type: string) {
-  if (type === "achievement_unlocked") return "🏆";
-  if (type.includes("question")) return "✉";
-  if (type.includes("quiz")) return "✦";
-  if (type.includes("chat")) return "◌";
-  if (type.includes("memory")) return "▣";
-  if (type.includes("tracker")) return "◫";
-  return "♡";
+function getIcon(type: string): NavIconName {
+  if (type === "achievement_unlocked") return "achievements";
+  if (type.includes("question")) return "questions";
+  if (type.includes("quiz")) return "quizzes";
+  if (type.includes("chat")) return "chat";
+  if (type.includes("memory")) return "memories";
+  if (type.includes("tracker")) return "tracker";
+  return "notifications";
 }
 
 function getTypeLabel(type: string) {
@@ -270,7 +272,7 @@ export default function NotificationsPage() {
                           className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-xl text-white shadow-lg"
                           style={{ backgroundColor: theme.accent }}
                         >
-                          {getIcon(item.type)}
+                          <NavIcon name={getIcon(item.type)} className="h-8 w-8 bg-transparent shadow-none" />
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">

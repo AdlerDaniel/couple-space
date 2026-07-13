@@ -27,3 +27,21 @@ test("mobile dock uses the matte implementation instead of liquid glass buttons"
   assert.doesNotMatch(dock, /LiquidGlassButton/);
   assert.doesNotMatch(dock, /LiquidGlassSurface/);
 });
+
+test("More opens a compact matte list without dashboard clutter", async () => {
+  const source = await readFile(new URL("../components/MobileNav.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /mobile-matte-sheet/);
+  assert.match(source, /max-h-\[72dvh\]/);
+  assert.doesNotMatch(source, /quickState/);
+  assert.doesNotMatch(source, /quickNavActions/);
+  assert.doesNotMatch(source, /PushNotificationButton/);
+  assert.doesNotMatch(source, />Быстро</);
+});
+
+test("navigation icons come from Lucide", async () => {
+  const source = await readFile(new URL("../components/NavIcon.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /from "lucide-react"/);
+  assert.doesNotMatch(source, /iconPaths/);
+});

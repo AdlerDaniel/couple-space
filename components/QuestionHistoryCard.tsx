@@ -1,3 +1,5 @@
+import { Trash2 } from "lucide-react";
+
 type QuestionHistoryCardProps = {
   date: string;
   question: string;
@@ -24,9 +26,10 @@ export default function QuestionHistoryCard({
 
         <button
           onClick={onDelete}
-          className="rounded-full bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-200"
+          className="inline-flex items-center gap-2 rounded-full bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-200"
         >
-          🗑 Удалить
+          <Trash2 aria-hidden="true" size={16} />
+          Удалить
         </button>
       </div>
 

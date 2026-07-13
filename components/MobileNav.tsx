@@ -7,7 +7,6 @@ import {
   mobileMainLinks,
   mobileMoreLinks,
   type NavIconName,
-  quickNavActions,
 } from "@/lib/navigation";
 import { getPageTheme } from "@/lib/pageThemes";
 import { supabase } from "@/lib/supabaseClient";
@@ -16,8 +15,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 import NavIcon from "./NavIcon";
-import PushNotificationButton from "./PushNotificationButton";
-import { LiquidGlassButton, LiquidGlassSurface } from "./LiquidGlass";
 
 type CoupleNotification = {
   id: string;
@@ -27,28 +24,6 @@ type CoupleNotification = {
   href: string | null;
   read_at: string | null;
   created_at: string;
-};
-
-type Couple = {
-  id: string;
-  partner_one_id: string;
-  partner_two_id: string | null;
-};
-
-type CoupleProfile = {
-  partner_one: string | null;
-  partner_two: string | null;
-};
-
-type TrackerGoal = {
-  title: string;
-};
-
-type QuickState = {
-  couple: Couple | null;
-  profile: CoupleProfile | null;
-  answerStreak: number;
-  latestGoal: TrackerGoal | null;
 };
 
 function getNotificationIcon(type: string): NavIconName {
@@ -73,13 +48,6 @@ function formatNotificationTime(date: string) {
   return `${days} дн назад`;
 }
 
-function getReadableName(value?: string | null, fallback = "Партнёр") {
-  const name = value?.trim();
-  if (!name) return fallback;
-  if (/^\d{5,}$/.test(name)) return fallback;
-  return name;
-}
-
 function hexToRgb(hex: string) {
   const value = hex.replace("#", "");
   if (value.length !== 6) return "234, 88, 12";
@@ -96,15 +64,8 @@ export default function MobileNav() {
   const accentRgb = hexToRgb(accent);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<CoupleNotification[]>([]);
-  const [quickState, setQuickState] = useState<QuickState>({
-    couple: null,
-    profile: null,
-    answerStreak: 0,
-    latestGoal: null,
-  });
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const [isQuickOpen, setIsQuickOpen] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -122,52 +83,6 @@ export default function MobileNav() {
       }
     }
 
-    async function loadQuickState(userId: string) {
-      const { data: couple } = await supabase
-        .from("couples")
-        .select("id, partner_one_id, partner_two_id")
-        .or(`partner_one_id.eq.${userId},partner_two_id.eq.${userId}`)
-        .limit(1)
-        .maybeSingle<Couple>();
-
-      if (!couple) {
-        if (!ignore) {
-          setQuickState({ couple: null, profile: null, answerStreak: 0, latestGoal: null });
-        }
-        return;
-      }
-
-      const [profileResult, answersResult, goalResult] = await Promise.all([
-        supabase
-          .from("couple_profiles")
-          .select("partner_one, partner_two")
-          .eq("couple_id", couple.id)
-          .limit(1)
-          .maybeSingle<CoupleProfile>(),
-        supabase
-          .from("question_answers")
-          .select("id", { count: "exact", head: true })
-          .eq("couple_id", couple.id)
-          .or(`answer_one.not.is.null,answer_two.not.is.null`),
-        supabase
-          .from("tracker_goals")
-          .select("title")
-          .eq("couple_id", couple.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle<TrackerGoal>(),
-      ]);
-
-      if (!ignore) {
-        setQuickState({
-          couple,
-          profile: profileResult.data || null,
-          answerStreak: answersResult.count || 0,
-          latestGoal: goalResult.data || null,
-        });
-      }
-    }
-
     async function checkUser() {
       const {
         data: { user },
@@ -176,12 +91,11 @@ export default function MobileNav() {
       if (!user) {
         setCurrentUserId(null);
         setNotifications([]);
-        setQuickState({ couple: null, profile: null, answerStreak: 0, latestGoal: null });
         return;
       }
 
       setCurrentUserId(user.id);
-      await Promise.all([loadNotifications(user.id), loadQuickState(user.id)]);
+      await loadNotifications(user.id);
     }
 
     checkUser();
@@ -191,16 +105,13 @@ export default function MobileNav() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsNotificationsOpen(false);
       setIsMoreOpen(false);
-      setIsQuickOpen(false);
       window.setTimeout(() => {
         if (session?.user) {
           setCurrentUserId(session.user.id);
           loadNotifications(session.user.id);
-          loadQuickState(session.user.id);
         } else {
           setCurrentUserId(null);
           setNotifications([]);
-          setQuickState({ couple: null, profile: null, answerStreak: 0, latestGoal: null });
         }
       }, 0);
     });
@@ -254,16 +165,6 @@ export default function MobileNav() {
   }
 
   const unreadNotifications = notifications.filter((notification) => !notification.read_at).length;
-  const coupleTitle = quickState.profile
-    ? `${getReadableName(quickState.profile.partner_one, "Партнёр 1")} + ${getReadableName(quickState.profile.partner_two, "Партнёр 2")}`
-    : quickState.couple
-      ? "Ваша пара"
-      : "Пара не создана";
-  const coupleSubtitle = quickState.couple?.partner_two_id
-    ? "Общее пространство активно"
-    : quickState.couple
-      ? "Пригласите партнёра"
-      : "Создайте пару в профиле";
   const mobileNavStyle = {
     "--mobile-nav-accent": accent,
     "--mobile-nav-accent-rgb": accentRgb,
@@ -275,7 +176,6 @@ export default function MobileNav() {
     const nextIsOpen = !isNotificationsOpen;
     setIsNotificationsOpen(nextIsOpen);
     setIsMoreOpen(false);
-    setIsQuickOpen(false);
 
     if (!nextIsOpen || !currentUserId) return;
 
@@ -313,34 +213,27 @@ export default function MobileNav() {
       )}
 
       {isNotificationsOpen && (
-        <LiquidGlassSurface
-          tone="menu"
-          accent={accent}
-          accentRgb={accentRgb}
-          className="liquid-glass-readable app-bottom-sheet fixed inset-x-0 bottom-0 z-50 max-h-[82dvh] rounded-t-[1.35rem] p-3 pb-[calc(5rem+env(safe-area-inset-bottom))]"
-          style={{ color: accent }}
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-label="Уведомления"
+          style={mobileNavStyle}
+          className="mobile-matte-sheet app-bottom-sheet fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-2 right-2 z-50 max-h-[72dvh] overflow-hidden rounded-[1.75rem] p-3 md:hidden"
         >
-          <div className="mx-auto mb-2 h-1.5 w-12 rounded-full bg-current opacity-25" />
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
+          <div className="flex items-center justify-between px-2 py-3">
             <div>
-              <p className="text-xs font-black uppercase tracking-wide opacity-55">
-                Уведомления
-              </p>
-              <p className="mt-1 text-sm font-bold opacity-70">Новые события пары</p>
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">Уведомления</h2>
+              <p className="mt-0.5 text-sm font-semibold text-slate-500 dark:text-slate-400">Новые события пары</p>
             </div>
-            {notifications.length > 0 && (
-              <span
-                className="rounded-full px-3 py-1 text-xs font-black text-white shadow-lg"
-                style={{ backgroundColor: accent }}
-              >
-                {notifications.length}
-              </span>
-            )}
+            <button type="button" onClick={() => setIsNotificationsOpen(false)} className="mobile-sheet-close" aria-label="Закрыть уведомления">
+              <NavIcon name="close" className="h-8 w-8" />
+            </button>
           </div>
 
-          <div className="max-h-[48vh] overflow-y-auto px-2 pb-2">
+          <div className="max-h-[55dvh] overflow-y-auto px-1 pb-1">
             {notifications.length === 0 ? (
-              <div className="rounded-[1rem] bg-white/78 px-4 py-5 text-sm font-bold opacity-70 shadow-inner dark:bg-white/10">
+              <div className="rounded-2xl bg-slate-100 px-4 py-5 text-sm font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                 Пока уведомлений нет.
               </div>
             ) : (
@@ -349,7 +242,7 @@ export default function MobileNav() {
                   key={notification.id}
                   href={notification.href || "/dashboard"}
                   onClick={() => setIsNotificationsOpen(false)}
-                  className="mb-2 block rounded-[1rem] border border-white/32 bg-white/52 px-4 py-3 shadow-inner backdrop-blur transition hover:bg-white/68 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/14"
+                  className="mb-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750"
                 >
                   <div className="flex items-start gap-3">
                     <span
@@ -379,169 +272,99 @@ export default function MobileNav() {
               ))
             )}
           </div>
-        </LiquidGlassSurface>
+        </section>
       )}
 
-      {(isMoreOpen || isQuickOpen) && (
+      {isMoreOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] md:hidden"
           aria-label="Закрыть меню"
-          onClick={() => {
-            setIsMoreOpen(false);
-            setIsQuickOpen(false);
-          }}
+          onClick={() => setIsMoreOpen(false)}
         />
       )}
 
-      {(isMoreOpen || isQuickOpen) && (
-        <LiquidGlassSurface
-          tone="menu"
-          accent={accent}
-          accentRgb={accentRgb}
-          className="liquid-glass-readable app-bottom-sheet fixed inset-x-0 bottom-0 z-50 max-h-[86dvh] overflow-y-auto rounded-t-[1.35rem] p-4 pb-[calc(5rem+env(safe-area-inset-bottom))]"
-          style={{ color: accent }}
+      {isMoreOpen && (
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mobile-more-title"
+          style={mobileNavStyle}
+          className="mobile-matte-sheet app-bottom-sheet fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-2 right-2 z-50 max-h-[72dvh] overflow-y-auto rounded-[1.75rem] p-3 md:hidden"
         >
-          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-current opacity-25" />
-          <div className="mb-3 rounded-[1rem] border border-white/36 bg-white/50 p-3 shadow-inner backdrop-blur dark:border-white/10 dark:bg-white/8">
-            <div className="flex items-center gap-3">
-              <div
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-xl font-black text-white shadow-lg"
-                style={{ backgroundColor: accent }}
-              >
-                <NavIcon name="dashboard" className="h-7 w-7 text-white" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-base font-black">{coupleTitle}</p>
-                <p className="mt-1 text-xs font-bold opacity-58">{coupleSubtitle}</p>
-              </div>
+          <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
+          <div className="flex items-center justify-between px-2 py-3">
+            <div>
+              <h2 id="mobile-more-title" className="text-xl font-black text-slate-950 dark:text-white">Ещё</h2>
+              <p className="mt-0.5 text-sm font-semibold text-slate-500 dark:text-slate-400">Все остальные разделы</p>
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-[0.8rem] border border-white/32 bg-white/42 px-2 py-2 shadow-inner dark:border-white/10 dark:bg-black/18">
-                <p className="text-lg font-black">{unreadNotifications}</p>
-                <p className="truncate text-[10px] font-black uppercase opacity-50">Новых</p>
-              </div>
-              <div className="rounded-[0.8rem] border border-white/32 bg-white/42 px-2 py-2 shadow-inner dark:border-white/10 dark:bg-black/18">
-                <p className="text-lg font-black">{quickState.answerStreak}</p>
-                <p className="truncate text-[10px] font-black uppercase opacity-50">Ответов</p>
-              </div>
-              <div className="rounded-[0.8rem] border border-white/32 bg-white/42 px-2 py-2 shadow-inner dark:border-white/10 dark:bg-black/18">
-                <p className="truncate text-xs font-black">
-                  {quickState.latestGoal?.title || "Нет цели"}
-                </p>
-                <p className="truncate text-[10px] font-black uppercase opacity-50">Цель</p>
-              </div>
-            </div>
+            <button type="button" onClick={() => setIsMoreOpen(false)} className="mobile-sheet-close" aria-label="Закрыть меню">
+              <NavIcon name="close" className="h-8 w-8" />
+            </button>
           </div>
 
-          <p className="mb-2 px-2 text-[10px] font-black uppercase tracking-wide opacity-45">
-            Быстро
+          <p className="mb-2 mt-1 px-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+            Разделы
           </p>
-          <div className="mb-3 grid grid-cols-4 gap-2">
-            {quickNavActions.map((action) => (
-              <LiquidGlassButton
-                asChild
-                key={action.href + action.label}
-                accent={accent}
-                accentRgb={accentRgb}
-                tone="subtle"
-                size="mobile"
-                shape="rounded"
-                className="mobile-glass-tab min-w-0 px-2 py-3 text-center text-xs"
-              >
-              <Link
-                href={action.href}
-                onClick={() => setIsMoreOpen(false)}
-              >
-                <NavIcon name={action.icon} className="h-9 w-9 text-white shadow" />
-                <span className="max-w-full truncate">{action.label}</span>
-              </Link>
-              </LiquidGlassButton>
-            ))}
-          </div>
-
-          <p className="mb-2 px-2 text-[10px] font-black uppercase tracking-wide opacity-45">
-            Основные разделы
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <LiquidGlassButton
-              type="button"
-              onClick={openNotifications}
-              accent={accent}
-              accentRgb={accentRgb}
-              tone="subtle"
-              size="lg"
-              shape="rounded"
-              className="mobile-glass-row relative justify-start px-3 py-3 text-left text-xs font-black"
-            >
-              <NavIcon name="notifications" className="h-8 w-8" />
-              <span>Уведомления</span>
-              {unreadNotifications > 0 && (
-                <span className="ml-auto rounded-full bg-[#ef4444] px-2 py-0.5 text-xs text-white">
-                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                </span>
-              )}
-            </LiquidGlassButton>
+          <div className="space-y-1">
             {mobileMoreLinks.map((link) => {
               const isActive = isActivePath(pathname, link.href);
 
               return (
-                <LiquidGlassButton
-                  asChild
-                  key={link.href}
-                  accent={accent}
-                  accentRgb={accentRgb}
-                  tone={isActive ? "active" : "subtle"}
-                  size="lg"
-                  shape="rounded"
-                  className="mobile-glass-row min-w-0 justify-start px-3 py-3 text-xs font-black"
-                >
                 <Link
+                  key={link.href}
                   href={link.href}
                   onClick={() => setIsMoreOpen(false)}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`mobile-more-row ${isActive ? "mobile-more-row-active" : ""}`}
                 >
-                  <NavIcon name={link.icon} className="h-8 w-8" />
-                  <span className="truncate">{link.label}</span>
+                  <NavIcon name={link.icon} className="h-9 w-9" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-black">{link.label}</span>
+                    {link.description && <span className="mt-0.5 block truncate text-xs font-semibold opacity-55">{link.description}</span>}
+                  </span>
+                  <NavIcon name="chevronRight" className="h-7 w-7 opacity-35" />
                 </Link>
-                </LiquidGlassButton>
               );
             })}
+            <button type="button" onClick={openNotifications} className="mobile-more-row w-full text-left">
+              <NavIcon name="notifications" className="h-9 w-9" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-black">Уведомления</span>
+                <span className="mt-0.5 block truncate text-xs font-semibold opacity-55">События и обновления пары</span>
+              </span>
+              {unreadNotifications > 0 ? (
+                <span className="rounded-full bg-rose-500 px-2.5 py-1 text-xs font-black text-white">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>
+              ) : (
+                <NavIcon name="chevronRight" className="h-7 w-7 opacity-35" />
+              )}
+            </button>
           </div>
 
-          <p className="mb-2 mt-3 px-2 text-[10px] font-black uppercase tracking-wide opacity-45">
+          <p className="mb-2 mt-4 px-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
             Аккаунт
           </p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-1">
             {accountNavLinks.map((link) => {
               const isActive = isActivePath(pathname, link.href);
+              const isLogout = link.href === "/logout";
 
               return (
-                <LiquidGlassButton
-                  asChild
-                  key={link.href}
-                  accent={accent}
-                  accentRgb={accentRgb}
-                  tone={isActive ? "active" : "subtle"}
-                  size="lg"
-                  shape="rounded"
-                  className="mobile-glass-tab min-w-0 px-2 py-3 text-xs font-black"
-                >
                 <Link
+                  key={link.href}
                   href={link.href}
                   onClick={() => setIsMoreOpen(false)}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`mobile-more-row ${isActive ? "mobile-more-row-active" : ""} ${isLogout ? "mobile-more-row-danger" : ""}`}
                 >
-                  <NavIcon name={link.icon} className="h-7 w-7" />
-                  <span className="truncate">{link.label}</span>
+                  <NavIcon name={link.icon} className="h-9 w-9" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-black">{link.label}</span>
+                  <NavIcon name="chevronRight" className="h-7 w-7 opacity-35" />
                 </Link>
-                </LiquidGlassButton>
               );
             })}
           </div>
-          <PushNotificationButton
-            accent={accent}
-            className="mt-2 w-full rounded-[1rem] bg-white/78 px-3 py-3 text-left text-sm font-black shadow-inner transition hover:bg-black/5 dark:bg-white/10 dark:hover:bg-white/15"
-          />
-        </LiquidGlassSurface>
+        </section>
       )}
 
       <nav
@@ -573,7 +396,6 @@ export default function MobileNav() {
             type="button"
             onClick={() => {
               setIsMoreOpen((current) => !current);
-              setIsQuickOpen(false);
               setIsNotificationsOpen(false);
             }}
             className={`mobile-matte-tab relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 py-1.5 ${

@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { trackerCategoryColors, trackerDefaultCategories } from "@/lib/trackerCategories";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 type Period = "day" | "week" | "month" | "year";
 type Mood = "great" | "good" | "normal" | "tired" | "bad";
@@ -1033,13 +1034,13 @@ function TrackerHeader({
           onClick={() => onShift(-1)}
           className="rounded-full bg-white/70 px-4 py-2 font-black shadow-lg transition hover:-translate-y-0.5 dark:bg-white/10"
         >
-          ←
+          <ArrowLeft aria-hidden="true" size={18} />
         </button>
         <button
           onClick={() => onShift(1)}
           className="rounded-full bg-white/70 px-4 py-2 font-black shadow-lg transition hover:-translate-y-0.5 dark:bg-white/10"
         >
-          →
+          <ArrowRight aria-hidden="true" size={18} />
         </button>
       </div>
     </section>

@@ -6,6 +6,7 @@ import { profileUpdatedEventName } from "@/lib/profileEvents";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { Moon, Sun } from "lucide-react";
 
 type Couple = {
   id: string;
@@ -440,7 +441,7 @@ export default function ProfilePage() {
                       isDarkTheme ? "translate-x-7 text-[#92400e]" : "translate-x-0 text-[#92400e]"
                     }`}
                   >
-                    {isDarkTheme ? "☀️" : "🌙"}
+                    {isDarkTheme ? <Sun aria-hidden="true" size={16} /> : <Moon aria-hidden="true" size={16} />}
                   </span>
                 </button>
               </div>
@@ -607,4 +608,3 @@ export default function ProfilePage() {
     </main>
   );
 }
-

@@ -456,7 +456,7 @@ export default function WatchPage() {
       <article
         key={item.id}
         data-anime-draggable={!item.is_watched ? "true" : undefined}
-        className={`group rounded-[1.4rem] border p-4 shadow-[0_18px_45px_rgba(77,124,15,0.12)] transition duration-300 hover:-translate-y-1 dark:shadow-black/20 ${
+        className={`performance-list-item group rounded-[1.4rem] border p-4 shadow-[0_18px_45px_rgba(77,124,15,0.12)] transition duration-300 hover:-translate-y-1 dark:shadow-black/20 ${
           item.is_watched
             ? "border-lime-200/60 bg-white/58 opacity-78 dark:border-lime-100/10 dark:bg-white/7"
             : "border-white/65 bg-white/68 dark:border-white/10 dark:bg-white/8"

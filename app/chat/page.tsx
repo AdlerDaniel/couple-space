@@ -149,6 +149,7 @@ const recentStickerStorageKey = "couple-space:chat-recent-stickers";
 const favoriteStickerStorageKey = "couple-space:chat-favorite-stickers";
 const externalChatDraftKey = "couple-space:chat-draft";
 const reactions = ["❤️", "😂", "🥺", "👍", "👎", "😡", "😮", "🤢"];
+const CHAT_PAGE_SIZE = 80;
 const maxMediaSize = 25 * 1024 * 1024;
 const maxFileSize = 50 * 1024 * 1024;
 
@@ -420,6 +421,8 @@ export default function ChatPage() {
   const partnerTypingTimeoutRef = useRef<number | null>(null);
   const longPressTimeoutRef = useRef<number | null>(null);
   const swipeStartRef = useRef<{ id: string; x: number } | null>(null);
+  const prependScrollRef = useRef<{ height: number; top: number } | null>(null);
+  const scrollFrameRef = useRef<number | null>(null);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
@@ -465,9 +468,12 @@ export default function ChatPage() {
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const [partnerLastSeen, setPartnerLastSeen] = useState<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
 
   useEffect(() => {
     return () => {
+      if (scrollFrameRef.current) window.cancelAnimationFrame(scrollFrameRef.current);
       discardRecordingRef.current = true;
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== "inactive") recorder.stop();
@@ -735,6 +741,7 @@ export default function ChatPage() {
       if (!coupleData) {
         setCouple(null);
         setMessages([]);
+        setHasOlderMessages(false);
         setIsLoading(false);
         return;
       }
@@ -755,15 +762,17 @@ export default function ChatPage() {
         .from("couple_chat_messages")
         .select(chatSelect)
         .eq("couple_id", coupleData.id)
-        .order("created_at", { ascending: true })
-        .limit(200);
+        .order("created_at", { ascending: false })
+        .limit(CHAT_PAGE_SIZE);
 
       if (messagesError) {
         setErrorMessage(
           `${messagesError.message}. Запустите обновлённый supabase-chat-messages.sql в Supabase.`
         );
       } else {
-        setMessages((messageData || []) as ChatMessage[]);
+        const recentMessages = ((messageData || []) as ChatMessage[]).reverse();
+        setMessages(recentMessages);
+        setHasOlderMessages(recentMessages.length === CHAT_PAGE_SIZE);
       }
 
       setIsLoading(false);
@@ -961,10 +970,59 @@ export default function ChatPage() {
   }
 
   function handleScroll() {
+    if (scrollFrameRef.current) return;
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      const element = scrollRef.current;
+      if (element) {
+        const distance = element.scrollHeight - element.scrollTop - element.clientHeight;
+        setShowScrollButton(distance > 220);
+      }
+      scrollFrameRef.current = null;
+    });
+  }
+
+  async function loadOlderMessages() {
+    const firstMessage = messages[0];
     const element = scrollRef.current;
-    if (!element) return;
-    const distance = element.scrollHeight - element.scrollTop - element.clientHeight;
-    setShowScrollButton(distance > 220);
+    if (!couple?.id || !firstMessage || !element || isLoadingOlder) return;
+
+    setIsLoadingOlder(true);
+    prependScrollRef.current = {
+      height: element.scrollHeight,
+      top: element.scrollTop,
+    };
+
+    const { data, error } = await supabase
+      .from("couple_chat_messages")
+      .select(chatSelect)
+      .eq("couple_id", couple.id)
+      .lt("created_at", firstMessage.created_at)
+      .order("created_at", { ascending: false })
+      .limit(CHAT_PAGE_SIZE);
+
+    if (error) {
+      prependScrollRef.current = null;
+      setErrorMessage("Не удалось загрузить старые сообщения.");
+      setIsLoadingOlder(false);
+      return;
+    }
+
+    const olderMessages = ((data || []) as ChatMessage[]).reverse();
+    setMessages((current) => [...olderMessages, ...current]);
+    setHasOlderMessages(olderMessages.length === CHAT_PAGE_SIZE);
+    setIsLoadingOlder(false);
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const anchor = prependScrollRef.current;
+        const currentElement = scrollRef.current;
+        if (anchor && currentElement) {
+          currentElement.scrollTop =
+            anchor.top + currentElement.scrollHeight - anchor.height;
+        }
+        prependScrollRef.current = null;
+      });
+    });
   }
 
   async function sendTyping() {
@@ -1791,6 +1849,18 @@ export default function ChatPage() {
             </div>
           ) : (
             <div className="space-y-2">
+              {hasOlderMessages && !search.trim() && (
+                <div className="flex justify-center pb-2">
+                  <button
+                    type="button"
+                    onClick={loadOlderMessages}
+                    disabled={isLoadingOlder}
+                    className="rounded-full bg-white/88 px-4 py-2 text-sm font-black text-sky-700 shadow-md transition disabled:opacity-60 dark:bg-slate-900 dark:text-sky-100"
+                  >
+                    {isLoadingOlder ? "Загружаем…" : "Показать предыдущие сообщения"}
+                  </button>
+                </div>
+              )}
               {visibleMessages.map((message, index) => {
                 const previous = visibleMessages[index - 1];
                 const next = visibleMessages[index + 1];
@@ -1849,7 +1919,7 @@ export default function ChatPage() {
                 );
 
                 return (
-                  <div key={message.id} id={`message-${message.id}`}>
+                  <div key={message.id} id={`message-${message.id}`} className="performance-list-item">
                     {!sameDay && (
                       <div className="sticky top-2 z-10 mx-auto my-3 w-fit rounded-full bg-white/72 px-4 py-1 text-xs font-black text-sky-600 shadow-lg backdrop-blur dark:bg-black/45 dark:text-sky-100">
                         {formatDay(message.created_at)}
@@ -1974,6 +2044,8 @@ export default function ChatPage() {
                                     ) : (
                                       <video
                                         src={attachment.url}
+                                        preload="none"
+                                        playsInline
                                         className="h-44 w-full object-cover"
                                         muted
                                       />
@@ -2086,7 +2158,7 @@ export default function ChatPage() {
                                     audioRefs.current[message.id] = node;
                                   }}
                                   src={voiceAttachment.url}
-                                  preload="metadata"
+                                  preload="none"
                                   onLoadedMetadata={(event) => {
                                     const duration = event.currentTarget.duration;
                                     setAudioDurations((current) => ({
@@ -2219,6 +2291,8 @@ export default function ChatPage() {
                     attachment.type === "video" ? (
                       <video
                         src={attachment.previewUrl}
+                        preload="metadata"
+                        playsInline
                         className="h-20 w-full object-cover"
                         muted
                       />
@@ -2719,7 +2793,7 @@ export default function ChatPage() {
                             className="group relative aspect-square overflow-hidden rounded-md bg-white/45 shadow-inner dark:bg-white/8"
                           >
                             {attachment.type === "video" ? (
-                              <video src={attachment.url} className="h-full w-full object-cover" muted />
+                              <video src={attachment.url} preload="none" playsInline className="h-full w-full object-cover" muted />
                             ) : (
                               <Image src={attachment.url} alt={attachment.name} width={180} height={180} sizes="25vw" className="h-full w-full object-cover transition group-hover:scale-105" />
                             )}
@@ -2791,7 +2865,7 @@ export default function ChatPage() {
                           </div>
                           <p className="text-xs font-semibold opacity-55">{formatDay(item.createdAt)}</p>
                         </div>
-                        <audio ref={(node) => { audioRefs.current[item.id] = node; }} src={attachment.url} className="hidden" onEnded={() => setPlayingAudioId(null)} />
+                        <audio ref={(node) => { audioRefs.current[item.id] = node; }} src={attachment.url} preload="none" className="hidden" onEnded={() => setPlayingAudioId(null)} />
                         <button onClick={() => scrollToMessage(item.messageId)} aria-label="Перейти к сообщению" className="grid h-9 w-9 place-items-center rounded-full bg-sky-100 text-[#0284c7] shadow-inner dark:bg-white/10 dark:text-white"><ArrowDown aria-hidden="true" size={16} /></button>
                       </div>
                     );

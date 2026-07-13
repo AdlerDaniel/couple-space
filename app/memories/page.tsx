@@ -840,7 +840,7 @@ export default function MemoriesPage() {
                   Удалить
                 </button>
               </div>
-              <audio controls preload="metadata" src={memoryVoice} className="w-full" />
+              <audio controls preload="none" src={memoryVoice} className="w-full" />
             </div>
           )}
           {message && (
@@ -892,7 +892,7 @@ export default function MemoriesPage() {
               return (
                 <article
                   key={memory.id}
-                  className="group mb-5 break-inside-avoid overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] dark:border-white/10 dark:bg-white/8"
+                  className="performance-list-item group mb-5 break-inside-avoid overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] dark:border-white/10 dark:bg-white/8"
                 >
                   {media.photoUrl && (
                     <div className="relative overflow-hidden rounded-[1.35rem] bg-blue-100 dark:bg-white/8">
@@ -960,7 +960,7 @@ export default function MemoriesPage() {
                         <p className="mb-2 text-sm font-black text-[#2563eb] dark:text-blue-100">
                           Голосовое воспоминание
                         </p>
-                        <audio controls preload="metadata" src={media.voiceUrl} className="w-full" />
+                        <audio controls preload="none" src={media.voiceUrl} className="w-full" />
                       </div>
                     )}
                     <div className="mt-4 grid gap-2 text-sm font-bold text-[#172554]/58 dark:text-white/45">
@@ -1099,7 +1099,7 @@ export default function MemoriesPage() {
               {selectedMedia.voiceUrl && (
                 <div className="mt-4 rounded-2xl bg-white/12 p-3">
                   <p className="mb-2 text-sm font-black">Голосовое воспоминание</p>
-                  <audio controls preload="metadata" src={selectedMedia.voiceUrl} className="w-full" />
+                  <audio controls preload="none" src={selectedMedia.voiceUrl} className="w-full" />
                 </div>
               )}
             </div>

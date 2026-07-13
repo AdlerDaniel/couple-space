@@ -1,3 +1,5 @@
+import { getMediaKind } from "@/lib/mediaFiles";
+
 type CompressImageOptions = {
   maxWidth?: number;
   maxHeight?: number;
@@ -36,13 +38,36 @@ function canvasToBlob(canvas: HTMLCanvasElement, quality: number) {
   });
 }
 
-async function createImageSource(file: File) {
-  if (typeof createImageBitmap !== "function") return null;
+async function createImageSource(file: File): Promise<ImageBitmap | HTMLImageElement | null> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      return await createImageBitmap(file);
+    } catch {
+      // Safari can decode some camera formats through <img> even when
+      // createImageBitmap is unavailable or rejects the file.
+    }
+  }
 
+  if (typeof Image === "undefined" || typeof URL === "undefined") return null;
+
+  const objectUrl = URL.createObjectURL(file);
   try {
-    return await createImageBitmap(file);
+    const image = new Image();
+    image.decoding = "async";
+    image.src = objectUrl;
+    if (typeof image.decode === "function") {
+      await image.decode();
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error("Не удалось прочитать изображение"));
+      });
+    }
+    return image;
   } catch {
     return null;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
   }
 }
 
@@ -55,24 +80,26 @@ export async function compressImageFile(
     fileName,
   }: CompressImageOptions = {}
 ) {
-  if (!file.type.startsWith("image/")) return file;
+  if (getMediaKind(file) !== "image") return file;
 
   const image = await createImageSource(file);
   if (!image) return file;
 
-  const size = getScaledSize(image.width, image.height, maxWidth, maxHeight);
+  const sourceWidth = "naturalWidth" in image ? image.naturalWidth : image.width;
+  const sourceHeight = "naturalHeight" in image ? image.naturalHeight : image.height;
+  const size = getScaledSize(sourceWidth, sourceHeight, maxWidth, maxHeight);
   const canvas = document.createElement("canvas");
   canvas.width = size.width;
   canvas.height = size.height;
 
   const ctx = canvas.getContext("2d");
   if (!ctx) {
-    image.close();
+    if ("close" in image && typeof image.close === "function") image.close();
     return file;
   }
 
   ctx.drawImage(image, 0, 0, size.width, size.height);
-  image.close();
+  if ("close" in image && typeof image.close === "function") image.close();
 
   let blob: Blob;
   try {

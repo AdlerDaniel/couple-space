@@ -3,6 +3,15 @@
 import { supabase } from "@/lib/supabaseClient";
 import { createPartnerNotification } from "@/lib/notifications";
 import { compressImageFile } from "@/lib/imageCompression";
+import {
+  createCompatibleAudioRecorder,
+  createRecordedAudioFile,
+  MAX_AUDIO_SIZE,
+  MAX_IMAGE_SIZE,
+  getSafeStoragePath,
+  validateMediaFile,
+} from "@/lib/mediaFiles";
+import { decodeMemoryMedia, encodeMemoryMedia } from "@/lib/memoryMedia";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -96,15 +105,21 @@ function formatTime(date: string) {
   });
 }
 
-function getMemoryImagePath(imageUrl?: string | null) {
-  if (!imageUrl) return null;
+function formatRecordingTime(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.floor(seconds % 60).toString().padStart(2, "0");
+  return `${minutes}:${rest}`;
+}
+
+function getMemoryStoragePath(mediaUrl?: string | null) {
+  if (!mediaUrl) return null;
 
   const marker = "/memory-images/";
-  const markerIndex = imageUrl.indexOf(marker);
+  const markerIndex = mediaUrl.indexOf(marker);
 
   if (markerIndex === -1) return null;
 
-  const storagePath = imageUrl.slice(markerIndex + marker.length);
+  const storagePath = mediaUrl.slice(markerIndex + marker.length);
 
   try {
     return decodeURIComponent(storagePath);
@@ -113,17 +128,14 @@ function getMemoryImagePath(imageUrl?: string | null) {
   }
 }
 
-function getSafeImagePath(coupleId: string, file: File) {
-  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const safeExtension = extension || file.type.split("/").pop() || "jpg";
-
-  return `${coupleId}/${crypto.randomUUID()}.${safeExtension}`;
-}
-
 export default function MemoriesPage() {
   const router = useRouter();
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const touchStartX = useRef<number | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const discardRecordingRef = useRef(false);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -132,6 +144,8 @@ export default function MemoriesPage() {
   const [eventDate, setEventDate] = useState("");
   const [memoryImage, setMemoryImage] = useState<string | null>(null);
   const [memoryImageFile, setMemoryImageFile] = useState<File | null>(null);
+  const [memoryVoice, setMemoryVoice] = useState<string | null>(null);
+  const [memoryVoiceFile, setMemoryVoiceFile] = useState<File | null>(null);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [comments, setComments] = useState<Record<string, MemoryComment[]>>({});
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
@@ -143,6 +157,129 @@ export default function MemoriesPage() {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const [isRecording, setIsRecording] = useState(false);
+  const [isRecordingPaused, setIsRecordingPaused] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+
+  function selectMemoryPhoto(file: File) {
+    const validation = validateMediaFile(file, ["image"], MAX_IMAGE_SIZE);
+    if (validation.error) {
+      setMessage(validation.error);
+      return;
+    }
+
+    if (memoryImage) URL.revokeObjectURL(memoryImage);
+    setMemoryImageFile(file);
+    setMemoryImage(URL.createObjectURL(file));
+    setMessage("");
+  }
+
+  function selectMemoryVoice(file: File) {
+    const validation = validateMediaFile(file, ["audio"], MAX_AUDIO_SIZE);
+    if (validation.error) {
+      setMessage(validation.error);
+      return;
+    }
+
+    if (memoryVoice) URL.revokeObjectURL(memoryVoice);
+    setMemoryVoiceFile(file);
+    setMemoryVoice(URL.createObjectURL(file));
+    setMessage("");
+  }
+
+  async function toggleVoiceRecording() {
+    if (isRecording) {
+      discardRecordingRef.current = false;
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = createCompatibleAudioRecorder(stream);
+      audioChunksRef.current = [];
+      mediaRecorderRef.current = recorder;
+      discardRecordingRef.current = false;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        setIsRecording(false);
+        setIsRecordingPaused(false);
+        setRecordingSeconds(0);
+        if (discardRecordingRef.current) {
+          discardRecordingRef.current = false;
+          audioChunksRef.current = [];
+          return;
+        }
+
+        try {
+          selectMemoryVoice(
+            createRecordedAudioFile(audioChunksRef.current, recorder.mimeType, "memory-voice")
+          );
+        } catch (error) {
+          setMessage(error instanceof Error ? error.message : "Не удалось сохранить запись");
+        }
+      };
+
+      recorder.start();
+      setIsRecording(true);
+      setIsRecordingPaused(false);
+      setRecordingSeconds(0);
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        "Не удалось включить микрофон. Разрешите доступ или загрузите готовый аудиофайл."
+      );
+    }
+  }
+
+  function toggleVoicePause() {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || !isRecording) return;
+    if (recorder.state === "recording") {
+      recorder.pause();
+      setIsRecordingPaused(true);
+    } else if (recorder.state === "paused") {
+      recorder.resume();
+      setIsRecordingPaused(false);
+    }
+  }
+
+  function cancelVoiceRecording() {
+    discardRecordingRef.current = true;
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+    setIsRecordingPaused(false);
+    setRecordingSeconds(0);
+  }
+
+  useEffect(() => {
+    if (!isRecording || isRecordingPaused) {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+      return;
+    }
+
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingSeconds((current) => current + 1);
+    }, 1000);
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    };
+  }, [isRecording, isRecordingPaused]);
+
+  useEffect(() => {
+    return () => {
+      discardRecordingRef.current = true;
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") recorder.stop();
+      recorder?.stream.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
 
   useEffect(() => {
     async function loadMemories() {
@@ -228,6 +365,7 @@ export default function MemoriesPage() {
   const visibleMemories = filteredMemories.slice(0, visibleCount);
   const selectedMemory =
     selectedIndex === null ? null : visibleMemories[selectedIndex] || null;
+  const selectedMedia = decodeMemoryMedia(selectedMemory?.image);
 
   function getMemoryUserMeta(userId: string) {
     if (!couple) return { name: "?", avatar: null as string | null, initial: "?" };
@@ -267,16 +405,33 @@ export default function MemoriesPage() {
     );
   }
 
+  async function uploadMemoryFile(file: File) {
+    if (!couple) throw new Error("Пара не найдена");
+    const filePath = getSafeStoragePath(couple.id, file);
+    const { error } = await supabase.storage
+      .from("memory-images")
+      .upload(filePath, file, { upsert: false });
+    if (error) throw error;
+    const { data } = supabase.storage.from("memory-images").getPublicUrl(filePath);
+    return { filePath, publicUrl: data.publicUrl };
+  }
+
   async function addMemory() {
-    if (!couple || !currentUserId || (!title.trim() && !caption.trim() && !memoryImageFile)) {
+    if (
+      !couple ||
+      !currentUserId ||
+      (!title.trim() && !caption.trim() && !memoryImageFile && !memoryVoiceFile)
+    ) {
       return;
     }
 
     setIsSubmitting(true);
     setMessage("");
 
+    const uploadedPaths: string[] = [];
     try {
-      let imageUrl: string | null = null;
+      let photoUrl: string | null = null;
+      let voiceUrl: string | null = null;
 
       if (memoryImageFile) {
         const compressedImage = await compressImageFile(memoryImageFile, {
@@ -284,20 +439,15 @@ export default function MemoriesPage() {
           maxHeight: 1800,
           quality: 0.78,
         });
-        const filePath = getSafeImagePath(couple.id, compressedImage);
-        const { error: uploadError } = await supabase.storage
-          .from("memory-images")
-          .upload(filePath, compressedImage, { upsert: true });
+        const upload = await uploadMemoryFile(compressedImage);
+        uploadedPaths.push(upload.filePath);
+        photoUrl = upload.publicUrl;
+      }
 
-        if (uploadError) {
-          setMessage(`Не удалось загрузить фото: ${uploadError.message}`);
-          return;
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from("memory-images")
-          .getPublicUrl(filePath);
-        imageUrl = publicUrlData.publicUrl;
+      if (memoryVoiceFile) {
+        const upload = await uploadMemoryFile(memoryVoiceFile);
+        uploadedPaths.push(upload.filePath);
+        voiceUrl = upload.publicUrl;
       }
 
       const { data, error } = await supabase
@@ -308,7 +458,7 @@ export default function MemoriesPage() {
             caption: caption.trim() || null,
             text: caption.trim() || null,
             event_date: eventDate || null,
-            image: imageUrl,
+            image: encodeMemoryMedia({ photoUrl, voiceUrl }),
             user_id: currentUserId,
             couple_id: couple.id,
           },
@@ -321,8 +471,12 @@ export default function MemoriesPage() {
         setTitle("");
         setCaption("");
         setEventDate("");
+        if (memoryImage) URL.revokeObjectURL(memoryImage);
+        if (memoryVoice) URL.revokeObjectURL(memoryVoice);
         setMemoryImage(null);
         setMemoryImageFile(null);
+        setMemoryVoice(null);
+        setMemoryVoiceFile(null);
         setMessage("Воспоминание добавлено");
         await createPartnerNotification(couple, currentUserId, {
           type: "memory_added",
@@ -332,11 +486,12 @@ export default function MemoriesPage() {
         }).catch((notificationError) => {
           console.error(notificationError);
         });
-      } else if (error) {
-        setMessage(`Не удалось добавить воспоминание: ${error.message}`);
-      }
+      } else if (error) throw error;
     } catch (error) {
       console.error(error);
+      if (uploadedPaths.length > 0) {
+        await supabase.storage.from("memory-images").remove(uploadedPaths);
+      }
       setMessage(
         error instanceof Error
           ? `Не удалось добавить воспоминание: ${error.message}`
@@ -387,9 +542,12 @@ export default function MemoriesPage() {
       return;
     }
 
-    const imagePath = getMemoryImagePath(memory.image);
-    if (imagePath) {
-      await supabase.storage.from("memory-images").remove([imagePath]);
+    const media = decodeMemoryMedia(memory.image);
+    const mediaPaths = [media.photoUrl, media.voiceUrl]
+      .map(getMemoryStoragePath)
+      .filter((path): path is string => Boolean(path));
+    if (mediaPaths.length > 0) {
+      await supabase.storage.from("memory-images").remove(mediaPaths);
     }
 
     setMemories((current) => current.filter((item) => item.id !== memory.id));
@@ -508,7 +666,7 @@ export default function MemoriesPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#eff6ff] px-6 pb-24 pt-28 text-[#172554] transition-colors dark:bg-[#020617] dark:text-white">
+    <main className="relative min-h-screen overflow-hidden bg-[#eff6ff] px-4 pb-32 pt-24 text-[#172554] transition-colors dark:bg-[#020617] dark:text-white sm:px-6 md:pt-28">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(37,99,235,0.2),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(29,78,216,0.14),transparent_30%),linear-gradient(135deg,#eff6ff_0%,#f8fbff_48%,#dbeafe_100%)] dark:bg-[radial-gradient(circle_at_18%_12%,rgba(37,99,235,0.16),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(29,78,216,0.12),transparent_30%),linear-gradient(135deg,#020617_0%,#0f172a_48%,#020617_100%)]" />
       <div className="memories-grain pointer-events-none absolute inset-0 opacity-[0.16]" />
 
@@ -518,7 +676,7 @@ export default function MemoriesPage() {
             <p className="text-sm font-black uppercase tracking-wide text-[#2563eb]/70 dark:text-blue-200/70">
               Воспоминания
             </p>
-            <h1 className="mt-3 text-5xl font-black text-[#2563eb] dark:text-white md:text-7xl">
+            <h1 className="mt-3 text-4xl font-black text-[#2563eb] dark:text-white sm:text-5xl md:text-7xl">
               Моменты пары
             </h1>
           </div>
@@ -577,29 +735,83 @@ export default function MemoriesPage() {
               </div>
             )}
           </div>
-          <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className="cursor-pointer rounded-2xl border border-blue-200/70 bg-white/70 px-5 py-4 font-black text-[#2563eb] shadow-lg transition hover:bg-blue-50 dark:border-white/10 dark:bg-white/8 dark:text-blue-100 dark:hover:bg-blue-500/15">
               <input
                 type="file"
                 accept="image/*"
+                disabled={isSubmitting}
                 className="hidden"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
-                  if (!file) return;
-                  setMemoryImageFile(file);
-                  setMemoryImage(URL.createObjectURL(file));
+                  if (file) selectMemoryPhoto(file);
+                  event.target.value = "";
                 }}
               />
-              Добавить фото
+              <span className="block text-xs uppercase opacity-65">Изображение</span>
+              <span className="mt-1 block">Добавить фото</span>
+            </label>
+            <label className="cursor-pointer rounded-2xl border border-blue-200/70 bg-white/70 px-5 py-4 font-black text-[#2563eb] shadow-lg transition hover:bg-blue-50 dark:border-white/10 dark:bg-white/8 dark:text-blue-100 dark:hover:bg-blue-500/15">
+              <input
+                type="file"
+                accept="audio/*,.m4a,.mp3,.ogg,.wav,.webm"
+                disabled={isSubmitting}
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) selectMemoryVoice(file);
+                  event.target.value = "";
+                }}
+              />
+              <span className="block text-xs uppercase opacity-65">Голос</span>
+              <span className="mt-1 block">Загрузить аудио</span>
             </label>
             <button
+              type="button"
+              onClick={toggleVoiceRecording}
+              disabled={isSubmitting}
+              className={`rounded-2xl border px-5 py-4 text-left font-black shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50 ${
+                isRecording
+                  ? "border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-300/20 dark:bg-rose-400/12 dark:text-rose-100"
+                  : "border-blue-200/70 bg-white/70 text-[#2563eb] dark:border-white/10 dark:bg-white/8 dark:text-blue-100"
+              }`}
+            >
+              <span className="block text-xs uppercase opacity-65">Микрофон</span>
+              <span className="mt-1 block">{isRecording ? "Завершить запись" : "Записать голос"}</span>
+            </button>
+            <button
+              type="button"
               onClick={addMemory}
               disabled={isSubmitting}
-              className="rounded-full bg-[#2563eb] px-7 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50"
+              className="rounded-2xl bg-[#2563eb] px-7 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50"
             >
               {isSubmitting ? "Сохраняем..." : "Добавить воспоминание"}
             </button>
           </div>
+          {isRecording && (
+            <div className="mt-4 rounded-2xl bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] p-4 text-white shadow-lg">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className={`h-3 w-3 rounded-full bg-white ${isRecordingPaused ? "" : "animate-pulse"}`} />
+                  <div>
+                    <p className="font-black">{isRecordingPaused ? "Запись на паузе" : "Идёт запись"}</p>
+                    <p className="mt-1 text-sm font-bold opacity-75">{formatRecordingTime(recordingSeconds)}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={toggleVoicePause} className="rounded-full bg-white/18 px-4 py-2 text-sm font-black">
+                    {isRecordingPaused ? "Продолжить" : "Пауза"}
+                  </button>
+                  <button type="button" onClick={cancelVoiceRecording} className="rounded-full bg-white/18 px-4 py-2 text-sm font-black">
+                    Отмена
+                  </button>
+                  <button type="button" onClick={toggleVoiceRecording} className="rounded-full bg-white px-4 py-2 text-sm font-black text-[#2563eb]">
+                    Готово
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {memoryImage && (
             <Image
               src={memoryImage}
@@ -610,6 +822,25 @@ export default function MemoriesPage() {
               unoptimized
               className="mt-5 h-64 w-full rounded-[1.5rem] object-cover shadow-2xl"
             />
+          )}
+          {memoryVoice && (
+            <div className="mt-4 rounded-2xl border border-blue-200/70 bg-white/70 p-4 shadow-inner dark:border-white/10 dark:bg-white/8">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="font-black text-[#2563eb] dark:text-blue-100">Голосовое воспоминание</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    URL.revokeObjectURL(memoryVoice);
+                    setMemoryVoice(null);
+                    setMemoryVoiceFile(null);
+                  }}
+                  className="rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-600 dark:bg-rose-500/15 dark:text-rose-100"
+                >
+                  Удалить
+                </button>
+              </div>
+              <audio controls preload="metadata" src={memoryVoice} className="w-full" />
+            </div>
           )}
           {message && (
             <p className="mt-4 rounded-2xl bg-white/70 px-5 py-3 font-black text-[#2563eb] shadow-inner dark:bg-white/10 dark:text-blue-100">
@@ -653,7 +884,8 @@ export default function MemoriesPage() {
         ) : (
           <div className="columns-1 gap-5 md:columns-2 xl:columns-3">
             {visibleMemories.map((memory, index) => {
-              const isLoaded = !memory.image || loadedImages[memory.id];
+              const media = decodeMemoryMedia(memory.image);
+              const isLoaded = !media.photoUrl || loadedImages[memory.id];
               const author = memory.user_id === currentUserId ? "Вы" : "Партнёр";
 
               return (
@@ -661,14 +893,14 @@ export default function MemoriesPage() {
                   key={memory.id}
                   className="group mb-5 break-inside-avoid overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] dark:border-white/10 dark:bg-white/8"
                 >
-                  <div className="relative overflow-hidden rounded-[1.35rem] bg-blue-100 dark:bg-white/8">
-                    {memory.image && (
+                  {media.photoUrl && (
+                    <div className="relative overflow-hidden rounded-[1.35rem] bg-blue-100 dark:bg-white/8">
                       <>
                         {!isLoaded && (
                           <div className="absolute inset-0 animate-pulse bg-blue-100 blur-xl dark:bg-white/10" />
                         )}
                         <Image
-                          src={memory.image}
+                          src={media.photoUrl}
                           alt={memory.title || "Воспоминание"}
                           width={720}
                           height={900}
@@ -682,11 +914,11 @@ export default function MemoriesPage() {
                           }`}
                         />
                       </>
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-4 text-white opacity-0 transition group-hover:opacity-100">
-                      <p className="font-black">{memory.title || "Без названия"}</p>
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-4 text-white opacity-0 transition group-hover:opacity-100">
+                        <p className="font-black">{memory.title || "Без названия"}</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="p-3">
                     <div className="mb-3 flex items-center justify-between gap-3">
@@ -722,6 +954,14 @@ export default function MemoriesPage() {
                     <p className="mt-2 font-semibold leading-7 text-[#172554]/70 dark:text-white/62">
                       {memory.caption || memory.text || "Без описания"}
                     </p>
+                    {media.voiceUrl && (
+                      <div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/75 p-3 shadow-inner dark:border-white/10 dark:bg-white/8">
+                        <p className="mb-2 text-sm font-black text-[#2563eb] dark:text-blue-100">
+                          Голосовое воспоминание
+                        </p>
+                        <audio controls preload="metadata" src={media.voiceUrl} className="w-full" />
+                      </div>
+                    )}
                     <div className="mt-4 grid gap-2 text-sm font-bold text-[#172554]/58 dark:text-white/45">
                       <span>Дата события: {formatDate(memory.event_date)}</span>
                       <span>Загрузил: {author}</span>
@@ -841,10 +1081,10 @@ export default function MemoriesPage() {
           >
             ›
           </button>
-          <div className="max-h-[86vh] w-full max-w-5xl overflow-hidden rounded-[1.35rem] bg-white/10 p-2 pt-14 text-white shadow-2xl backdrop-blur-xl sm:rounded-[2rem] sm:p-4 sm:pt-4">
-            {selectedMemory.image && (
+          <div className="max-h-[86dvh] w-full max-w-5xl overflow-y-auto rounded-[1.35rem] bg-white/10 p-2 pt-14 text-white shadow-2xl backdrop-blur-xl sm:rounded-[2rem] sm:p-4 sm:pt-4">
+            {selectedMedia.photoUrl && (
               <Image
-                src={selectedMemory.image}
+                src={selectedMedia.photoUrl}
                 alt={selectedMemory.title || "Воспоминание"}
                 width={1400}
                 height={1000}
@@ -855,6 +1095,12 @@ export default function MemoriesPage() {
             <div className="p-4">
               <h2 className="text-3xl font-black">{selectedMemory.title || "Без названия"}</h2>
               <p className="mt-2 text-white/70">{selectedMemory.caption || selectedMemory.text}</p>
+              {selectedMedia.voiceUrl && (
+                <div className="mt-4 rounded-2xl bg-white/12 p-3">
+                  <p className="mb-2 text-sm font-black">Голосовое воспоминание</p>
+                  <audio controls preload="metadata" src={selectedMedia.voiceUrl} className="w-full" />
+                </div>
+              )}
             </div>
           </div>
         </div>

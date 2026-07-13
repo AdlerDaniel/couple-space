@@ -2,6 +2,14 @@
 
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { compressImageFile } from "@/lib/imageCompression";
+import {
+  createCompatibleAudioRecorder,
+  createRecordedAudioFile,
+  getSafeStoragePath,
+  MAX_AUDIO_SIZE,
+  MAX_IMAGE_SIZE,
+  validateMediaFile,
+} from "@/lib/mediaFiles";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
@@ -11,14 +19,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const EDIT_WINDOW_MINUTES = 15;
 const EDIT_WINDOW_MS = EDIT_WINDOW_MINUTES * 60 * 1000;
 const ANSWER_MAX_LENGTH = 600;
-
-function getSafeMediaPath(coupleId: string, answerId: string, file: File) {
-  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const fallbackExtension = file.type.split("/").pop()?.replace(/[^a-z0-9]/g, "") || "bin";
-  const safeExtension = extension || fallbackExtension;
-
-  return `${coupleId}/${answerId}/${crypto.randomUUID()}.${safeExtension}`;
-}
 
 type Couple = {
   id: string;
@@ -229,71 +229,86 @@ export default function QuestionAnswerPage() {
   async function uploadAnswerMedia(file: File, urlField: string, fallbackText: string) {
     if (!couple || isEditLocked) return;
 
-    setIsUploadingMedia(true);
-    const createdRecordForMedia = !answerRecord;
-    const activeRecord = await ensureAnswerRecord(fallbackText);
-
-    if (!activeRecord) {
-      setIsUploadingMedia(false);
-      return;
-    }
-
-    const uploadFile = file.type.startsWith("image/")
-      ? await compressImageFile(file, {
-          maxWidth: 1600,
-          maxHeight: 1600,
-          quality: 0.78,
-        })
-      : file;
-    const hadMediaBefore = Boolean(activeRecord[urlField as keyof Answer]);
-    const hadAnswerBefore = Boolean(
-      activeRecord[answerField] ||
-        activeRecord[voiceField] ||
-        activeRecord[photoField]
+    const isVoice = urlField.includes("voice");
+    const validation = validateMediaFile(
+      file,
+      [isVoice ? "audio" : "image"],
+      isVoice ? MAX_AUDIO_SIZE : MAX_IMAGE_SIZE
     );
-    const filePath = getSafeMediaPath(couple.id, activeRecord.id, uploadFile);
-    const { error: uploadError } = await supabase.storage
-      .from("question-media")
-      .upload(filePath, uploadFile, { upsert: true });
-
-    if (uploadError) {
-      console.error(uploadError);
-      setMessage("Не удалось загрузить медиа. Проверьте bucket question-media.");
-      setIsUploadingMedia(false);
+    if (validation.error) {
+      setMessage(validation.error);
       return;
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from("question-media")
-      .getPublicUrl(filePath);
+    setIsUploadingMedia(true);
+    setMessage("");
+    let filePath: string | null = null;
 
-    const { data, error } = await supabase
-      .from("question_answers")
-      .update({ [urlField]: publicUrlData.publicUrl })
-      .eq("id", activeRecord.id)
-      .select()
-      .single();
+    try {
+      const uploadFile = validation.kind === "image"
+        ? await compressImageFile(file, {
+            maxWidth: 1600,
+            maxHeight: 1600,
+            quality: 0.78,
+          })
+        : file;
+      filePath = getSafeStoragePath(couple.id, uploadFile);
+      const { error: uploadError } = await supabase.storage
+        .from("question-media")
+        .upload(filePath, uploadFile, { upsert: false });
 
-    if (error) {
+      if (uploadError) throw uploadError;
+
+      const createdRecordForMedia = !answerRecord;
+      const activeRecord = await ensureAnswerRecord(fallbackText);
+      if (!activeRecord) throw new Error("Не удалось создать ответ для медиа");
+
+      const hadMediaBefore = Boolean(activeRecord[urlField as keyof Answer]);
+      const hadAnswerBefore = Boolean(
+        activeRecord[answerField] ||
+          activeRecord[voiceField] ||
+          activeRecord[photoField]
+      );
+      const { data: publicUrlData } = supabase.storage
+        .from("question-media")
+        .getPublicUrl(filePath);
+
+      const { data, error } = await supabase
+        .from("question_answers")
+        .update({ [urlField]: publicUrlData.publicUrl })
+        .eq("id", activeRecord.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setAnswerRecord(data);
+        setSaveStatus("Медиа сохранено");
+      }
+
+      if (data && !hadMediaBefore && currentUserId) {
+        await createPartnerNotification(couple, currentUserId, {
+          type: isVoice ? "question_voice" : "question_photo",
+          title: isVoice ? "Голосовой ответ" : "Фото-ответ",
+          body: hadAnswerBefore && !createdRecordForMedia
+            ? "Партнёр добавил медиа к ответу."
+            : "Партнёр ответил на ежедневный вопрос.",
+          href: "/questions/today",
+        });
+      }
+    } catch (error) {
       console.error(error);
-      setMessage(error.message);
-    } else if (data) {
-      setAnswerRecord(data);
-      setSaveStatus("Медиа сохранено");
+      if (filePath) {
+        await supabase.storage.from("question-media").remove([filePath]);
+      }
+      setMessage(
+        error instanceof Error
+          ? `Не удалось загрузить медиа: ${error.message}`
+          : "Не удалось загрузить медиа. Попробуйте ещё раз."
+      );
+    } finally {
+      setIsUploadingMedia(false);
     }
-
-    if (!error && data && !hadMediaBefore && currentUserId) {
-      await createPartnerNotification(couple, currentUserId, {
-        type: urlField.includes("voice") ? "question_voice" : "question_photo",
-        title: urlField.includes("voice") ? "Голосовой ответ" : "Фото-ответ",
-        body: hadAnswerBefore && !createdRecordForMedia
-          ? "Партнёр добавил медиа к ответу."
-          : "Партнёр ответил на ежедневный вопрос.",
-        href: "/questions/today",
-      });
-    }
-
-    setIsUploadingMedia(false);
   }
 
   async function toggleVoiceRecording() {
@@ -306,7 +321,7 @@ export default function QuestionAnswerPage() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const recorder = createCompatibleAudioRecorder(stream);
       audioChunksRef.current = [];
       mediaRecorderRef.current = recorder;
       discardRecordingRef.current = false;
@@ -327,11 +342,16 @@ export default function QuestionAnswerPage() {
           audioChunksRef.current = [];
           return;
         }
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const audioFile = new File([audioBlob], "voice-answer.webm", {
-          type: "audio/webm",
-        });
-        uploadAnswerMedia(audioFile, voiceField, "Голосовой ответ");
+        try {
+          const audioFile = createRecordedAudioFile(
+            audioChunksRef.current,
+            recorder.mimeType,
+            "voice-answer"
+          );
+          uploadAnswerMedia(audioFile, voiceField, "Голосовой ответ");
+        } catch (error) {
+          setMessage(error instanceof Error ? error.message : "Не удалось сохранить запись");
+        }
       };
 
       recorder.start();
@@ -340,7 +360,9 @@ export default function QuestionAnswerPage() {
       setRecordingSeconds(0);
     } catch (error) {
       console.error(error);
-      setMessage("Не удалось включить микрофон");
+      setMessage(
+        "Не удалось включить микрофон. Разрешите доступ или загрузите готовый аудиофайл."
+      );
     }
   }
 
@@ -388,6 +410,15 @@ export default function QuestionAnswerPage() {
       }
     };
   }, [isRecording, isRecordingPaused]);
+
+  useEffect(() => {
+    return () => {
+      discardRecordingRef.current = true;
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") recorder.stop();
+      recorder?.stream.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
 
   useEffect(() => {
     async function loadPageData() {
@@ -500,7 +531,7 @@ export default function QuestionAnswerPage() {
   ]);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f0fff7] px-6 pb-20 pt-28 text-[#14532d] transition-colors dark:bg-[#02140b] dark:text-white">
+    <main className="relative min-h-screen overflow-hidden bg-[#f0fff7] px-4 pb-32 pt-24 text-[#14532d] transition-colors dark:bg-[#02140b] dark:text-white sm:px-6 md:pt-28">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_24%_14%,rgba(34,197,94,0.24),transparent_34%),radial-gradient(circle_at_82%_22%,rgba(20,184,166,0.18),transparent_30%),linear-gradient(135deg,#e7fff2_0%,#f4fff9_48%,#e9fff7_100%)] dark:bg-[radial-gradient(circle_at_24%_14%,rgba(34,197,94,0.16),transparent_34%),radial-gradient(circle_at_82%_22%,rgba(20,184,166,0.15),transparent_30%),linear-gradient(135deg,#03170c_0%,#062315_48%,#02100a_100%)]" />
 
       <section className="questions-reveal relative mx-auto max-w-4xl">
@@ -548,7 +579,7 @@ export default function QuestionAnswerPage() {
                 <span>{myAnswer.length}/{ANSWER_MAX_LENGTH}</span>
               </div>
 
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <button
                   type="button"
                   onClick={toggleVoiceRecording}
@@ -566,6 +597,22 @@ export default function QuestionAnswerPage() {
                     {isRecording ? "Остановить запись" : "Записать голос"}
                   </span>
                 </button>
+
+                <label className="cursor-pointer rounded-[1.2rem] border border-emerald-200/70 bg-white/70 px-5 py-4 text-left font-black text-emerald-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100 dark:hover:bg-emerald-500/15">
+                  <input
+                    type="file"
+                    accept="audio/*,.m4a,.mp3,.ogg,.wav,.webm"
+                    disabled={isEditLocked || isUploadingMedia}
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) uploadAnswerMedia(file, voiceField, "Голосовой ответ");
+                      event.target.value = "";
+                    }}
+                  />
+                  <span className="block text-sm uppercase opacity-70">Голосовой файл</span>
+                  <span className="mt-1 block">Загрузить аудио</span>
+                </label>
 
                 <label className="cursor-pointer rounded-[1.2rem] border border-emerald-200/70 bg-white/70 px-5 py-4 text-left font-black text-emerald-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100 dark:hover:bg-emerald-500/15">
                   <input

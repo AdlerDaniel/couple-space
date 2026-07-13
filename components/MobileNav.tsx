@@ -331,7 +331,7 @@ export default function MobileNav() {
           tone="menu"
           accent={accent}
           accentRgb={accentRgb}
-          className="liquid-glass-readable app-bottom-sheet fixed inset-x-0 bottom-0 z-50 max-h-[82dvh] rounded-t-[1.35rem] p-3 pb-20"
+          className="liquid-glass-readable app-bottom-sheet fixed inset-x-0 bottom-0 z-50 max-h-[82dvh] rounded-t-[1.35rem] p-3 pb-[calc(5rem+env(safe-area-inset-bottom))]"
           style={{ color: accent }}
         >
           <div className="mx-auto mb-2 h-1.5 w-12 rounded-full bg-current opacity-25" />
@@ -413,7 +413,7 @@ export default function MobileNav() {
           tone="menu"
           accent={accent}
           accentRgb={accentRgb}
-          className="liquid-glass-readable app-bottom-sheet fixed inset-x-0 bottom-0 z-50 max-h-[86dvh] overflow-y-auto rounded-t-[1.35rem] p-4 pb-20"
+          className="liquid-glass-readable app-bottom-sheet fixed inset-x-0 bottom-0 z-50 max-h-[86dvh] overflow-y-auto rounded-t-[1.35rem] p-4 pb-[calc(5rem+env(safe-area-inset-bottom))]"
           style={{ color: accent }}
         >
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-current opacity-25" />
@@ -563,7 +563,7 @@ export default function MobileNav() {
         accent={accent}
         accentRgb={accentRgb}
         style={mobileNavStyle}
-        className={`mobile-nav-shell fixed bottom-2 left-2 right-2 z-40 px-1 py-1.5 transition-transform duration-300 md:hidden ${
+        className={`mobile-nav-shell fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-2 right-2 z-40 px-1 py-1.5 transition-transform duration-300 md:hidden ${
           isHiddenByScroll ? "translate-y-24" : "translate-y-0"
         }`}
       >

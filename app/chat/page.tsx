@@ -1,6 +1,13 @@
 "use client";
 
 import { compressImageFile } from "@/lib/imageCompression";
+import {
+  createCompatibleAudioRecorder,
+  createRecordedAudioFile,
+  getMediaKind,
+  getSafeStoragePath,
+  MAX_AUDIO_SIZE,
+} from "@/lib/mediaFiles";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
@@ -117,7 +124,6 @@ const favoriteStickerStorageKey = "couple-space:chat-favorite-stickers";
 const externalChatDraftKey = "couple-space:chat-draft";
 const reactions = ["❤️", "😂", "🥺", "👍", "👎", "😡", "😮", "🤢"];
 const maxMediaSize = 25 * 1024 * 1024;
-const maxVoiceSize = 15 * 1024 * 1024;
 const maxFileSize = 50 * 1024 * 1024;
 
 const emojiCategories: EmojiCategory[] = [
@@ -206,22 +212,10 @@ function getInitial(name: string) {
   return name.trim().slice(0, 1).toUpperCase() || "♡";
 }
 
-function getSafeFilePath(coupleId: string, file: File) {
-  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
-  return `${coupleId}/${crypto.randomUUID()}${extension ? `.${extension}` : ""}`;
-}
-
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function getAttachmentType(file: File): ChatAttachment["type"] {
-  if (file.type.startsWith("image/")) return "image";
-  if (file.type.startsWith("video/")) return "video";
-  if (file.type.startsWith("audio/")) return "audio";
-  return "file";
 }
 
 function getFileIcon(fileName: string, mimeType?: string) {
@@ -388,6 +382,7 @@ export default function ChatPage() {
   const pickerRef = useRef<HTMLDivElement | null>(null);
   const appliedCursorRequestRef = useRef<string | null>(null);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  const audioInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
@@ -444,6 +439,15 @@ export default function ChatPage() {
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const [partnerLastSeen, setPartnerLastSeen] = useState<string | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      discardRecordingRef.current = true;
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") recorder.stop();
+      recorder?.stream.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
 
   const partnerId = useMemo(() => {
     if (!couple || !currentUserId) return null;
@@ -950,43 +954,53 @@ export default function ChatPage() {
   }
 
   async function uploadPendingAttachments(items: PendingAttachment[]) {
-    if (!couple) return [];
+    if (!couple) return { attachments: [], storagePaths: [] };
 
     const uploaded: ChatAttachment[] = [];
-    for (const item of items) {
-      setUploadProgress((current) => ({ ...current, [item.id]: 12 }));
-      const uploadFile = item.file.type.startsWith("image/")
-        ? await compressImageFile(item.file, {
-            maxWidth: 1600,
-            maxHeight: 1600,
-            quality: 0.78,
-          })
-        : item.file;
-      setUploadProgress((current) => ({ ...current, [item.id]: 46 }));
+    const storagePaths: string[] = [];
 
-      const filePath = getSafeFilePath(couple.id, uploadFile);
-      const { error } = await supabase.storage
-        .from("chat-media")
-        .upload(filePath, uploadFile, { upsert: true });
+    try {
+      for (const item of items) {
+        setUploadProgress((current) => ({ ...current, [item.id]: 12 }));
+        const uploadFile = item.type === "image"
+          ? await compressImageFile(item.file, {
+              maxWidth: 1600,
+              maxHeight: 1600,
+              quality: 0.78,
+            })
+          : item.file;
+        setUploadProgress((current) => ({ ...current, [item.id]: 46 }));
 
-      if (error) {
-        throw new Error("Не удалось загрузить вложение. Проверьте bucket chat-media.");
+        const filePath = getSafeStoragePath(couple.id, uploadFile);
+        const { error } = await supabase.storage
+          .from("chat-media")
+          .upload(filePath, uploadFile, { upsert: false });
+
+        if (error) {
+          throw new Error("Не удалось загрузить вложение. Проверьте bucket chat-media.");
+        }
+
+        storagePaths.push(filePath);
+        setUploadProgress((current) => ({ ...current, [item.id]: 86 }));
+        const { data } = supabase.storage.from("chat-media").getPublicUrl(filePath);
+        uploaded.push({
+          id: item.id,
+          url: data.publicUrl,
+          type: item.type,
+          name: uploadFile.name,
+          size: uploadFile.size,
+          mime_type: uploadFile.type || item.file.type || "application/octet-stream",
+        });
+        setUploadProgress((current) => ({ ...current, [item.id]: 100 }));
       }
-
-      setUploadProgress((current) => ({ ...current, [item.id]: 86 }));
-      const { data } = supabase.storage.from("chat-media").getPublicUrl(filePath);
-      uploaded.push({
-        id: item.id,
-        url: data.publicUrl,
-        type: item.type,
-        name: uploadFile.name,
-        size: uploadFile.size,
-        mime_type: uploadFile.type || item.file.type || "application/octet-stream",
-      });
-      setUploadProgress((current) => ({ ...current, [item.id]: 100 }));
+    } catch (error) {
+      if (storagePaths.length > 0) {
+        await supabase.storage.from("chat-media").remove(storagePaths);
+      }
+      throw error;
     }
 
-    return uploaded;
+    return { attachments: uploaded, storagePaths };
   }
 
   async function sendMessage(event?: FormEvent<HTMLFormElement>, directAttachments: PendingAttachment[] = []) {
@@ -1024,10 +1038,16 @@ export default function ChatPage() {
     }
 
     let uploadedAttachments: ChatAttachment[] = [];
+    let uploadedStoragePaths: string[] = [];
     try {
-      uploadedAttachments = await uploadPendingAttachments(attachmentsToSend);
+      const upload = await uploadPendingAttachments(attachmentsToSend);
+      uploadedAttachments = upload.attachments;
+      uploadedStoragePaths = upload.storagePaths;
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Не удалось загрузить вложение");
+      if (directAttachments.length > 0) {
+        setPendingAttachments((current) => [...current, ...directAttachments].slice(0, 10));
+      }
       setIsSending(false);
       return;
     }
@@ -1066,13 +1086,6 @@ export default function ChatPage() {
     };
 
     setMessages((current) => [...current, optimisticMessage]);
-    setDraft("");
-    pendingAttachments.forEach((attachment) => {
-      if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
-    });
-    setPendingAttachments([]);
-    setUploadProgress({});
-    setReplyToId(null);
 
     const { data, error } = await supabase
       .from("couple_chat_messages")
@@ -1096,6 +1109,12 @@ export default function ChatPage() {
 
     if (error || !data) {
       setMessages((current) => current.filter((message) => message.id !== optimisticId));
+      if (uploadedStoragePaths.length > 0) {
+        await supabase.storage.from("chat-media").remove(uploadedStoragePaths);
+      }
+      if (directAttachments.length > 0) {
+        setPendingAttachments((current) => [...current, ...directAttachments].slice(0, 10));
+      }
       setErrorMessage(error?.message || "Не удалось отправить сообщение");
       setIsSending(false);
       return;
@@ -1104,6 +1123,15 @@ export default function ChatPage() {
     setMessages((current) =>
       current.map((message) => (message.id === optimisticId ? data : message))
     );
+    setDraft("");
+    attachmentsToSend.forEach((attachment) => {
+      if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
+    });
+    if (directAttachments.length === 0) {
+      setPendingAttachments([]);
+    }
+    setUploadProgress({});
+    setReplyToId(null);
     setIsSending(false);
 
     await createPartnerNotification(couple, currentUserId, {
@@ -1253,9 +1281,14 @@ export default function ChatPage() {
     const nextItems: PendingAttachment[] = [];
 
     for (const file of files) {
-      const type = getAttachmentType(file);
+      const type = getMediaKind(file);
       const limit =
-        type === "audio" ? maxVoiceSize : type === "file" ? maxFileSize : maxMediaSize;
+        type === "audio" ? MAX_AUDIO_SIZE : type === "file" ? maxFileSize : maxMediaSize;
+
+      if (file.size <= 0) {
+        setErrorMessage(`${file.name}: файл пустой.`);
+        continue;
+      }
 
       if (file.size > limit) {
         setErrorMessage(
@@ -1276,7 +1309,17 @@ export default function ChatPage() {
     }
 
     if (nextItems.length) {
-      setPendingAttachments((current) => [...current, ...nextItems].slice(0, 10));
+      setPendingAttachments((current) => {
+        const availableSlots = Math.max(0, 10 - current.length);
+        const acceptedItems = nextItems.slice(0, availableSlots);
+        nextItems.slice(availableSlots).forEach((item) => {
+          if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+        });
+        if (acceptedItems.length < nextItems.length) {
+          setErrorMessage("Можно прикрепить не больше 10 файлов к одному сообщению.");
+        }
+        return [...current, ...acceptedItems];
+      });
     }
   }
 
@@ -1291,7 +1334,7 @@ export default function ChatPage() {
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const recorder = createCompatibleAudioRecorder(stream);
       audioChunksRef.current = [];
       mediaRecorderRef.current = recorder;
       discardRecordingRef.current = false;
@@ -1310,18 +1353,23 @@ export default function ChatPage() {
           audioChunksRef.current = [];
           return;
         }
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const audioFile = new File([audioBlob], `voice-${Date.now()}.webm`, {
-          type: "audio/webm",
-        });
-        sendMessage(undefined, [
-          {
-            id: crypto.randomUUID(),
-            file: audioFile,
-            type: "audio",
-            previewUrl: null,
-          },
-        ]);
+        try {
+          const audioFile = createRecordedAudioFile(
+            audioChunksRef.current,
+            recorder.mimeType,
+            "voice"
+          );
+          sendMessage(undefined, [
+            {
+              id: crypto.randomUUID(),
+              file: audioFile,
+              type: "audio",
+              previewUrl: null,
+            },
+          ]);
+        } catch (error) {
+          setErrorMessage(error instanceof Error ? error.message : "Не удалось сохранить запись");
+        }
       };
 
       recorder.start();
@@ -1329,7 +1377,9 @@ export default function ChatPage() {
       setIsRecordingPaused(false);
       setRecordingSeconds(0);
     } catch {
-      setErrorMessage("Не удалось включить микрофон");
+      setErrorMessage(
+        "Не удалось включить микрофон. Разрешите доступ или загрузите готовый аудиофайл."
+      );
     }
   }
 
@@ -1556,14 +1606,14 @@ export default function ChatPage() {
         setIsDraggingFile(false);
         addPendingFiles(Array.from(event.dataTransfer.files));
       }}
-      className="mobile-fullscreen relative h-[100svh] overflow-hidden bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] px-0 pb-0 pt-0 text-[#075985] dark:from-[#031b2e] dark:via-[#021526] dark:to-black dark:text-white md:min-h-screen md:px-6 md:pb-8 md:pt-28"
+      className="mobile-fullscreen relative h-[100dvh] overflow-hidden bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] px-0 pb-0 pt-0 text-[#075985] dark:from-[#031b2e] dark:via-[#021526] dark:to-black dark:text-white md:min-h-screen md:px-6 md:pb-8 md:pt-28"
     >
       <div className="pointer-events-none absolute inset-0">
         <div className="chat-blob absolute left-[-8rem] top-24 h-80 w-80 rounded-full bg-sky-300/35 blur-3xl dark:bg-sky-500/12" />
         <div className="chat-blob chat-blob-delay absolute right-[-9rem] top-48 h-96 w-96 rounded-full bg-cyan-300/30 blur-3xl dark:bg-cyan-500/12" />
       </div>
 
-      <section className="relative mx-auto flex h-[100svh] min-h-0 max-w-5xl flex-col overflow-hidden border-y border-white/60 bg-white/44 shadow-[0_32px_110px_rgba(2,132,199,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:h-[calc(100vh-9rem)] md:rounded-[2rem] md:border">
+      <section className="relative mx-auto flex h-[100dvh] min-h-0 max-w-5xl flex-col overflow-hidden border-y border-white/60 bg-white/44 shadow-[0_32px_110px_rgba(2,132,199,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:h-[calc(100vh-9rem)] md:rounded-[2rem] md:border">
         {isDraggingFile && (
           <div className="pointer-events-none absolute inset-3 z-50 grid place-items-center rounded-[1.5rem] border-2 border-dashed border-[#0284c7]/55 bg-white/55 text-center text-xl font-black text-[#0284c7] shadow-inner backdrop-blur-xl dark:bg-black/45 dark:text-white">
             Отпустите файл, чтобы добавить вложение
@@ -2203,7 +2253,7 @@ export default function ChatPage() {
                 <span className={`grid h-3 w-3 shrink-0 place-items-center rounded-full bg-sky-500 ${isRecordingPaused ? "" : "animate-pulse"}`} />
                 <div className="min-w-0">
                   <p className="text-sm font-black">
-                    {isRecordingPaused ? "Р—Р°РїРёСЃСЊ РЅР° РїР°СѓР·Рµ" : "РРґС‘С‚ Р·Р°РїРёСЃСЊ"}
+                    {isRecordingPaused ? "Запись на паузе" : "Идёт запись"}
                   </p>
                   <div className="mt-1 flex h-5 items-center gap-[2px]">
                     {Array.from({ length: 24 }).map((_, index) => (
@@ -2365,8 +2415,8 @@ export default function ChatPage() {
                     )}
                   </div>
                   <div className="mt-3 flex items-center gap-1 overflow-x-auto rounded-2xl bg-sky-50 p-1 dark:bg-white/8">
-                    <button type="button" onClick={() => setActiveStickerPack("recent")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "recent" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="????????">??</button>
-                    <button type="button" onClick={() => setActiveStickerPack("favorites")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "favorites" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="?????????">?</button>
+                    <button type="button" onClick={() => setActiveStickerPack("recent")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "recent" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="Недавние" aria-label="Недавние стикеры">🕘</button>
+                    <button type="button" onClick={() => setActiveStickerPack("favorites")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "favorites" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="Избранные" aria-label="Избранные стикеры">★</button>
                     {stickerPacks.map((pack) => (
                       <button key={pack.id} type="button" onClick={() => setActiveStickerPack(pack.id)} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg transition ${activeStickerPack === pack.id ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title={pack.name}>
                         {pack.icon}
@@ -2392,6 +2442,17 @@ export default function ChatPage() {
             <input
               ref={fileInputRef}
               type="file"
+              multiple
+              className="hidden"
+              onChange={(event) => {
+                addPendingFiles(Array.from(event.target.files || []));
+                event.target.value = "";
+              }}
+            />
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept="audio/*,.m4a,.mp3,.ogg,.wav,.webm"
               multiple
               className="hidden"
               onChange={(event) => {
@@ -2429,7 +2490,7 @@ export default function ChatPage() {
               🧸
             </button>
             <div className="relative order-4">
-              <button type="button" onClick={() => setIsAttachMenuOpen((current) => !current)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-white/85 text-lg shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl">
+              <button type="button" onClick={() => setIsAttachMenuOpen((current) => !current)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-white/85 text-lg shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl" aria-label="Прикрепить файл">
               📎
               </button>
               {isAttachMenuOpen && (
@@ -2439,6 +2500,9 @@ export default function ChatPage() {
                   </button>
                   <button type="button" onClick={() => { fileInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
                     📄 Файл
+                  </button>
+                  <button type="button" onClick={() => { audioInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
+                    🎵 Аудиофайл
                   </button>
                   <button type="button" onClick={() => { if (isRecording) { stopRecording(); } else { startRecording(); } setIsAttachMenuOpen(false); }} className="w-full rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
                     🎙 Голосовое
@@ -2469,11 +2533,11 @@ export default function ChatPage() {
               className="order-3 max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-[1rem] border border-sky-200/70 bg-white/86 px-3 py-2.5 text-sm font-semibold text-[#075985] outline-none shadow-inner transition placeholder:text-sky-400/70 focus:border-[#0ea5e9] focus:shadow-[0_0_0_5px_rgba(14,165,233,0.14)] dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/38 md:max-h-36 md:min-h-12 md:rounded-[1.25rem] md:px-4 md:py-3 md:text-base"
             />
             {draft.trim() || editingId || pendingAttachments.length > 0 ? (
-              <button type="submit" disabled={isSending} className={`order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-xl font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.34)] transition hover:-translate-y-0.5 disabled:opacity-45 md:h-12 md:w-12 md:rounded-[1rem] md:text-2xl ${isSending ? "chat-send-pulse" : ""}`}>
+              <button type="submit" disabled={isSending} aria-label="Отправить сообщение" className={`order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-xl font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.34)] transition hover:-translate-y-0.5 disabled:opacity-45 md:h-12 md:w-12 md:rounded-[1rem] md:text-2xl ${isSending ? "chat-send-pulse" : ""}`}>
                 ↑
               </button>
             ) : (
-              <button type="button" onClick={isRecording ? stopRecording : startRecording} className={`order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.28)] transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${isRecording ? "bg-sky-600 animate-pulse" : "bg-[#0284c7]"}`}>
+              <button type="button" onClick={isRecording ? stopRecording : startRecording} aria-label={isRecording ? "Остановить запись" : "Записать голосовое"} className={`order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.28)] transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${isRecording ? "bg-sky-600 animate-pulse" : "bg-[#0284c7]"}`}>
                 {isRecording ? "■" : "🎙"}
               </button>
             )}

@@ -40,7 +40,7 @@ type TodayState = {
   isLoading: boolean;
 };
 
-type FocusId = "question" | "memories" | "evening";
+type FocusId = "question" | "memories" | "movies";
 
 const defaultTimeZone = "Europe/Moscow";
 
@@ -229,7 +229,7 @@ export default function TodayPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] px-4 pb-28 pt-7 text-slate-900 dark:bg-[#070c14] dark:text-white sm:px-6 lg:px-10 lg:pb-12 lg:pt-10">
+    <main className={`today-page today-page-${activeFocus} min-h-screen px-4 pb-28 pt-7 text-slate-900 dark:text-white sm:px-6 lg:px-10 lg:pb-12 lg:pt-10`}>
       <section className="mx-auto max-w-5xl">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -275,7 +275,7 @@ export default function TodayPage() {
               {([
                 { id: "question" as const, label: "Вопрос", icon: "questions" as const, note: myAnswer ? "Готово" : "Сейчас" },
                 { id: "memories" as const, label: "Воспоминания", icon: "memories" as const, note: "Добавить" },
-                { id: "evening" as const, label: "Вечер", icon: "watch" as const, note: state.watchRemaining ? `${state.watchRemaining} идей` : "Добавить" },
+                { id: "movies" as const, label: "Фильмы", icon: "watch" as const, note: state.watchRemaining ? `${state.watchRemaining} идей` : "Добавить" },
               ]).map((focus) => (
                 <button
                   key={focus.id}
@@ -357,9 +357,9 @@ export default function TodayPage() {
                 </div>
               )}
 
-              {activeFocus === "evening" && (
+              {activeFocus === "movies" && (
                 <div className="mx-auto max-w-3xl">
-                  <p className="today-focus-eyebrow">На вечер</p>
+                  <p className="today-focus-eyebrow">Фильмы</p>
                   <h2 className="mt-4 text-3xl font-black leading-tight md:text-5xl">
                     {state.watchRemaining ? "Выберите, что посмотреть вместе" : "Добавьте идею для общего вечера"}
                   </h2>

@@ -5,6 +5,7 @@ export type PageThemeKey =
   | "today"
   | "dashboard"
   | "profile"
+  | "settings"
   | "memories"
   | "questions"
   | "quizzes"
@@ -51,6 +52,16 @@ export const pageThemes: Record<PageThemeKey, PageTheme> = {
       boxShadow: "0 16px 48px rgba(146, 64, 14, 0.18)",
     },
   },
+  settings: {
+    key: "settings",
+    accent: "#78350f",
+    soft: "#ead8c8",
+    nav: {
+      background: "linear-gradient(135deg, rgba(120, 53, 15, 0.24), rgba(146, 64, 14, 0.16))",
+      borderColor: "rgba(120, 53, 15, 0.34)",
+      boxShadow: "0 16px 48px rgba(120, 53, 15, 0.2)",
+    },
+  },
   memories: {
     key: "memories",
     accent: "#2563eb",
@@ -93,12 +104,12 @@ export const pageThemes: Record<PageThemeKey, PageTheme> = {
   },
   watch: {
     key: "watch",
-    accent: "#65a30d",
+    accent: "#3f6212",
     soft: "#ecfccb",
     nav: {
-      background: "linear-gradient(135deg, rgba(101, 163, 13, 0.25), rgba(132, 204, 22, 0.16))",
-      borderColor: "rgba(101, 163, 13, 0.36)",
-      boxShadow: "0 16px 50px rgba(101, 163, 13, 0.2)",
+      background: "linear-gradient(135deg, rgba(63, 98, 18, 0.25), rgba(101, 163, 13, 0.16))",
+      borderColor: "rgba(63, 98, 18, 0.36)",
+      boxShadow: "0 16px 50px rgba(63, 98, 18, 0.2)",
     },
   },
   tracker: {
@@ -138,6 +149,7 @@ export function getPageThemeKey(pathname: string): PageThemeKey {
   if (pathname.startsWith("/today")) return "today";
   if (pathname.startsWith("/dashboard")) return "dashboard";
   if (pathname.startsWith("/profile")) return "profile";
+  if (pathname.startsWith("/settings")) return "settings";
   if (pathname.startsWith("/memories")) return "memories";
   if (pathname.startsWith("/questions")) return "questions";
   if (pathname.startsWith("/quizzes")) return "quizzes";

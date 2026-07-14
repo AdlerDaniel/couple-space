@@ -1,6 +1,7 @@
 "use client";
 
 import EmptyState from "@/components/EmptyState";
+import PushNotificationButton from "@/components/PushNotificationButton";
 import { getPageTheme } from "@/lib/pageThemes";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
@@ -32,28 +33,6 @@ const sections: SettingsSection[] = [
     text: "Создание пары, invite-код и управление связью.",
     href: "/profile",
   },
-  {
-    id: "privacy",
-    title: "Приватность",
-    text: "Подтверждение удаления, выход из пары и контроль общих данных.",
-  },
-  {
-    id: "notifications",
-    title: "Уведомления",
-    text: "История событий, достижения и действия партнёра.",
-    href: "/notifications",
-  },
-  {
-    id: "media",
-    title: "Медиа и хранилище",
-    text: "Сжатие фото, голосовые ответы и вложения.",
-  },
-  {
-    id: "session",
-    title: "Сессия",
-    text: "Выход из аккаунта на этом устройстве.",
-    href: "/logout",
-  },
 ];
 
 const notificationOptions = [
@@ -84,7 +63,7 @@ function normalizeSettings(value: unknown): NotificationSettings {
 }
 
 export default function SettingsPage() {
-  const theme = getPageTheme("/profile");
+  const theme = getPageTheme("/settings");
   const [isSignedIn, setIsSignedIn] = useState<boolean | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [coupleId, setCoupleId] = useState<string | null>(null);
@@ -174,15 +153,15 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#fff7ed] px-4 pb-28 pt-24 text-[#7c2d12] dark:bg-[#120907] dark:text-white md:px-6 md:pt-28">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_10%,rgba(146,64,14,0.20),transparent_30%),radial-gradient(circle_at_88%_18%,rgba(180,83,9,0.14),transparent_28%),linear-gradient(135deg,#fff7ed_0%,#ffedd5_46%,#fef3c7_100%)] dark:bg-[radial-gradient(circle_at_18%_10%,rgba(146,64,14,0.15),transparent_30%),linear-gradient(135deg,#170b05_0%,#211007_48%,#0d0603_100%)]" />
+    <main className="min-h-screen bg-[#f7efe8] px-4 pb-28 pt-24 text-[#5f321f] dark:bg-[#130b08] dark:text-white md:px-6 md:pt-28">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_10%,rgba(120,53,15,0.20),transparent_30%),radial-gradient(circle_at_88%_18%,rgba(146,64,14,0.14),transparent_28%),linear-gradient(135deg,#f7efe8_0%,#ead8c8_46%,#f4e7dc_100%)] dark:bg-[radial-gradient(circle_at_18%_10%,rgba(146,64,14,0.16),transparent_30%),linear-gradient(135deg,#170b07_0%,#241209_48%,#0f0704_100%)]" />
 
       <section className="mx-auto max-w-5xl">
         <div className="rounded-[2rem] border border-white/55 bg-white/58 p-5 shadow-[0_24px_90px_rgba(146,64,14,0.14)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:p-7">
           <p className="text-sm font-black uppercase tracking-[0.2em] opacity-60">Настройки</p>
           <h1 className="mt-2 text-4xl font-black md:text-5xl">Управление сайтом</h1>
           <p className="mt-3 max-w-2xl font-bold opacity-65">
-            Основные настройки аккаунта, пары, уведомлений и выхода собраны в одном месте.
+            Основные настройки аккаунта, пары и уведомлений собраны в одном месте.
           </p>
         </div>
 
@@ -215,14 +194,23 @@ export default function SettingsPage() {
                     >
                       <span>{label}</span>
                       <span
-                        className={`rounded-full px-3 py-1 text-xs text-white ${
-                          notificationSettings[key] ? "bg-emerald-600" : "bg-slate-400"
-                        }`}
+                        className={`rounded-full px-3 py-1 text-xs text-white ${notificationSettings[key] ? "" : "bg-slate-400"}`}
+                        style={notificationSettings[key] ? { backgroundColor: theme.accent } : undefined}
                       >
                         {notificationSettings[key] ? "вкл" : "выкл"}
                       </span>
                     </button>
                   ))}
+                </div>
+                <div className="mt-5 border-t border-[#78350f]/15 pt-4 dark:border-white/10">
+                  <p className="font-black">Системные push-уведомления</p>
+                  <p className="mt-1 text-sm font-bold opacity-65">
+                    Управляйте уведомлениями для этого браузера и устройства.
+                  </p>
+                  <PushNotificationButton
+                    accent={theme.accent}
+                    className="mt-3 w-full rounded-2xl bg-[#78350f] px-4 py-3 text-left font-black text-white shadow-lg transition hover:bg-[#92400e] disabled:cursor-not-allowed disabled:opacity-55 dark:bg-[#78350f] dark:hover:bg-[#92400e]"
+                  />
                 </div>
               </section>
 

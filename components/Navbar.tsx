@@ -1,25 +1,23 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { signOutAndRedirect } from "@/lib/authSession";
 import { notificationsUpdatedEventName } from "@/lib/notifications";
 import { getPageTheme } from "@/lib/pageThemes";
 import { profileUpdatedEventName } from "@/lib/profileEvents";
 import { useDashboardAccent } from "@/lib/useDashboardAccent";
 import {
+  desktopNavLinks,
   isActivePath,
-  primaryNavLinks,
-  quickNavActions,
-  secondaryNavLinks,
   type NavIconName,
 } from "@/lib/navigation";
 import type { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState, type CSSProperties } from "react";
 import NavIcon from "./NavIcon";
 import { showAppToast } from "./AppToast";
-import PushNotificationButton from "./PushNotificationButton";
 
 type UserProfile = {
   name: string;
@@ -57,26 +55,6 @@ function getNotificationIcon(type: string): NavIconName {
   if (type.includes("chat")) return "chat";
   if (type.includes("memory")) return "memories";
   return "notifications";
-}
-
-const densityStorageKey = "couple-space:density";
-const densityUpdatedEventName = "couple-space:density-updated";
-
-function getDensitySnapshot() {
-  if (typeof window === "undefined") return false;
-  return localStorage.getItem(densityStorageKey) === "compact";
-}
-
-function subscribeToDensity(onStoreChange: () => void) {
-  if (typeof window === "undefined") return () => {};
-
-  window.addEventListener(densityUpdatedEventName, onStoreChange);
-  window.addEventListener("storage", onStoreChange);
-
-  return () => {
-    window.removeEventListener(densityUpdatedEventName, onStoreChange);
-    window.removeEventListener("storage", onStoreChange);
-  };
 }
 
 function getFallbackName(user: User) {
@@ -118,7 +96,6 @@ function formatNotificationTime(date: string) {
 }
 
 export default function Navbar() {
-  const router = useRouter();
   const pathname = usePathname();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -127,15 +104,11 @@ export default function Navbar() {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const isCompact = useSyncExternalStore(subscribeToDensity, getDensitySnapshot, () => false);
 
   const dashboardAccent = useDashboardAccent();
   const isLogin = pathname.startsWith("/login");
   const theme = getPageTheme(pathname, dashboardAccent);
   const accent = isLogin ? "#be123c" : theme.accent;
-  const isSecondaryActive = secondaryNavLinks.some((link) => isActivePath(pathname, link.href));
 
   useEffect(() => {
     let ignore = false;
@@ -297,41 +270,16 @@ export default function Navbar() {
     };
   }, [accent, currentUserId]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("app-compact", isCompact);
-    document.body.classList.toggle("app-compact", isCompact);
-  }, [isCompact]);
-
-  function toggleCompactMode() {
-    const nextCompact = !isCompact;
-    document.documentElement.classList.toggle("app-compact", nextCompact);
-    document.body.classList.toggle("app-compact", nextCompact);
-    localStorage.setItem(densityStorageKey, nextCompact ? "compact" : "comfortable");
-    window.dispatchEvent(new Event(densityUpdatedEventName));
-    showAppToast({
-      title: nextCompact ? "Компактный режим включён" : "Обычный режим включён",
-      text: nextCompact ? "На десктопе поместится больше данных." : "Интерфейс снова просторнее.",
-      accent,
-    });
-  }
-
   async function logout() {
     setIsProfileOpen(false);
     setIsNotificationsOpen(false);
-    setIsMoreOpen(false);
-    setIsActionsOpen(false);
-    await supabase.auth.signOut();
-    setProfile(null);
-    setNotifications([]);
-    router.push("/login");
+    await signOutAndRedirect();
   }
 
   async function openNotifications() {
     const nextIsOpen = !isNotificationsOpen;
     setIsNotificationsOpen(nextIsOpen);
     setIsProfileOpen(false);
-    setIsMoreOpen(false);
-    setIsActionsOpen(false);
 
     if (!nextIsOpen || !currentUserId) return;
 
@@ -379,7 +327,7 @@ export default function Navbar() {
         <div className="desktop-rail-divider" />
 
         <div className="grid gap-1">
-          {primaryNavLinks.map((link) => {
+          {desktopNavLinks.map((link) => {
             const isActive = isActivePath(pathname, link.href);
             return (
               <Link
@@ -395,48 +343,6 @@ export default function Navbar() {
             );
           })}
 
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setIsMoreOpen((current) => !current);
-                setIsProfileOpen(false);
-                setIsNotificationsOpen(false);
-                setIsActionsOpen(false);
-              }}
-              className={`desktop-rail-item group relative w-full ${isSecondaryActive || isMoreOpen ? "desktop-rail-item-active" : ""}`}
-              aria-expanded={isMoreOpen}
-            >
-              <NavIcon name="more" className="h-8 w-8" />
-              <span className="desktop-rail-label">Ещё</span>
-              <span className="desktop-rail-tooltip" aria-hidden="true">Ещё</span>
-            </button>
-
-            {isMoreOpen && (
-              <div className="desktop-matte-popover absolute left-[calc(100%+0.75rem)] top-0 w-72 p-2">
-                <p className="desktop-popover-title">Разделы</p>
-                <div className="grid gap-1">
-                  {secondaryNavLinks.map((link) => {
-                    const isActive = isActivePath(pathname, link.href);
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        onClick={() => setIsMoreOpen(false)}
-                        className={`desktop-popover-row ${isActive ? "desktop-popover-row-active" : ""}`}
-                      >
-                        <NavIcon name={link.icon} className="h-9 w-9" />
-                        <span className="min-w-0">
-                          <span className="block truncate font-extrabold">{link.label}</span>
-                          <span className="block truncate text-xs font-semibold opacity-65">{link.description}</span>
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
         </div>
 
         <div className="mt-auto grid gap-1">
@@ -444,47 +350,6 @@ export default function Navbar() {
             <div className="desktop-rail-loading animate-pulse" />
           ) : profile ? (
             <>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsActionsOpen((current) => !current);
-                    setIsNotificationsOpen(false);
-                    setIsProfileOpen(false);
-                    setIsMoreOpen(false);
-                  }}
-                  className={`desktop-rail-item group relative w-full ${isActionsOpen ? "desktop-rail-item-active" : ""}`}
-                  aria-label="Быстрые действия"
-                  aria-expanded={isActionsOpen}
-                >
-                  <NavIcon name="plus" className="h-8 w-8" />
-                  <span className="desktop-rail-label">Добавить</span>
-                  <span className="desktop-rail-tooltip" aria-hidden="true">Добавить</span>
-                </button>
-
-                {isActionsOpen && (
-                  <div className="desktop-matte-popover absolute bottom-0 left-[calc(100%+0.75rem)] w-72 p-2">
-                    <p className="desktop-popover-title">Быстро добавить</p>
-                    <div className="grid gap-1">
-                      {quickNavActions.map((action) => (
-                        <Link
-                          key={action.href + action.label}
-                          href={action.href}
-                          onClick={() => setIsActionsOpen(false)}
-                          className="desktop-popover-row"
-                        >
-                          <NavIcon name={action.icon} className="h-9 w-9" />
-                          <span className="min-w-0">
-                            <span className="block truncate font-extrabold">{action.label}</span>
-                            <span className="block truncate text-xs font-semibold opacity-65">{action.description}</span>
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
               <div className="relative">
                 <button
                   type="button"
@@ -558,8 +423,6 @@ export default function Navbar() {
                   onClick={() => {
                     setIsProfileOpen((current) => !current);
                     setIsNotificationsOpen(false);
-                    setIsMoreOpen(false);
-                    setIsActionsOpen(false);
                   }}
                   className={`desktop-rail-item group relative w-full ${isProfileOpen ? "desktop-rail-item-active" : ""}`}
                   aria-label="Профиль"
@@ -590,10 +453,9 @@ export default function Navbar() {
                     <Link href="/profile" onClick={() => setIsProfileOpen(false)} className="desktop-profile-action">
                       Открыть профиль
                     </Link>
-                    <button type="button" onClick={toggleCompactMode} className="desktop-profile-action">
-                      {isCompact ? "Обычная плотность" : "Компактная плотность"}
-                    </button>
-                    <div className="mb-1"><PushNotificationButton accent={accent} /></div>
+                    <Link href="/settings" onClick={() => setIsProfileOpen(false)} className="desktop-profile-action">
+                      Настройки
+                    </Link>
                     <button type="button" onClick={logout} className="desktop-profile-action desktop-profile-action-danger">
                       Выйти
                     </button>

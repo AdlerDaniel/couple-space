@@ -15,7 +15,6 @@ export type NavIconName =
   | "more"
   | "close"
   | "chevronRight"
-  | "plus"
   | "logout";
 
 export type NavLinkItem = {
@@ -27,9 +26,9 @@ export type NavLinkItem = {
 
 export const primaryNavLinks: NavLinkItem[] = [
   { label: "Сегодня", href: "/today", icon: "today", description: "Лучший следующий шаг" },
-  { label: "Вопросы", href: "/questions", icon: "questions", description: "Ответы и архив" },
+  { label: "Вопрос дня", href: "/questions", icon: "questions", description: "Ответы и архив" },
   { label: "Викторины", href: "/quizzes", icon: "quizzes", description: "Тесты для пары" },
-  { label: "Смотреть", href: "/watch", icon: "watch", description: "Что посмотрим?" },
+  { label: "Фильмы", href: "/watch", icon: "watch", description: "Список и рулетка" },
   { label: "Воспоминания", href: "/memories", icon: "memories", description: "Фото и моменты" },
 ];
 
@@ -37,7 +36,7 @@ export const mobileMainLinks: NavLinkItem[] = [
   { label: "Моменты", href: "/memories", icon: "memories" },
   { label: "Вопрос дня", href: "/questions", icon: "questions" },
   { label: "Трекер", href: "/tracker", icon: "tracker" },
-  { label: "Смотреть", href: "/watch", icon: "watch" },
+  { label: "Фильмы", href: "/watch", icon: "watch" },
 ];
 
 export const mobileMoreLinks: NavLinkItem[] = [
@@ -53,12 +52,7 @@ export const secondaryNavLinks: NavLinkItem[] = [
   { label: "Трекер", href: "/tracker", icon: "tracker", description: "Цели и привычки" },
 ];
 
-export const quickNavActions: NavLinkItem[] = [
-  { label: "Момент", href: "/memories", icon: "plus", description: "Добавить воспоминание" },
-  { label: "Фильм", href: "/watch", icon: "watch", description: "Добавить в список" },
-  { label: "Цель", href: "/tracker", icon: "tracker", description: "Внести прогресс" },
-  { label: "Чат", href: "/chat", icon: "chat", description: "Написать партнёру" },
-];
+export const desktopNavLinks: NavLinkItem[] = [...primaryNavLinks, ...secondaryNavLinks];
 
 export const accountNavLinks: NavLinkItem[] = [
   { label: "Профиль", href: "/profile", icon: "profile" },
@@ -85,7 +79,7 @@ export const routeMeta: Record<
     icon: "today",
   },
   "/questions": {
-    label: "Вопросы",
+    label: "Вопрос дня",
     description: "Ежедневные вопросы, ответы и архив",
     icon: "questions",
   },
@@ -105,7 +99,7 @@ export const routeMeta: Record<
     icon: "quizzes",
   },
   "/watch": {
-    label: "Что посмотрим",
+    label: "Фильмы",
     description: "Список фильмов и рулетка вечера",
     icon: "watch",
   },

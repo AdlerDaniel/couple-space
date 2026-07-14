@@ -34,6 +34,16 @@ test("memories support photo, uploaded audio and recorded voice", async () => {
   assert.match(source, /<Mic/);
 });
 
+test("memories use their upload timestamp instead of a custom event date", async () => {
+  const [composerSource, memoriesSource] = await Promise.all([
+    readSource("components/MemoryComposer.tsx"),
+    readSource("app/memories/page.tsx"),
+  ]);
+  assert.doesNotMatch(composerSource, /type="date"|eventDate|event_date/);
+  assert.doesNotMatch(memoriesSource, /Дата события|Время загрузки|event_date/);
+  assert.match(memoriesSource, /Дата: \{formatTime\(memory\.created_at\)\}/);
+});
+
 test("today and memories share the full memory composer", async () => {
   const [todaySource, memoriesSource] = await Promise.all([
     readSource("app/today/page.tsx"),

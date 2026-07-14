@@ -32,7 +32,6 @@ type Memory = {
   caption: string | null;
   text: string | null;
   image: string | null;
-  event_date: string | null;
   is_pinned: boolean;
   reactions?: Record<string, string | null | undefined>;
   user_id: string;
@@ -48,19 +47,11 @@ type MemoryComment = {
   created_at: string;
 };
 
-function formatDate(date?: string | null) {
-  if (!date) return "Дата не указана";
-  return new Date(date).toLocaleDateString("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
 function formatTime(date: string) {
   return new Date(date).toLocaleString("ru-RU", {
     day: "numeric",
     month: "short",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -130,7 +121,7 @@ export default function MemoriesPage() {
       const [{ data: memoryRows }, { data: commentRows }, { data: profileData }] = await Promise.all([
         supabase
           .from("memories")
-          .select("id, title, caption, text, image, event_date, is_pinned, reactions, user_id, couple_id, created_at")
+          .select("id, title, caption, text, image, is_pinned, reactions, user_id, couple_id, created_at")
           .eq("couple_id", coupleData.id)
           .order("is_pinned", { ascending: false })
           .order("created_at", { ascending: false }),
@@ -536,9 +527,8 @@ export default function MemoriesPage() {
                       </div>
                     )}
                     <div className="mt-4 grid gap-2 text-sm font-bold text-[#172554]/58 dark:text-white/45">
-                      <span>Дата события: {formatDate(memory.event_date)}</span>
                       <span>Загрузил: {author}</span>
-                      <span>Время загрузки: {formatTime(memory.created_at)}</span>
+                      <span>Дата: {formatTime(memory.created_at)}</span>
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">

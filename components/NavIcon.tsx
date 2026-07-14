@@ -12,7 +12,6 @@ import {
   LogOut,
   MessageCircleQuestion,
   MessageCircle,
-  Plus,
   Settings,
   Sparkles,
   Trophy,
@@ -38,7 +37,6 @@ const icons: Record<NavIconName, LucideIconComponent> = {
   more: Ellipsis,
   close: X,
   chevronRight: ChevronRight,
-  plus: Plus,
   logout: LogOut,
 };
 

@@ -28,7 +28,6 @@ export type CreatedMemory = {
   caption: string | null;
   text: string | null;
   image: string | null;
-  event_date: string | null;
   is_pinned: boolean;
   reactions?: Record<string, string | null | undefined>;
   user_id: string;
@@ -69,7 +68,6 @@ export default function MemoryComposer({
   const audioInputRef = useRef<HTMLInputElement | null>(null);
   const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
-  const [eventDate, setEventDate] = useState("");
   const [memoryImage, setMemoryImage] = useState<string | null>(null);
   const [memoryImageFile, setMemoryImageFile] = useState<File | null>(null);
   const [memoryVoice, setMemoryVoice] = useState<string | null>(null);
@@ -245,7 +243,6 @@ export default function MemoryComposer({
             title: title.trim() || "Без названия",
             caption: caption.trim() || null,
             text: caption.trim() || null,
-            event_date: eventDate || null,
             image: encodeMemoryMedia({ photoUrl, voiceUrl }),
             user_id: currentUserId,
             couple_id: couple.id,
@@ -259,7 +256,6 @@ export default function MemoryComposer({
       onCreated?.(data);
       setTitle("");
       setCaption("");
-      setEventDate("");
       if (memoryImage) URL.revokeObjectURL(memoryImage);
       if (memoryVoice) URL.revokeObjectURL(memoryVoice);
       setMemoryImage(null);
@@ -302,20 +298,12 @@ export default function MemoryComposer({
           : "mb-10 rounded-[2rem] border border-white/70 bg-white/50 p-5 shadow-[0_28px_90px_rgba(37,99,235,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8"
       }
     >
-      <div className="grid gap-4 md:grid-cols-2">
-        <input
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="Заголовок воспоминания"
-          className="rounded-2xl border border-blue-200/70 bg-white/75 px-5 py-4 font-bold text-blue-950 outline-none focus:border-blue-400 dark:border-white/10 dark:bg-white/8 dark:text-white"
-        />
-        <input
-          type="date"
-          value={eventDate}
-          onChange={(event) => setEventDate(event.target.value)}
-          className="rounded-2xl border border-blue-200/70 bg-white/75 px-5 py-4 font-bold text-blue-950 outline-none focus:border-blue-400 dark:border-white/10 dark:bg-white/8 dark:text-white"
-        />
-      </div>
+      <input
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        placeholder="Заголовок воспоминания"
+        className="w-full rounded-2xl border border-blue-200/70 bg-white/75 px-5 py-4 font-bold text-blue-950 outline-none focus:border-blue-400 dark:border-white/10 dark:bg-white/8 dark:text-white"
+      />
 
       <div className="relative mt-4">
         <input

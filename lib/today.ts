@@ -169,7 +169,7 @@ export function getTodayNextStep(input: TodayNextStepInput): TodayNextStep {
   if (input.watchRemaining > 0) {
     return {
       id: "watch",
-      label: "Вечер",
+      label: "Фильмы",
       title: "Запустите рулетку просмотра",
       text: `${input.watchRemaining} вариантов ждут выбора на вечер.`,
       href: "/watch?spin=1",

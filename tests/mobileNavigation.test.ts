@@ -3,10 +3,9 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
+  desktopNavLinks,
   mobileMainLinks,
   mobileMoreLinks,
-  primaryNavLinks,
-  secondaryNavLinks,
 } from "../lib/navigation.ts";
 
 test("mobile dock keeps the four requested sections in the requested order", () => {
@@ -22,11 +21,61 @@ test("remaining primary mobile sections are available under More", () => {
     ["/today", "/dashboard", "/quizzes", "/chat"]
   );
 });
-test("desktop sidebar promotes memories and keeps chat under More", () => {
-  assert.equal(primaryNavLinks.at(-1)?.href, "/memories");
-  assert.equal(primaryNavLinks.some(({ href }) => href === "/chat"), false);
-  assert.equal(secondaryNavLinks.some(({ href }) => href === "/chat"), true);
-  assert.equal(secondaryNavLinks.some(({ href }) => href === "/memories"), false);
+
+test("desktop sidebar exposes every section without a More menu", async () => {
+  assert.deepEqual(
+    desktopNavLinks.map(({ href }) => href),
+    ["/today", "/questions", "/quizzes", "/watch", "/memories", "/dashboard", "/chat", "/tracker"],
+  );
+  assert.equal(desktopNavLinks.find(({ href }) => href === "/questions")?.label, "Вопрос дня");
+  assert.equal(desktopNavLinks.find(({ href }) => href === "/watch")?.label, "Фильмы");
+
+  const source = await readFile(new URL("../components/Navbar.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /isMoreOpen|setIsMoreOpen/);
+  assert.doesNotMatch(source, />Ещё</);
+  assert.doesNotMatch(source, /isActionsOpen|quickNavActions|>Добавить</);
+});
+
+test("desktop profile has no density setting", async () => {
+  const [navbarSource, themeSource, cssSource] = await Promise.all([
+    readFile(new URL("../components/Navbar.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/ThemeToggle.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.doesNotMatch(navbarSource, /isCompact|toggleCompactMode|плотность/i);
+  assert.doesNotMatch(cssSource, /app-compact/);
+  assert.match(themeSource, /localStorage\.removeItem\("couple-space:density"\)/);
+});
+
+test("Today focus colors the mobile More tab", async () => {
+  const cssSource = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(cssSource, /body:has\(\.today-page-question\) \.mobile-matte-dock/);
+  assert.match(cssSource, /body:has\(\.today-page-memories\) \.mobile-matte-dock/);
+  assert.match(cssSource, /body:has\(\.today-page-movies\) \.mobile-matte-dock/);
+  assert.match(cssSource, /--mobile-nav-accent: #3f6212/);
+  assert.match(cssSource, /body:has\(\.today-page-question\) \.desktop-matte-rail/);
+  assert.match(cssSource, /body:has\(\.today-page-memories\) \.desktop-matte-rail/);
+  assert.match(cssSource, /body:has\(\.today-page-movies\) \.desktop-matte-rail/);
+});
+
+test("desktop profile menu links to settings", async () => {
+  const source = await readFile(new URL("../components/Navbar.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /href="\/settings"/);
+  assert.match(source, />\s*Настройки\s*</);
+});
+
+test("desktop gutter follows the active page background", async () => {
+  const [layoutSource, syncSource] = await Promise.all([
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/PageBackgroundSync.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(layoutSource, /<PageBackgroundSync \/>/);
+  assert.match(syncSource, /getComputedStyle\(main\)\.backgroundColor/);
+  assert.match(syncSource, /document\.body\.style\.backgroundColor = backgroundColor/);
 });
 
 test("mobile dock uses the matte implementation instead of liquid glass buttons", async () => {

@@ -12,7 +12,7 @@ import {
   dashboardAccentStorageKey,
   dashboardThemeAccents,
 } from "@/lib/dashboardTheme";
-import { CountUp, PulseBurst, RelationshipJourney } from "@/components/AnimeWidgets";
+import { CountUp, PulseBurst } from "@/components/AnimeWidgets";
 import NextImage from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -1085,10 +1085,14 @@ export default function DashboardPage() {
   }`;
 
   const isPartnerOne = currentUserId === couple?.partner_one_id;
-  const myAvatarUrl = isPartnerOne ? avatarOneUrl : avatarTwoUrl;
-  const leftHeroUrl = avatarOneUrl || null;
-  const rightHeroUrl = avatarTwoUrl || null;
-  const hasHeroCollage = Boolean(leftHeroUrl && rightHeroUrl);
+  const legacyAvatarUrl = profile?.avatar || null;
+  const myAvatarUrl = (isPartnerOne ? avatarOneUrl : avatarTwoUrl) || legacyAvatarUrl;
+  const leftHeroUrl = avatarOneUrl || (isPartnerOne ? legacyAvatarUrl : null);
+  const rightHeroUrl = avatarTwoUrl || (!isPartnerOne ? legacyAvatarUrl : null);
+  const heroPartners = [
+    { key: "one", name: profile?.partner_one || "Вы", image: leftHeroUrl },
+    { key: "two", name: profile?.partner_two || "Партнёр", image: rightHeroUrl },
+  ];
   const achievements = useMemo(
     () => buildAchievements(stats, daysTogether),
     [daysTogether, stats]
@@ -1107,9 +1111,6 @@ export default function DashboardPage() {
       : unlockedAchievementList.slice(0, 3);
   const weeklyActivityCount = getWeeklyActivityCount(activity);
   const latestImportantActivity = activity[0];
-  const totalDashboardActivity =
-    stats.memories + stats.questionAnswers + stats.quizzes + stats.statusUpdates;
-
   useEffect(() => {
     if (!isDashboardLoaded || !couple || !currentUserId || achievements.length === 0) {
       return;
@@ -1404,35 +1405,30 @@ export default function DashboardPage() {
         <section
           className={`relative min-h-[300px] overflow-hidden rounded-[1.5rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-5 shadow-2xl md:min-h-[360px] md:rounded-3xl md:p-8`}
         >
-          {hasHeroCollage && (
-            <div className="absolute inset-0 opacity-40">
-              <div className="grid h-full w-full grid-cols-2">
-                {leftHeroUrl && (
-                  <NextImage
-                    src={leftHeroUrl}
-                    alt="Фото первого участника"
-                    width={720}
-                    height={360}
-                    sizes="(min-width: 1024px) 560px, 50vw"
-                    className="h-full w-full object-cover"
-                  />
-                )}
-                {rightHeroUrl && (
-                  <NextImage
-                    src={rightHeroUrl}
-                    alt="Фото второго участника"
-                    width={720}
-                    height={360}
-                    sizes="(min-width: 1024px) 560px, 50vw"
-                    className="h-full w-full object-cover"
-                  />
-                )}
-              </div>
+          <div className="absolute inset-0 opacity-60">
+            <div className="grid h-full w-full grid-cols-2">
+              {heroPartners.map((partner) => (
+                <div key={partner.key} className="relative h-full min-w-0 overflow-hidden">
+                  {partner.image ? (
+                    <NextImage
+                      src={partner.image}
+                      alt={`Фото: ${partner.name}`}
+                      fill
+                      sizes="(min-width: 1024px) 560px, 50vw"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-gradient-to-br from-rose-300 via-red-300 to-orange-200 text-[clamp(5rem,18vw,13rem)] font-black text-white/75 dark:from-rose-950 dark:via-red-950 dark:to-orange-950">
+                      {initials(partner.name)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
               <div className="absolute inset-y-0 left-1/2 w-[42%] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent blur-3xl dark:via-black/30" />
               <div className="absolute inset-y-0 left-1/2 w-[34%] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent blur-2xl dark:via-white/5" />
               <div className="absolute inset-0 bg-gradient-to-r from-black/18 via-white/10 to-black/18 dark:via-black/10" />
-            </div>
-          )}
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-white/10 dark:from-black/60" />
 
           <div className="relative flex min-h-[300px] flex-col justify-between gap-8">
@@ -1596,25 +1592,6 @@ export default function DashboardPage() {
               </div>
             </article>
           </div>
-        </section>
-
-        <section className="ui-card p-5 md:p-6">
-          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className={`text-sm font-black uppercase tracking-wide ${theme.muted} dark:text-white/60`}>
-                Путь пары
-              </p>
-              <h2 className="mt-1 text-2xl font-black">Живая линия прогресса</h2>
-            </div>
-            <p className={`max-w-md text-sm font-semibold ${theme.muted} dark:text-white/65`}>
-              Линия двигается по дням вместе и общей активности, чтобы кабинет ощущался живым.
-            </p>
-          </div>
-          <RelationshipJourney
-            daysTogether={daysTogether}
-            activity={totalDashboardActivity}
-            className="mt-5 rounded-[1.5rem] bg-white/35 p-4 shadow-inner dark:bg-white/6"
-          />
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">

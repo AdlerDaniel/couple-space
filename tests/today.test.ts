@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { isAuthorizedCronRequest } from "../lib/cronAuth.ts";
@@ -73,6 +74,20 @@ test("today next step handles question states", () => {
     }).id,
     "quick-reply",
   );
+});
+
+test("today switches the full page theme between question, memories and movies", async () => {
+  const [pageSource, cssSource] = await Promise.all([
+    readFile(new URL("../app/today/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(pageSource, /type FocusId = "question" \| "memories" \| "movies"/);
+  assert.match(pageSource, /today-page-\$\{activeFocus\}/);
+  assert.match(pageSource, /label: "Фильмы"/);
+  assert.match(cssSource, /\.today-page-question/);
+  assert.match(cssSource, /\.today-page-memories/);
+  assert.match(cssSource, /\.today-page-movies/);
 });
 
 test("daily question reminder targets only users without today's answer", () => {

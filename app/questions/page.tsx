@@ -80,9 +80,19 @@ export default function QuestionsPage() {
         .eq("date", activeDate)
         .eq("question", activeQuestion)
         .limit(1)
-        .single();
+        .maybeSingle<Answer>();
 
       if (answerData) {
+        const savedAnswer =
+          user.id === coupleData.partner_one_id
+            ? answerData.answer_one
+            : answerData.answer_two;
+
+        if (savedAnswer) {
+          router.replace("/questions/today");
+          return;
+        }
+
         setAnswerRecord(answerData);
       }
 

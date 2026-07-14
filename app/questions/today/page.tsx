@@ -242,9 +242,6 @@ export default function TodayQuestionPage() {
             >
               Архив
             </button>
-            <p className="inline-flex rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-black text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
-              {dailyQuestionState.timeZone}
-            </p>
           </div>
           <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-black leading-tight text-[#15803d] dark:text-white md:text-6xl">
             {questionOfTheDay}

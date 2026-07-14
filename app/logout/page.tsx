@@ -1,22 +1,12 @@
 "use client";
 
-import { supabase } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { signOutAndRedirect } from "@/lib/authSession";
+import { useEffect } from "react";
 
 export default function LogoutPage() {
-  const router = useRouter();
-  const [isLeaving, setIsLeaving] = useState(false);
-
   useEffect(() => {
-    async function logout() {
-      setIsLeaving(true);
-      await supabase.auth.signOut();
-      router.replace("/login");
-    }
-
-    logout();
-  }, [router]);
+    void signOutAndRedirect();
+  }, []);
 
   return (
     <main className="grid min-h-screen place-items-center bg-gradient-to-br from-[#fff1f5] via-[#fff7fb] to-[#fce7f3] px-6 text-[#be123c] dark:from-[#19050d] dark:via-[#12040b] dark:to-black dark:text-white">
@@ -26,7 +16,7 @@ export default function LogoutPage() {
         </div>
         <h1 className="mt-5 text-2xl font-black">Выходим из аккаунта</h1>
         <p className="mt-2 text-sm font-semibold opacity-65">
-          {isLeaving ? "Сейчас перенаправим на страницу входа." : "Подготавливаем выход."}
+          Сейчас перенаправим на страницу входа.
         </p>
       </section>
     </main>

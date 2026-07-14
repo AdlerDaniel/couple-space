@@ -9,7 +9,6 @@ import AppBreadcrumbs from "@/components/AppBreadcrumbs";
 import AppToast from "@/components/AppToast";
 import AnimeRuntime from "@/components/AnimeRuntime";
 import ClientRouteRecovery from "@/components/ClientRouteRecovery";
-import PageBackgroundSync from "@/components/PageBackgroundSync";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,7 +46,6 @@ export default function RootLayout({
         className="min-h-full flex flex-col bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-100"
       >
         <ThemeToggle />
-        <PageBackgroundSync />
         <Navbar />
         <AppBreadcrumbs />
         <div className="app-desktop-content min-w-0 flex-1">{children}</div>

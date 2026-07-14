@@ -90,6 +90,15 @@ test("today switches the full page theme between question, memories and movies",
   assert.match(cssSource, /\.today-page-movies/);
 });
 
+test("today scrollbar follows the selected section accent", async () => {
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(css, /html:has\(\.today-page-question\)[\s\S]*--scroll-accent: #15803d/);
+  assert.match(css, /html:has\(\.today-page-memories\)[\s\S]*--scroll-accent: #2563eb/);
+  assert.match(css, /html:has\(\.today-page-movies\)[\s\S]*--scroll-accent: #3f6212/);
+  assert.match(css, /html\.dark:has\(\.today-page-question\)[\s\S]*--scroll-accent: #4ade80/);
+});
+
 test("daily question reminder targets only users without today's answer", () => {
   const couple = {
     partner_one_id: "user-1",

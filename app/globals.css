@@ -815,15 +815,19 @@ body {
 
 @media (min-width: 1024px) {
   .app-desktop-content {
-    width: calc(100% - 5.25rem);
-    margin-left: 5.25rem;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .app-desktop-content > main {
+    box-sizing: border-box;
+    padding-left: 6.25rem !important;
   }
 }
 
 @media (min-width: 1536px) {
-  .app-desktop-content {
-    width: calc(100% - 14.25rem);
-    margin-left: 14.25rem;
+  .app-desktop-content > main {
+    padding-left: 15.5rem !important;
   }
 
   .desktop-rail-brand,
@@ -998,6 +1002,30 @@ body:has(.today-page-movies) .mobile-matte-dock {
 
 html body:has(.today-page-movies) .desktop-matte-rail {
   --desktop-nav-accent: #3f6212 !important;
+}
+
+html:has(.today-page-question) {
+  --scroll-accent: #15803d !important;
+}
+
+html:has(.today-page-memories) {
+  --scroll-accent: #2563eb !important;
+}
+
+html:has(.today-page-movies) {
+  --scroll-accent: #3f6212 !important;
+}
+
+html.dark:has(.today-page-question) {
+  --scroll-accent: #4ade80 !important;
+}
+
+html.dark:has(.today-page-memories) {
+  --scroll-accent: #60a5fa !important;
+}
+
+html.dark:has(.today-page-movies) {
+  --scroll-accent: #bef264 !important;
 }
 
 .today-page {

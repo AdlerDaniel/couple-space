@@ -67,15 +67,15 @@ test("desktop profile menu links to settings", async () => {
   assert.match(source, />\s*Настройки\s*</);
 });
 
-test("desktop gutter follows the active page background", async () => {
-  const [layoutSource, syncSource] = await Promise.all([
+test("desktop page background continues beneath the floating sidebar", async () => {
+  const [layoutSource, cssSource] = await Promise.all([
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../components/PageBackgroundSync.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
 
-  assert.match(layoutSource, /<PageBackgroundSync \/>/);
-  assert.match(syncSource, /getComputedStyle\(main\)\.backgroundColor/);
-  assert.match(syncSource, /document\.body\.style\.backgroundColor = backgroundColor/);
+  assert.doesNotMatch(layoutSource, /PageBackgroundSync/);
+  assert.match(cssSource, /\.app-desktop-content \{[\s\S]*?width: 100%;[\s\S]*?margin-left: 0;/);
+  assert.match(cssSource, /\.app-desktop-content > main \{[\s\S]*?padding-left: 6\.25rem !important;/);
 });
 
 test("mobile dock uses the matte implementation instead of liquid glass buttons", async () => {

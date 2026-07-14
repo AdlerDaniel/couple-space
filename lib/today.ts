@@ -6,7 +6,6 @@ export type TodayNextStepId =
   | "answer-question"
   | "open-partner-answer"
   | "quick-reply"
-  | "upcoming-event"
   | "watch"
   | "goal"
   | "quiz";
@@ -18,12 +17,10 @@ export type TodayNextStepInput = {
   hasUnread: boolean;
   hasMyAnswer: boolean;
   hasPartnerAnswer: boolean;
-  hasUpcomingEvent: boolean;
   watchRemaining: number;
   hasGoal: boolean;
   quizHref: string;
   unreadHref?: string | null;
-  upcomingEventHref?: string | null;
 };
 
 export type TodayNextStep = {
@@ -166,18 +163,6 @@ export function getTodayNextStep(input: TodayNextStepInput): TodayNextStep {
       href: "/today#quick-reply",
       button: "Написать",
       icon: "◌",
-    };
-  }
-
-  if (input.hasUpcomingEvent) {
-    return {
-      id: "upcoming-event",
-      label: "Событие",
-      title: "Посмотрите ближайшее событие",
-      text: "В календаре есть ближайшая дата, которую можно вспомнить или дополнить.",
-      href: input.upcomingEventHref || "/calendar",
-      button: "Открыть",
-      icon: "◫",
     };
   }
 

@@ -14,12 +14,12 @@ export default function AppBreadcrumbs() {
   const breadcrumbs = getBreadcrumbs(pathname);
   const meta = getRouteMeta(pathname);
 
-  if (breadcrumbs.length === 0 || pathname.startsWith("/chat")) {
+  if (breadcrumbs.length === 0 || pathname === "/today" || pathname.startsWith("/chat")) {
     return null;
   }
 
   return (
-    <div className="pointer-events-none fixed left-0 right-0 top-[4.25rem] z-20 hidden px-5 md:block">
+    <div className="pointer-events-none fixed left-[5.25rem] right-0 top-4 z-20 hidden px-5 lg:block 2xl:left-[14.25rem]">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
         <nav
           className="app-glass pointer-events-auto flex max-w-full items-center gap-1 rounded-full px-2 py-1 text-xs font-black"

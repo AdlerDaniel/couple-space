@@ -2,7 +2,6 @@ import type { NavIconName } from "@/lib/navigation";
 import {
   Activity,
   Bell,
-  Calendar,
   CalendarDays,
   ChevronRight,
   Clapperboard,
@@ -32,7 +31,6 @@ const icons: Record<NavIconName, LucideIconComponent> = {
   dashboard: LayoutDashboard,
   memories: Images,
   tracker: Activity,
-  calendar: Calendar,
   achievements: Trophy,
   profile: UserRound,
   settings: Settings,

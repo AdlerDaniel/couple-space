@@ -24,9 +24,22 @@ test("chat exposes separate media and audio pickers and does not use storage ups
 });
 
 test("memories support photo, uploaded audio and recorded voice", async () => {
-  const source = await readSource("app/memories/page.tsx");
+  const source = await readSource("components/MemoryComposer.tsx");
   assert.match(source, /accept="image\/\*"/);
   assert.match(source, /accept="audio\/\*/);
   assert.match(source, /Голосовое воспоминание/);
   assert.match(source, /createCompatibleAudioRecorder/);
+  assert.match(source, /<Paperclip/);
+  assert.match(source, /<Smile/);
+  assert.match(source, /<Mic/);
+});
+
+test("today and memories share the full memory composer", async () => {
+  const [todaySource, memoriesSource] = await Promise.all([
+    readSource("app/today/page.tsx"),
+    readSource("app/memories/page.tsx"),
+  ]);
+  assert.match(todaySource, /<MemoryComposer/);
+  assert.match(todaySource, /embedded/);
+  assert.match(memoriesSource, /<MemoryComposer/);
 });

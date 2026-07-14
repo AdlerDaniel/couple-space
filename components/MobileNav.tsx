@@ -206,7 +206,7 @@ export default function MobileNav() {
       {isNotificationsOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] md:hidden"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] lg:hidden"
           aria-label="Закрыть уведомления"
           onClick={() => setIsNotificationsOpen(false)}
         />
@@ -218,7 +218,7 @@ export default function MobileNav() {
           aria-modal="true"
           aria-label="Уведомления"
           style={mobileNavStyle}
-          className="mobile-matte-sheet app-bottom-sheet fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-2 right-2 z-50 max-h-[72dvh] overflow-hidden rounded-[1.75rem] p-3 md:hidden"
+          className="mobile-matte-sheet app-bottom-sheet fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-2 right-2 z-50 max-h-[72dvh] overflow-hidden rounded-[1.75rem] p-3 lg:hidden"
         >
           <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
           <div className="flex items-center justify-between px-2 py-3">
@@ -278,7 +278,7 @@ export default function MobileNav() {
       {isMoreOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] lg:hidden"
           aria-label="Закрыть меню"
           onClick={() => setIsMoreOpen(false)}
         />
@@ -290,7 +290,7 @@ export default function MobileNav() {
           aria-modal="true"
           aria-labelledby="mobile-more-title"
           style={mobileNavStyle}
-          className="mobile-matte-sheet app-bottom-sheet fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-2 right-2 z-50 max-h-[72dvh] overflow-y-auto rounded-[1.75rem] p-3 md:hidden"
+          className="mobile-matte-sheet app-bottom-sheet fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-2 right-2 z-50 max-h-[72dvh] overflow-y-auto rounded-[1.75rem] p-3 lg:hidden"
         >
           <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
           <div className="flex items-center justify-between px-2 py-3">
@@ -370,7 +370,7 @@ export default function MobileNav() {
       <nav
         aria-label="Основная мобильная навигация"
         style={mobileNavStyle}
-        className="mobile-matte-dock fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-2 right-2 z-40 p-1.5 md:hidden"
+        className="mobile-matte-dock fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-2 right-2 z-40 p-1.5 lg:hidden"
       >
         <div className="grid grid-cols-5 items-stretch gap-0.5 text-center">
           {mobileMainLinks.map((link) => {

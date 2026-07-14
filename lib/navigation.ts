@@ -8,7 +8,6 @@ export type NavIconName =
   | "dashboard"
   | "memories"
   | "tracker"
-  | "calendar"
   | "achievements"
   | "profile"
   | "settings"
@@ -31,7 +30,7 @@ export const primaryNavLinks: NavLinkItem[] = [
   { label: "Вопросы", href: "/questions", icon: "questions", description: "Ответы и архив" },
   { label: "Викторины", href: "/quizzes", icon: "quizzes", description: "Тесты для пары" },
   { label: "Смотреть", href: "/watch", icon: "watch", description: "Что посмотрим?" },
-  { label: "Чат", href: "/chat", icon: "chat", description: "Сообщения" },
+  { label: "Воспоминания", href: "/memories", icon: "memories", description: "Фото и моменты" },
 ];
 
 export const mobileMainLinks: NavLinkItem[] = [
@@ -46,15 +45,12 @@ export const mobileMoreLinks: NavLinkItem[] = [
   { label: "Кабинет", href: "/dashboard", icon: "dashboard", description: "Аналитика пары" },
   { label: "Викторины", href: "/quizzes", icon: "quizzes", description: "Тесты для пары" },
   { label: "Чат", href: "/chat", icon: "chat", description: "Сообщения" },
-  { label: "Календарь", href: "/calendar", icon: "calendar", description: "События пары" },
 ];
 
 export const secondaryNavLinks: NavLinkItem[] = [
   { label: "Кабинет", href: "/dashboard", icon: "dashboard", description: "Аналитика пары" },
-  { label: "Воспоминания", href: "/memories", icon: "memories", description: "Фото и моменты" },
-  { label: "Трекер", href: "/tracker", icon: "tracker", description: "Цели и привычки" },
-  { label: "Календарь", href: "/calendar", icon: "calendar", description: "События пары по дням" },
   { label: "Чат", href: "/chat", icon: "chat", description: "Сообщения" },
+  { label: "Трекер", href: "/tracker", icon: "tracker", description: "Цели и привычки" },
 ];
 
 export const quickNavActions: NavLinkItem[] = [
@@ -132,11 +128,6 @@ export const routeMeta: Record<
     label: "Трекер",
     description: "Цели, привычки и прогресс",
     icon: "tracker",
-  },
-  "/calendar": {
-    label: "Календарь",
-    description: "Вопросы, фильмы, цели и воспоминания по дням",
-    icon: "calendar",
   },
   "/profile": {
     label: "Профиль",

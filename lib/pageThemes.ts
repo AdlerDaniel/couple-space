@@ -10,7 +10,6 @@ export type PageThemeKey =
   | "quizzes"
   | "watch"
   | "tracker"
-  | "calendar"
   | "chat"
   | "login"
   | "default";
@@ -112,16 +111,6 @@ export const pageThemes: Record<PageThemeKey, PageTheme> = {
       boxShadow: "0 16px 48px rgba(202, 138, 4, 0.18)",
     },
   },
-  calendar: {
-    key: "calendar",
-    accent: "#0891b2",
-    soft: "#cffafe",
-    nav: {
-      background: "linear-gradient(135deg, rgba(8, 145, 178, 0.24), rgba(20, 184, 166, 0.14))",
-      borderColor: "rgba(8, 145, 178, 0.34)",
-      boxShadow: "0 16px 50px rgba(8, 145, 178, 0.2)",
-    },
-  },
   chat: {
     key: "chat",
     accent: "#0284c7",
@@ -154,7 +143,6 @@ export function getPageThemeKey(pathname: string): PageThemeKey {
   if (pathname.startsWith("/quizzes")) return "quizzes";
   if (pathname.startsWith("/watch")) return "watch";
   if (pathname.startsWith("/tracker")) return "tracker";
-  if (pathname.startsWith("/calendar")) return "calendar";
   if (pathname.startsWith("/chat")) return "chat";
   if (pathname.startsWith("/login")) return "login";
   return "default";

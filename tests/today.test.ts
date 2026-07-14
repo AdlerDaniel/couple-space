@@ -18,7 +18,6 @@ const baseInput = {
   hasUnread: false,
   hasMyAnswer: false,
   hasPartnerAnswer: false,
-  hasUpcomingEvent: false,
   watchRemaining: 0,
   hasGoal: false,
   quizHref: "/quizzes/play?quiz=test",

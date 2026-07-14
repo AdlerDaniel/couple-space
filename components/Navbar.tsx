@@ -16,11 +16,10 @@ import type { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
 import NavIcon from "./NavIcon";
 import { showAppToast } from "./AppToast";
 import PushNotificationButton from "./PushNotificationButton";
-import { LiquidGlassButton, LiquidGlassSurface } from "./LiquidGlass";
 
 type UserProfile = {
   name: string;
@@ -118,15 +117,6 @@ function formatNotificationTime(date: string) {
   return `${days} дн назад`;
 }
 
-function hexToRgb(hex: string) {
-  const value = hex.replace("#", "");
-  if (value.length !== 6) return "28, 139, 89";
-  const red = Number.parseInt(value.slice(0, 2), 16);
-  const green = Number.parseInt(value.slice(2, 4), 16);
-  const blue = Number.parseInt(value.slice(4, 6), 16);
-  return `${red}, ${green}, ${blue}`;
-}
-
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -144,8 +134,7 @@ export default function Navbar() {
   const dashboardAccent = useDashboardAccent();
   const isLogin = pathname.startsWith("/login");
   const theme = getPageTheme(pathname, dashboardAccent);
-  const accent = isLogin ? "#f3f4f6" : theme.accent;
-  const accentRgb = hexToRgb(accent);
+  const accent = isLogin ? "#be123c" : theme.accent;
   const isSecondaryActive = secondaryNavLinks.some((link) => isActivePath(pathname, link.href));
 
   useEffect(() => {
@@ -330,6 +319,7 @@ export default function Navbar() {
     setIsProfileOpen(false);
     setIsNotificationsOpen(false);
     setIsMoreOpen(false);
+    setIsActionsOpen(false);
     await supabase.auth.signOut();
     setProfile(null);
     setNotifications([]);
@@ -341,6 +331,7 @@ export default function Navbar() {
     setIsNotificationsOpen(nextIsOpen);
     setIsProfileOpen(false);
     setIsMoreOpen(false);
+    setIsActionsOpen(false);
 
     if (!nextIsOpen || !currentUserId) return;
 
@@ -370,360 +361,255 @@ export default function Navbar() {
     (notification) => !notification.read_at
   ).length;
 
-  return (
-    <header className="fixed left-0 top-0 z-30 hidden w-full px-4 py-2 md:block">
-      <LiquidGlassSurface
-        as="nav"
-        accent={accent}
-        accentRgb={accentRgb}
-        className="desktop-navbar-shell mx-auto flex max-w-6xl items-center justify-between gap-2 overflow-visible px-2 py-1.5 transition-colors"
-      >
-        <LiquidGlassButton
-          asChild
-          accent={accent}
-          accentRgb={accentRgb}
-          tone="subtle"
-          size="md"
-          className="px-3 opacity-95"
-        >
-        <Link
-          href="/"
-        >
-          <NavIcon name="home" className="h-7 w-7" />
-          <span className="hidden lg:inline">Couple Space</span>
-          <span className="lg:hidden">CS</span>
-        </Link>
-        </LiquidGlassButton>
+  const navStyle = { "--desktop-nav-accent": accent } as CSSProperties;
 
-        <div className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex">
+  return (
+    <header className="desktop-sidebar fixed inset-y-3 left-3 z-40 hidden w-[4.5rem] lg:block 2xl:w-[13.5rem]">
+      <nav
+        aria-label="Основная навигация"
+        style={navStyle}
+        className="desktop-matte-rail flex h-full w-full flex-col p-2"
+      >
+        <Link href="/" className="desktop-rail-brand group relative" aria-label="Couple Space">
+          <NavIcon name="home" className="h-8 w-8" />
+          <span className="desktop-rail-label">Couple Space</span>
+          <span className="desktop-rail-tooltip" aria-hidden="true">Couple Space</span>
+        </Link>
+
+        <div className="desktop-rail-divider" />
+
+        <div className="grid gap-1">
           {primaryNavLinks.map((link) => {
             const isActive = isActivePath(pathname, link.href);
             return (
-              <LiquidGlassButton
-                asChild
-                key={link.href}
-                accent={accent}
-                accentRgb={accentRgb}
-                tone={isActive ? "active" : "default"}
-                size="md"
-                className="group relative px-3"
-              >
               <Link
+                key={link.href}
                 href={link.href}
-                title={link.description || link.label}
+                aria-current={isActive ? "page" : undefined}
+                className={`desktop-rail-item group relative ${isActive ? "desktop-rail-item-active" : ""}`}
               >
-                <NavIcon name={link.icon} className="h-7 w-7" />
-                <span className="hidden xl:inline">{link.label}</span>
-                <span className="app-tooltip" aria-hidden="true">{link.label}</span>
+                <NavIcon name={link.icon} className="h-8 w-8" />
+                <span className="desktop-rail-label">{link.label}</span>
+                <span className="desktop-rail-tooltip" aria-hidden="true">{link.label}</span>
               </Link>
-              </LiquidGlassButton>
             );
           })}
 
           <div className="relative">
-            <LiquidGlassButton
+            <button
               type="button"
               onClick={() => {
                 setIsMoreOpen((current) => !current);
                 setIsProfileOpen(false);
                 setIsNotificationsOpen(false);
+                setIsActionsOpen(false);
               }}
-              accent={accent}
-              accentRgb={accentRgb}
-              tone={isSecondaryActive ? "active" : "default"}
-              size="md"
-              className="group relative px-3"
+              className={`desktop-rail-item group relative w-full ${isSecondaryActive || isMoreOpen ? "desktop-rail-item-active" : ""}`}
+              aria-expanded={isMoreOpen}
             >
-              <NavIcon name="settings" className="h-7 w-7" />
-              <span className="hidden xl:inline">Ещё</span>
-              <span className="app-tooltip" aria-hidden="true">Ещё</span>
-            </LiquidGlassButton>
+              <NavIcon name="more" className="h-8 w-8" />
+              <span className="desktop-rail-label">Ещё</span>
+              <span className="desktop-rail-tooltip" aria-hidden="true">Ещё</span>
+            </button>
 
             {isMoreOpen && (
-              <LiquidGlassSurface
-                tone="menu"
-                accent={accent}
-                accentRgb={accentRgb}
-                className="liquid-glass-readable absolute left-1/2 top-12 z-50 w-72 -translate-x-1/2 rounded-[1.25rem] p-3 text-[#7f1d1d] dark:text-white"
-              >
-                <p className="px-2 pb-2 text-[10px] font-black uppercase tracking-wide opacity-45">
-                  Разделы
-                </p>
+              <div className="desktop-matte-popover absolute left-[calc(100%+0.75rem)] top-0 w-72 p-2">
+                <p className="desktop-popover-title">Разделы</p>
                 <div className="grid gap-1">
-                {secondaryNavLinks.map((link) => {
-                  const isActive = isActivePath(pathname, link.href);
-                  return (
-                    <LiquidGlassButton
-                      asChild
-                      key={link.href}
-                      accent={accent}
-                      accentRgb={accentRgb}
-                      tone={isActive ? "active" : "subtle"}
-                      size="lg"
-                      shape="rounded"
-                      className="w-full justify-start px-3 text-sm"
-                    >
-                    <Link
-                      href={link.href}
-                      onClick={() => setIsMoreOpen(false)}
-                    >
-                      <NavIcon name={link.icon} className="h-9 w-9 bg-white/55 shadow-inner dark:bg-white/10" />
-                      <span className="min-w-0">
-                        <span className="block truncate">{link.label}</span>
-                        <span className="block truncate text-xs font-bold opacity-55">
-                          {link.description}
+                  {secondaryNavLinks.map((link) => {
+                    const isActive = isActivePath(pathname, link.href);
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setIsMoreOpen(false)}
+                        className={`desktop-popover-row ${isActive ? "desktop-popover-row-active" : ""}`}
+                      >
+                        <NavIcon name={link.icon} className="h-9 w-9" />
+                        <span className="min-w-0">
+                          <span className="block truncate font-extrabold">{link.label}</span>
+                          <span className="block truncate text-xs font-semibold opacity-65">{link.description}</span>
                         </span>
-                      </span>
-                    </Link>
-                    </LiquidGlassButton>
-                  );
-                })}
+                      </Link>
+                    );
+                  })}
                 </div>
-              </LiquidGlassSurface>
+              </div>
             )}
           </div>
         </div>
 
-        {isLoadingUser ? (
-          <div
-            className="h-10 w-28 animate-pulse rounded-[1rem]"
-            style={{
-              backgroundColor: isLogin ? "#f3f4f6" : accent,
-            }}
-          />
-        ) : profile ? (
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsActionsOpen((current) => !current);
-                  setIsNotificationsOpen(false);
-                  setIsProfileOpen(false);
-                  setIsMoreOpen(false);
-                }}
-                style={!isLogin ? { backgroundColor: accent, color: "#fff" } : undefined}
-                className={`hidden ui-pressable h-9 w-9 place-items-center rounded-full text-xl font-black shadow-lg ${
-                  isLogin ? "bg-black text-white dark:bg-white dark:text-black" : ""
-                }`}
-                aria-label="Быстрые действия"
-              >
-                <NavIcon name="plus" className="h-7 w-7" />
-              </button>
-
-              {isActionsOpen && (
-                <LiquidGlassSurface
-                  tone="menu"
-                  accent={accent}
-                  accentRgb={accentRgb}
-                  className="liquid-glass-readable absolute right-0 top-12 z-50 w-72 rounded-[1.25rem] p-3 text-[#7f1d1d] dark:text-white"
-                >
-                  <p className="px-2 pb-2 text-[10px] font-black uppercase tracking-wide opacity-45">
-                    Быстро добавить
-                  </p>
-                  <div className="grid gap-1">
-                    {quickNavActions.map((action) => (
-                      <LiquidGlassButton
-                        asChild
-                        key={action.href + action.label}
-                        accent={accent}
-                        accentRgb={accentRgb}
-                        tone="subtle"
-                        size="lg"
-                        shape="rounded"
-                        className="w-full justify-start px-3 text-sm"
-                      >
-                      <Link
-                        href={action.href}
-                        onClick={() => setIsActionsOpen(false)}
-                      >
-                        <NavIcon
-                          name={action.icon}
-                          className="h-9 w-9 text-white shadow-inner"
-                          title={action.label}
-                        />
-                        <span className="min-w-0">
-                          <span className="block truncate">{action.label}</span>
-                          <span className="block truncate text-xs font-bold opacity-55">
-                            {action.description}
-                          </span>
-                        </span>
-                      </Link>
-                      </LiquidGlassButton>
-                    ))}
-                  </div>
-                </LiquidGlassSurface>
-              )}
-            </div>
-
-            <div className="relative">
-              <LiquidGlassButton
-                onClick={openNotifications}
-                accent={accent}
-                accentRgb={accentRgb}
-                tone="default"
-                size="icon"
-                aria-label="Уведомления"
-              >
-                <NavIcon name="notifications" className="h-7 w-7" />
-                {unreadNotifications > 0 && (
-                  <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#ef4444] px-1.5 text-[11px] font-black leading-none text-white shadow-[0_0_18px_rgba(239,68,68,0.8)] ring-2 ring-white">
-                    {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                  </span>
-                )}
-              </LiquidGlassButton>
-
-              {isNotificationsOpen && (
-                <LiquidGlassSurface
-                  tone="menu"
-                  accent={accent}
-                  accentRgb={accentRgb}
-                  className="liquid-glass-readable absolute right-0 top-12 z-50 w-[22rem] max-w-[calc(100vw-2rem)] rounded-[1.25rem] p-2 text-[#7f1d1d] dark:text-white"
-                >
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-wide opacity-55">
-                        Уведомления
-                      </p>
-                      <p className="mt-1 text-sm font-bold opacity-70">
-                        Новые события пары
-                      </p>
-                    </div>
-                    {notifications.length > 0 && (
-                      <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-black text-rose-600 dark:bg-white/10 dark:text-rose-100">
-                        {notifications.length}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="max-h-96 overflow-y-auto px-2 pb-2">
-                    {notifications.length === 0 ? (
-                      <div className="rounded-2xl bg-white/70 px-4 py-5 text-sm font-bold opacity-70 shadow-inner dark:bg-white/10">
-                        Пока уведомлений нет.
-                      </div>
-                    ) : (
-                      notifications.map((notification) => (
-                        <Link
-                          key={notification.id}
-                          href={notification.href || "/dashboard"}
-                          onClick={() => setIsNotificationsOpen(false)}
-                          className="mb-2 block rounded-[1rem] border border-white/32 bg-white/52 px-4 py-3 shadow-inner backdrop-blur transition hover:bg-white/68 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/14"
-                        >
-                          <div className="flex items-start gap-3">
-                            <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-700 dark:bg-white/10 dark:text-rose-100">
-                              <NavIcon name={getNotificationIcon(notification.type)} className="h-7 w-7 bg-transparent shadow-none" />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                {!notification.read_at && (
-                                  <span className="h-2 w-2 shrink-0 rounded-full bg-[#ef4444] shadow-[0_0_14px_rgba(239,68,68,0.75)]" />
-                                )}
-                                <p className="truncate font-black">{notification.title}</p>
-                              </div>
-                              {notification.body && (
-                                <p className="mt-1 line-clamp-2 text-sm font-semibold opacity-68">
-                                  {notification.body}
-                                </p>
-                              )}
-                              <p className="mt-2 text-xs font-black opacity-45">
-                                {formatNotificationTime(notification.created_at)}
-                              </p>
-                            </div>
-                          </div>
-                        </Link>
-                      ))
-                    )}
-                  </div>
-                </LiquidGlassSurface>
-              )}
-            </div>
-
-            <div className="relative">
-            <LiquidGlassButton
-              onClick={() => {
-                setIsProfileOpen((current) => !current);
-                setIsNotificationsOpen(false);
-                setIsMoreOpen(false);
-              }}
-              accent={accent}
-              accentRgb={accentRgb}
-              tone="default"
-              size="md"
-              className="gap-2 py-1 pl-1.5 pr-3 text-sm"
-            >
-              {profile.avatar ? (
-                <Image
-                  src={profile.avatar}
-                  alt={profile.name}
-                  width={36}
-                  height={36}
-                  sizes="36px"
-                  className="h-8 w-8 rounded-full object-cover ring-2 ring-white/70"
-                />
-              ) : (
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/75 text-sm font-black shadow-inner dark:bg-white/10">
-                  {getInitial(profile.name)}
-                </span>
-              )}
-              <span className="hidden max-w-28 truncate sm:block">{profile.name}</span>
-            </LiquidGlassButton>
-
-            {isProfileOpen && (
-              <LiquidGlassSurface
-                tone="menu"
-                accent={accent}
-                accentRgb={accentRgb}
-                className="liquid-glass-readable absolute right-0 top-12 z-50 w-56 rounded-[1.25rem] p-2 text-[#7f1d1d] dark:text-white"
-              >
-                <div className="px-4 py-3">
-                  <p className="text-xs font-black uppercase tracking-wide opacity-55">
-                    Профиль
-                  </p>
-                  <p className="mt-1 truncate font-black">{profile.name}</p>
-                </div>
-                <Link
-                  href="/profile"
-                  onClick={() => setIsProfileOpen(false)}
-                  className="mb-2 block rounded-2xl border border-white/32 bg-white/52 px-4 py-3 font-black shadow-inner backdrop-blur transition hover:bg-white/68 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/14"
-                >
-                  Открыть профиль
-                </Link>
+        <div className="mt-auto grid gap-1">
+          {isLoadingUser ? (
+            <div className="desktop-rail-loading animate-pulse" />
+          ) : profile ? (
+            <>
+              <div className="relative">
                 <button
                   type="button"
-                  onClick={toggleCompactMode}
-                  className="mb-2 w-full rounded-2xl border border-white/32 bg-white/52 px-4 py-3 text-left font-black shadow-inner backdrop-blur transition hover:bg-white/68 dark:border-white/10 dark:bg-white/8 dark:hover:bg-white/14"
+                  onClick={() => {
+                    setIsActionsOpen((current) => !current);
+                    setIsNotificationsOpen(false);
+                    setIsProfileOpen(false);
+                    setIsMoreOpen(false);
+                  }}
+                  className={`desktop-rail-item group relative w-full ${isActionsOpen ? "desktop-rail-item-active" : ""}`}
+                  aria-label="Быстрые действия"
+                  aria-expanded={isActionsOpen}
                 >
-                  {isCompact ? "Обычная плотность" : "Компактная плотность"}
+                  <NavIcon name="plus" className="h-8 w-8" />
+                  <span className="desktop-rail-label">Добавить</span>
+                  <span className="desktop-rail-tooltip" aria-hidden="true">Добавить</span>
                 </button>
-                <div className="mb-2">
-                  <PushNotificationButton accent={accent} />
-                </div>
+
+                {isActionsOpen && (
+                  <div className="desktop-matte-popover absolute bottom-0 left-[calc(100%+0.75rem)] w-72 p-2">
+                    <p className="desktop-popover-title">Быстро добавить</p>
+                    <div className="grid gap-1">
+                      {quickNavActions.map((action) => (
+                        <Link
+                          key={action.href + action.label}
+                          href={action.href}
+                          onClick={() => setIsActionsOpen(false)}
+                          className="desktop-popover-row"
+                        >
+                          <NavIcon name={action.icon} className="h-9 w-9" />
+                          <span className="min-w-0">
+                            <span className="block truncate font-extrabold">{action.label}</span>
+                            <span className="block truncate text-xs font-semibold opacity-65">{action.description}</span>
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative">
                 <button
-                  onClick={logout}
-                  className="w-full rounded-2xl bg-[#dc2626] px-4 py-3 text-left font-black text-white shadow-lg transition hover:bg-[#ef4444]"
+                  type="button"
+                  onClick={openNotifications}
+                  className={`desktop-rail-item group relative w-full ${isNotificationsOpen ? "desktop-rail-item-active" : ""}`}
+                  aria-label="Уведомления"
+                  aria-expanded={isNotificationsOpen}
                 >
-                  Выйти
+                  <NavIcon name="notifications" className="h-8 w-8" />
+                  <span className="desktop-rail-label">Уведомления</span>
+                  <span className="desktop-rail-tooltip" aria-hidden="true">Уведомления</span>
+                  {unreadNotifications > 0 && (
+                    <span className="desktop-notification-badge">
+                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    </span>
+                  )}
                 </button>
-              </LiquidGlassSurface>
-            )}
-          </div>
-          </div>
-        ) : (
-          <LiquidGlassButton
-            asChild
-            accent={isLogin ? "#be123c" : accent}
-            accentRgb={isLogin ? "190, 18, 60" : accentRgb}
-            tone="active"
-            size="md"
-          >
-          <Link
-            href="/login"
-          >
-            Войти
-          </Link>
-          </LiquidGlassButton>
-        )}
-      </LiquidGlassSurface>
+
+                {isNotificationsOpen && (
+                  <div className="desktop-matte-popover absolute bottom-0 left-[calc(100%+0.75rem)] w-[22rem] p-2">
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <div>
+                        <p className="text-xs font-black uppercase text-slate-500 dark:text-slate-400">Уведомления</p>
+                        <p className="mt-1 text-sm font-bold">Новые события пары</p>
+                      </div>
+                      {notifications.length > 0 && (
+                        <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-black dark:bg-slate-800">
+                          {notifications.length}
+                        </span>
+                      )}
+                    </div>
+                    <div className="max-h-96 overflow-y-auto px-1 pb-1">
+                      {notifications.length === 0 ? (
+                        <div className="rounded-xl bg-slate-100 px-4 py-5 text-sm font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          Пока уведомлений нет.
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <Link
+                            key={notification.id}
+                            href={notification.href || "/dashboard"}
+                            onClick={() => setIsNotificationsOpen(false)}
+                            className="desktop-notification-row"
+                          >
+                            <NavIcon name={getNotificationIcon(notification.type)} className="h-9 w-9" />
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-center gap-2">
+                                {!notification.read_at && <span className="h-2 w-2 shrink-0 rounded-full bg-rose-500" />}
+                                <span className="truncate font-extrabold">{notification.title}</span>
+                              </span>
+                              {notification.body && (
+                                <span className="mt-1 line-clamp-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                                  {notification.body}
+                                </span>
+                              )}
+                              <span className="mt-2 block text-xs font-bold text-slate-400">
+                                {formatNotificationTime(notification.created_at)}
+                              </span>
+                            </span>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsProfileOpen((current) => !current);
+                    setIsNotificationsOpen(false);
+                    setIsMoreOpen(false);
+                    setIsActionsOpen(false);
+                  }}
+                  className={`desktop-rail-item group relative w-full ${isProfileOpen ? "desktop-rail-item-active" : ""}`}
+                  aria-label="Профиль"
+                  aria-expanded={isProfileOpen}
+                >
+                  {profile.avatar ? (
+                    <Image
+                      src={profile.avatar}
+                      alt=""
+                      width={34}
+                      height={34}
+                      sizes="34px"
+                      className="h-[2.125rem] w-[2.125rem] shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="desktop-profile-initial">{getInitial(profile.name)}</span>
+                  )}
+                  <span className="desktop-rail-label truncate">{profile.name}</span>
+                  <span className="desktop-rail-tooltip" aria-hidden="true">{profile.name}</span>
+                </button>
+
+                {isProfileOpen && (
+                  <div className="desktop-matte-popover absolute bottom-0 left-[calc(100%+0.75rem)] w-64 p-2">
+                    <div className="px-3 py-2">
+                      <p className="text-xs font-black uppercase text-slate-500 dark:text-slate-400">Профиль</p>
+                      <p className="mt-1 truncate font-black">{profile.name}</p>
+                    </div>
+                    <Link href="/profile" onClick={() => setIsProfileOpen(false)} className="desktop-profile-action">
+                      Открыть профиль
+                    </Link>
+                    <button type="button" onClick={toggleCompactMode} className="desktop-profile-action">
+                      {isCompact ? "Обычная плотность" : "Компактная плотность"}
+                    </button>
+                    <div className="mb-1"><PushNotificationButton accent={accent} /></div>
+                    <button type="button" onClick={logout} className="desktop-profile-action desktop-profile-action-danger">
+                      Выйти
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <Link href="/login" className="desktop-rail-item desktop-rail-item-active group relative">
+              <NavIcon name="profile" className="h-8 w-8" />
+              <span className="desktop-rail-label">Войти</span>
+              <span className="desktop-rail-tooltip" aria-hidden="true">Войти</span>
+            </Link>
+          )}
+        </div>
+      </nav>
     </header>
   );
 }

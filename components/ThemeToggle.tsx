@@ -11,7 +11,15 @@ export default function ThemeToggle() {
   const accent = getPageTheme(pathname, dashboardAccent).accent;
 
   useLayoutEffect(() => {
-    document.documentElement.style.setProperty("--scroll-accent", accent);
+    const root = document.documentElement;
+    const isDark = localStorage.getItem("theme") === "dark";
+    const isCompact = localStorage.getItem("couple-space:density") === "compact";
+
+    root.classList.toggle("dark", isDark);
+    root.classList.toggle("app-compact", isCompact);
+    root.style.colorScheme = isDark ? "dark" : "light";
+    root.style.setProperty("--scroll-accent", accent);
+    document.body.classList.toggle("app-compact", isCompact);
   }, [accent]);
 
   return null;

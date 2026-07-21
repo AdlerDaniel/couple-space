@@ -40,6 +40,7 @@ The project supports two production targets without sharing build output:
 
 - Vercel uses the standard Next.js commands: `npm run build` and `npm run start`.
 - Sites uses the Cloudflare-compatible vinext commands: `npm run build:sites` and `npm run start:sites`.
+- The Sites runtime sets `DEPLOY_TARGET=sites`; Vercel intentionally leaves it unset.
 
 Vercel remains the single scheduler for the daily-question cron in `vercel.json`.
 Both deployments use the same Supabase project and VAPID keys, so the scheduled

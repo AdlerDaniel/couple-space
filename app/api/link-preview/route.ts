@@ -116,9 +116,24 @@ async function assertPublicHttpUrl(targetUrl: URL) {
     return "Unsupported URL";
   }
 
-  const addresses = await resolveHostAddresses(targetUrl.hostname);
-  if (addresses.length === 0 || addresses.some(isBlockedAddress)) {
+  const normalizedHostname = targetUrl.hostname.replace(/^\[|\]$/g, "");
+  const isLiteralAddress =
+    /^\d{1,3}(?:\.\d{1,3}){3}$/.test(normalizedHostname) ||
+    normalizedHostname.includes(":");
+
+  if (isLiteralAddress && isBlockedAddress(normalizedHostname)) {
     return "Unsupported URL";
+  }
+
+  // Cloudflare Workers mediate outbound fetches and block internal network
+  // services. Their production DNS shim does not implement lookup-style host
+  // checks consistently, so Sites relies on that platform boundary while the
+  // Node.js/Vercel target retains an explicit DNS preflight.
+  if (process.env.DEPLOY_TARGET !== "sites") {
+    const addresses = await resolveHostAddresses(normalizedHostname);
+    if (addresses.length === 0 || addresses.some(isBlockedAddress)) {
+      return "Unsupported URL";
+    }
   }
 
   return null;

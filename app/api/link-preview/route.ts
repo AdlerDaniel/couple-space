@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
-import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
+import { resolve4, resolve6 } from "node:dns/promises";
 
 export const runtime = "nodejs";
 
@@ -50,7 +49,12 @@ function resolveUrl(value: string, baseUrl: string) {
 
 function isPrivateIPv4(address: string) {
   const parts = address.split(".").map((part) => Number(part));
-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part))) return true;
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+  ) {
+    return true;
+  }
   const [a, b] = parts;
 
   return (
@@ -78,10 +82,29 @@ function isPrivateIPv6(address: string) {
 }
 
 function isBlockedAddress(address: string) {
-  const version = isIP(address);
-  if (version === 4) return isPrivateIPv4(address);
-  if (version === 6) return isPrivateIPv6(address);
+  const normalized = address.replace(/^\[|\]$/g, "");
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(normalized)) {
+    return isPrivateIPv4(normalized);
+  }
+  if (normalized.includes(":")) return isPrivateIPv6(normalized);
   return true;
+}
+
+async function resolveHostAddresses(hostname: string) {
+  const normalizedHostname = hostname.replace(/^\[|\]$/g, "");
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(normalizedHostname)) {
+    return [normalizedHostname];
+  }
+  if (normalizedHostname.includes(":")) return [normalizedHostname];
+
+  const results = await Promise.allSettled([
+    resolve4(normalizedHostname),
+    resolve6(normalizedHostname),
+  ]);
+
+  return results.flatMap((result) =>
+    result.status === "fulfilled" ? result.value : [],
+  );
 }
 
 async function assertPublicHttpUrl(targetUrl: URL) {
@@ -93,8 +116,8 @@ async function assertPublicHttpUrl(targetUrl: URL) {
     return "Unsupported URL";
   }
 
-  const addresses = await lookup(targetUrl.hostname, { all: true, verbatim: true });
-  if (addresses.length === 0 || addresses.some((item) => isBlockedAddress(item.address))) {
+  const addresses = await resolveHostAddresses(targetUrl.hostname);
+  if (addresses.length === 0 || addresses.some(isBlockedAddress)) {
     return "Unsupported URL";
   }
 

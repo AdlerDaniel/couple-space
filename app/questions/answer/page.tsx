@@ -12,6 +12,7 @@ import {
 } from "@/lib/mediaFiles";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
+import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -272,10 +273,11 @@ export default function QuestionAnswerPage() {
       const { data: publicUrlData } = supabase.storage
         .from("question-media")
         .getPublicUrl(filePath);
+      const publicUrl = toPortableSupabaseUrl(publicUrlData.publicUrl);
 
       const { data, error } = await supabase
         .from("question_answers")
-        .update({ [urlField]: publicUrlData.publicUrl })
+        .update({ [urlField]: publicUrl })
         .eq("id", activeRecord.id)
         .select()
         .single();

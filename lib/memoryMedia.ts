@@ -1,3 +1,5 @@
+import { toBrowserSupabaseUrl } from "./supabaseUrls.ts";
+
 const memoryMediaPrefix = "couple-space-media:";
 
 export type MemoryMedia = {
@@ -16,7 +18,7 @@ export function encodeMemoryMedia({ photoUrl, voiceUrl }: MemoryMedia) {
 export function decodeMemoryMedia(value?: string | null): MemoryMedia {
   if (!value) return { photoUrl: null, voiceUrl: null };
   if (!value.startsWith(memoryMediaPrefix)) {
-    return { photoUrl: value, voiceUrl: null };
+    return { photoUrl: toBrowserSupabaseUrl(value), voiceUrl: null };
   }
 
   try {
@@ -26,8 +28,10 @@ export function decodeMemoryMedia(value?: string | null): MemoryMedia {
     };
 
     return {
-      photoUrl: typeof parsed.photoUrl === "string" ? parsed.photoUrl : null,
-      voiceUrl: typeof parsed.voiceUrl === "string" ? parsed.voiceUrl : null,
+      photoUrl:
+        typeof parsed.photoUrl === "string" ? toBrowserSupabaseUrl(parsed.photoUrl) : null,
+      voiceUrl:
+        typeof parsed.voiceUrl === "string" ? toBrowserSupabaseUrl(parsed.voiceUrl) : null,
     };
   } catch {
     return { photoUrl: null, voiceUrl: null };

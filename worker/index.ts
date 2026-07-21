@@ -7,6 +7,7 @@ import handler from "vinext/server/app-router-entry";
 
 interface Env {
   ASSETS: Fetcher;
+  NEXT_PUBLIC_SUPABASE_URL?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {
@@ -19,6 +20,43 @@ interface Env {
   };
 }
 
+function getSupabaseUpstream(request: Request, env: Env) {
+  const configuredUrl =
+    env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!configuredUrl) return null;
+
+  const base = new URL(configuredUrl);
+  if (base.protocol !== "https:" || !base.hostname.endsWith(".supabase.co")) {
+    return null;
+  }
+
+  const incoming = new URL(request.url);
+  const upstream = new URL(base);
+  upstream.pathname = incoming.pathname.slice("/supabase".length) || "/";
+  upstream.search = incoming.search;
+  return upstream;
+}
+
+async function proxySupabase(request: Request, env: Env) {
+  const upstream = getSupabaseUpstream(request, env);
+  if (!upstream) {
+    return new Response("Supabase proxy is not configured", { status: 503 });
+  }
+
+  try {
+    return await fetch(new Request(upstream.toString(), request));
+  } catch (error) {
+    const incoming = new URL(request.url);
+    const message = error instanceof Error ? error.message : "Unknown proxy error";
+    return new Response(
+      incoming.hostname === "127.0.0.1" || incoming.hostname === "localhost"
+        ? message
+        : "Supabase proxy request failed",
+      { status: 502 },
+    );
+  }
+}
+
 interface ExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
   passThroughOnException(): void;
@@ -27,6 +65,10 @@ interface ExecutionContext {
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname === "/supabase/realtime/v1/websocket") {
+      return proxySupabase(request, env);
+    }
 
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];

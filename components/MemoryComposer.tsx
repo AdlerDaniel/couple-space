@@ -12,6 +12,7 @@ import {
 import { encodeMemoryMedia } from "@/lib/memoryMedia";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
+import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import { ImageIcon, Mic, Music2, Paperclip, Smile, Square } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -205,7 +206,7 @@ export default function MemoryComposer({
       .upload(filePath, file, { upsert: false });
     if (error) throw error;
     const { data } = supabase.storage.from("memory-images").getPublicUrl(filePath);
-    return { filePath, publicUrl: data.publicUrl };
+    return { filePath, publicUrl: toPortableSupabaseUrl(data.publicUrl) };
   }
 
   async function addMemory() {

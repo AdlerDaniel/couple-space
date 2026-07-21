@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { toBrowserSupabaseUrl, toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import { createOwnNotification, createPartnerNotification } from "@/lib/notifications";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
@@ -1353,22 +1354,23 @@ export default function DashboardPage() {
       const { data: publicUrlData } = supabase.storage
         .from("profile-avatars")
         .getPublicUrl(filePath);
+      const publicUrl = toPortableSupabaseUrl(publicUrlData.publicUrl);
 
       const { error } = await supabase
         .from("couple_profiles")
-        .update({ [avatarField]: publicUrlData.publicUrl })
+        .update({ [avatarField]: publicUrl })
         .eq("id", profile.id);
 
       if (error) throw error;
 
       if (avatarField === "avatar_one") {
-        setAvatarOneUrl(publicUrlData.publicUrl);
+        setAvatarOneUrl(toBrowserSupabaseUrl(publicUrl));
       } else {
-        setAvatarTwoUrl(publicUrlData.publicUrl);
+        setAvatarTwoUrl(toBrowserSupabaseUrl(publicUrl));
       }
       setProfile({
         ...profile,
-        [avatarField]: publicUrlData.publicUrl,
+        [avatarField]: publicUrl,
       });
       setCroppingImage(null);
       setAvatarMessage("Фото сохранено ❤️");

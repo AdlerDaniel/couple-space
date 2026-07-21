@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { toBrowserSupabaseUrl, toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import { compressImageFile } from "@/lib/imageCompression";
 import { profileUpdatedEventName } from "@/lib/profileEvents";
 import Image from "next/image";
@@ -333,10 +334,11 @@ export default function ProfilePage() {
     const { data: publicUrlData } = supabase.storage
       .from("profile-avatars")
       .getPublicUrl(filePath);
+    const publicUrl = toPortableSupabaseUrl(publicUrlData.publicUrl);
 
     const { data, error } = await supabase
       .from("couple_profiles")
-      .update({ [avatarField]: publicUrlData.publicUrl })
+      .update({ [avatarField]: publicUrl })
       .eq("couple_id", couple.id)
       .select()
       .returns<CoupleProfile[]>();
@@ -351,13 +353,13 @@ export default function ProfilePage() {
 
     await supabase.auth.updateUser({
       data: {
-        avatar_url: publicUrlData.publicUrl,
+        avatar_url: publicUrl,
       },
     });
     setProfile(nextProfile);
-    setAvatarUrl(publicUrlData.publicUrl);
+    setAvatarUrl(toBrowserSupabaseUrl(publicUrl));
     setMessage("Фото обновлено");
-    notifyProfileUpdated({ name: displayName, avatar: publicUrlData.publicUrl });
+    notifyProfileUpdated({ name: displayName, avatar: publicUrl });
     setIsSaving(false);
   }
 

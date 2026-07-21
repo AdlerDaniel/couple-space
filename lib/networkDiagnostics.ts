@@ -1,3 +1,5 @@
+import { getSupabaseClientUrl } from "./supabaseUrls.ts";
+
 export const networkDiagnosticsStorageKey = "couple-space:network-diagnostics-report";
 export const lastRouteErrorStorageKey = "couple-space:last-route-error";
 export const failedResourcesStorageKey = "couple-space:failed-resources";
@@ -56,7 +58,6 @@ type ResourceWithStatus = PerformanceResourceTiming & {
   responseStatus?: number;
 };
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 function now() {
@@ -168,8 +169,10 @@ function normalizeSupabaseRestCheck(check: NetworkDiagnosticCheck): NetworkDiagn
 }
 
 function getRealtimeUrl() {
+  const supabaseUrl = getSupabaseClientUrl();
   if (!supabaseUrl || !supabaseAnonKey) return "";
-  const url = new URL("/realtime/v1/websocket", supabaseUrl);
+  const url = new URL(supabaseUrl);
+  url.pathname = `${url.pathname.replace(/\/$/, "")}/realtime/v1/websocket`;
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.searchParams.set("apikey", supabaseAnonKey);
   url.searchParams.set("vsn", "1.0.0");
@@ -279,8 +282,9 @@ export async function runNetworkDiagnostics(lastError?: string | null) {
         : undefined,
   };
 
-  const restUrl = supabaseUrl ? new URL("/rest/v1/", supabaseUrl).toString() : "";
-  const authUrl = supabaseUrl ? new URL("/auth/v1/health", supabaseUrl).toString() : "";
+  const supabaseUrl = getSupabaseClientUrl();
+  const restUrl = supabaseUrl ? `${supabaseUrl.replace(/\/$/, "")}/rest/v1/` : "";
+  const authUrl = supabaseUrl ? `${supabaseUrl.replace(/\/$/, "")}/auth/v1/health` : "";
   const rawRestCheck = await timedCheck("Supabase REST", restUrl, async (signal) => {
     const response = await fetch(restUrl, {
       cache: "no-store",

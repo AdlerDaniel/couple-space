@@ -5,6 +5,8 @@ import {
 } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 
+const defaultSupabaseUrl = "https://adyfbxbmfrdetzdxdmmh.supabase.co";
+
 interface Env {
   ASSETS: Fetcher;
   NEXT_PUBLIC_SUPABASE_URL?: string;
@@ -20,9 +22,8 @@ interface Env {
   };
 }
 
-function getSupabaseUpstream(request: Request, env: Env) {
-  const configuredUrl =
-    env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+function getSupabaseUpstream(request: Request, env?: Env) {
+  const configuredUrl = env?.NEXT_PUBLIC_SUPABASE_URL || defaultSupabaseUrl;
   if (!configuredUrl) return null;
 
   const base = new URL(configuredUrl);
@@ -37,13 +38,13 @@ function getSupabaseUpstream(request: Request, env: Env) {
   return upstream;
 }
 
-async function proxySupabase(request: Request, env: Env) {
-  const upstream = getSupabaseUpstream(request, env);
-  if (!upstream) {
-    return new Response("Supabase proxy is not configured", { status: 503 });
-  }
-
+async function proxySupabase(request: Request, env?: Env) {
   try {
+    const upstream = getSupabaseUpstream(request, env);
+    if (!upstream) {
+      return new Response("Supabase proxy is not configured", { status: 503 });
+    }
+
     return await fetch(new Request(upstream.toString(), request));
   } catch (error) {
     const incoming = new URL(request.url);
@@ -66,7 +67,7 @@ const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname === "/supabase/realtime/v1/websocket") {
+    if (url.pathname === "/supabase" || url.pathname.startsWith("/supabase/")) {
       return proxySupabase(request, env);
     }
 

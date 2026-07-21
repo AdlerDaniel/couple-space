@@ -2,11 +2,29 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   getSupabaseAuthStorageKey,
   getSupabaseClientUrl,
+  shouldUseVercelRealtimeProxy,
+  vercelRealtimeProxyUrl,
 } from "./supabaseUrls.ts";
 
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 let client: SupabaseClient | null = null;
+
+function getRealtimeOptions() {
+  if (!shouldUseVercelRealtimeProxy() || typeof WebSocket === "undefined") {
+    return undefined;
+  }
+
+  class SitesRealtimeWebSocket extends WebSocket {
+    constructor(url: string | URL, protocols?: string | string[]) {
+      const upstreamUrl = new URL(vercelRealtimeProxyUrl);
+      upstreamUrl.search = new URL(url).search;
+      super(upstreamUrl, protocols);
+    }
+  }
+
+  return { transport: SitesRealtimeWebSocket };
+}
 
 export function getSupabaseClient() {
   if (!client) {
@@ -14,6 +32,7 @@ export function getSupabaseClient() {
       auth: {
         storageKey: getSupabaseAuthStorageKey(),
       },
+      realtime: getRealtimeOptions(),
     });
   }
 

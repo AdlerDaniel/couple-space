@@ -5,6 +5,7 @@ export const runtime = "nodejs";
 
 const maxPreviewBytes = 512 * 1024;
 const maxUrlLength = 2048;
+const maxRedirects = 3;
 
 function readMeta(html: string, names: string[]) {
   for (const name of names) {
@@ -170,6 +171,34 @@ async function readLimitedText(response: Response) {
   return new TextDecoder().decode(Buffer.concat(chunks));
 }
 
+async function fetchPreviewResponse(initialUrl: URL) {
+  let currentUrl = initialUrl;
+
+  for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount += 1) {
+    const validationError = await assertPublicHttpUrl(currentUrl);
+    if (validationError) throw new Error(validationError);
+
+    const response = await fetch(currentUrl.toString(), {
+      redirect: "manual",
+      headers: {
+        "user-agent": "Mozilla/5.0 CoupleSpaceLinkPreview/1.0",
+      },
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (response.status < 300 || response.status >= 400) return response;
+
+    const location = response.headers.get("location");
+    if (!location || redirectCount === maxRedirects) {
+      throw new Error("Too many redirects");
+    }
+
+    currentUrl = new URL(location, currentUrl);
+  }
+
+  throw new Error("Too many redirects");
+}
+
 export async function GET(request: NextRequest) {
   const rawUrl = request.nextUrl.searchParams.get("url") || "";
 
@@ -178,13 +207,7 @@ export async function GET(request: NextRequest) {
     const validationError = await assertPublicHttpUrl(targetUrl);
     if (validationError) return Response.json({ error: validationError }, { status: 400 });
 
-    const response = await fetch(targetUrl.toString(), {
-      redirect: "error",
-      headers: {
-        "user-agent": "Mozilla/5.0 CoupleSpaceLinkPreview/1.0",
-      },
-      signal: AbortSignal.timeout(6000),
-    });
+    const response = await fetchPreviewResponse(targetUrl);
     const html = await readLimitedText(response);
     const title = readMeta(html, ["og:title", "twitter:title"]) || readTitle(html);
     const description = readMeta(html, [

@@ -45,6 +45,12 @@ async function proxySupabase(request: Request, env?: Env) {
       return new Response("Supabase proxy is not configured", { status: 503 });
     }
 
+    if (request.headers.get("upgrade")?.toLowerCase() === "websocket") {
+      return await fetch(upstream.toString(), {
+        headers: { Upgrade: "websocket" },
+      });
+    }
+
     return await fetch(new Request(upstream.toString(), request));
   } catch (error) {
     const incoming = new URL(request.url);

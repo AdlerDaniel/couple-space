@@ -1,22 +1,30 @@
 "use client";
 
 import {
+  createVirtualQuestionArchiveId,
   formatQuestionArchiveDate,
   getQuestionArchiveGroup,
   getQuestionCategory,
+  getQuestionDateKey,
   parseQuestionDate,
   questionCategories,
   type QuestionArchiveGroup,
   type QuestionCategory,
 } from "@/lib/questionArchive";
+import { getDailyQuestionHistory } from "@/lib/dailyQuestions";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 type Couple = {
   id: string;
+  created_at: string;
   partner_one_id: string;
   partner_two_id: string | null;
+};
+
+type CoupleProfile = {
+  time_zone: string | null;
 };
 
 type AnswerRow = {
@@ -37,6 +45,7 @@ type ArchiveRow = AnswerRow & {
   parsedDate: Date;
   category: Exclude<QuestionCategory, "Все">;
   group: QuestionArchiveGroup;
+  isStored: boolean;
 };
 
 const groupOrder: QuestionArchiveGroup[] = [
@@ -115,6 +124,15 @@ export default function QuestionsArchivePage() {
 
       setCouple(coupleData);
 
+      const { data: profileData } = await supabase
+        .from("couple_profiles")
+        .select("time_zone")
+        .eq("couple_id", coupleData.id)
+        .limit(1)
+        .maybeSingle<CoupleProfile>();
+
+      const timeZone = profileData?.time_zone || "Europe/Moscow";
+
       const { data: answerRows } = await supabase
         .from("question_answers")
         .select(
@@ -130,11 +148,39 @@ export default function QuestionsArchivePage() {
             parsedDate,
             category: getQuestionCategory(row.question),
             group: getQuestionArchiveGroup(parsedDate),
+            isStored: true,
           };
         }) || [];
 
-      archiveRows.sort((first, second) => second.parsedDate.getTime() - first.parsedDate.getTime());
-      setRows(archiveRows);
+      const answeredDateKeys = new Set(
+        archiveRows.map((row) => getQuestionDateKey(row.parsedDate)),
+      );
+      const missingRows: ArchiveRow[] = getDailyQuestionHistory(
+        new Date(coupleData.created_at),
+        new Date(),
+        timeZone,
+      )
+        .filter((entry) => !answeredDateKeys.has(entry.dateKey))
+        .map((entry) => {
+          const parsedDate = parseQuestionDate(entry.date);
+
+          return {
+            id: createVirtualQuestionArchiveId(entry.dateKey),
+            question: entry.question,
+            answer_one: null,
+            answer_two: null,
+            date: entry.date,
+            couple_id: coupleData.id,
+            parsedDate,
+            category: getQuestionCategory(entry.question),
+            group: getQuestionArchiveGroup(parsedDate),
+            isStored: false,
+          };
+        });
+
+      const allRows = [...archiveRows, ...missingRows];
+      allRows.sort((first, second) => second.parsedDate.getTime() - first.parsedDate.getTime());
+      setRows(allRows);
       setIsLoading(false);
     }
 
@@ -179,11 +225,14 @@ export default function QuestionsArchivePage() {
               Назад к вопросу дня
             </button>
             <p className="text-sm font-black uppercase tracking-wide text-emerald-600/75 dark:text-emerald-200/70">
-              Архив прошлых вопросов
+              Архив вопросов дня
             </p>
             <h1 className="mt-3 text-5xl font-black text-[#15803d] dark:text-white md:text-7xl">
-              Ваша история ответов
+              Все вопросы вашей пары
             </h1>
+            <p className="mt-4 max-w-2xl font-semibold leading-7 text-emerald-900/58 dark:text-white/48">
+              Здесь есть каждый вопрос со дня создания пары — даже если вы пропустили ответ.
+            </p>
           </div>
           <div className="rounded-[1.4rem] border border-white/70 bg-white/55 px-5 py-4 text-sm font-black text-emerald-700 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-100">
             {filteredRows.length} из {rows.length} вопросов
@@ -272,7 +321,11 @@ export default function QuestionsArchivePage() {
                         </h3>
                         <div className="mt-5 grid gap-2 text-sm font-bold md:grid-cols-2">
                           <div className="rounded-2xl bg-emerald-50/80 p-3 text-emerald-800 dark:bg-white/8 dark:text-emerald-100">
-                            {myAnswer ? "Вы ответили" : "Ваш ответ пуст"}
+                            {myAnswer
+                              ? "Вы ответили"
+                              : row.isStored
+                                ? "Можно добавить ответ"
+                                : "Вопрос был пропущен — можно ответить"}
                             {myBadges.length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1">
                                 {myBadges.map((badge) => (

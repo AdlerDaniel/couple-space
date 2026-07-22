@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { authorizedFetch } from "@/lib/authorizedFetch";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -42,45 +43,15 @@ export default function InvitePage() {
       return;
     }
 
-    const { data: existingCouple } = await supabase
-      .from("couples")
-      .select("id")
-      .or(`partner_one_id.eq.${user.id},partner_two_id.eq.${user.id}`)
-      .limit(1)
-      .maybeSingle();
+    const response = await authorizedFetch("/api/couple/membership", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "join", inviteCode: normalizedCode }),
+    });
+    const result = (await response.json()) as { couple?: Couple; error?: string };
 
-    if (existingCouple) {
-      setMessage("Вы уже состоите в паре. Покиньте текущую пару, чтобы присоединиться к другой.");
-      setIsSaving(false);
-      return;
-    }
-
-    const { data: foundCouple } = await supabase
-      .from("couples")
-      .select("*")
-      .eq("invite_code", normalizedCode)
-      .is("partner_two_id", null)
-      .maybeSingle<Couple>();
-
-    if (!foundCouple) {
-      setMessage("Код не найден или уже использован");
-      setIsSaving(false);
-      return;
-    }
-
-    if (foundCouple.partner_one_id === user.id) {
-      setMessage("Это ваша пара. Откройте профиль, чтобы поделиться ссылкой.");
-      setIsSaving(false);
-      return;
-    }
-
-    const { error } = await supabase
-      .from("couples")
-      .update({ partner_two_id: user.id })
-      .eq("id", foundCouple.id);
-
-    if (error) {
-      setMessage(error.message);
+    if (!response.ok || !result.couple) {
+      setMessage(result.error || "Код не найден или уже использован");
       setIsSaving(false);
       return;
     }

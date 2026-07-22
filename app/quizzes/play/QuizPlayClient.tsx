@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import { createPartnerNotification } from "@/lib/notifications";
 import { compressImageFile } from "@/lib/imageCompression";
 import { getQuizById } from "@/lib/quizzes";
@@ -116,7 +117,10 @@ export default function QuizPlayClient() {
       .from("quiz-media")
       .getPublicUrl(filePath);
 
-    updateAnswer(questionId, publicUrlData.publicUrl);
+    updateAnswer(
+      questionId,
+      toPortableSupabaseUrl(publicUrlData.publicUrl) || publicUrlData.publicUrl,
+    );
     setUploadingQuestionId(null);
   }
 

@@ -1,11 +1,13 @@
 import { NextRequest } from "next/server";
-import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
+import { resolve4, resolve6 } from "node:dns/promises";
+import { enforceRateLimit } from "@/lib/apiSecurity";
+import { getAdminClient, getAuthenticatedUser } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
 const maxPreviewBytes = 512 * 1024;
 const maxUrlLength = 2048;
+const maxRedirects = 3;
 
 function readMeta(html: string, names: string[]) {
   for (const name of names) {
@@ -50,7 +52,12 @@ function resolveUrl(value: string, baseUrl: string) {
 
 function isPrivateIPv4(address: string) {
   const parts = address.split(".").map((part) => Number(part));
-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part))) return true;
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+  ) {
+    return true;
+  }
   const [a, b] = parts;
 
   return (
@@ -78,10 +85,29 @@ function isPrivateIPv6(address: string) {
 }
 
 function isBlockedAddress(address: string) {
-  const version = isIP(address);
-  if (version === 4) return isPrivateIPv4(address);
-  if (version === 6) return isPrivateIPv6(address);
+  const normalized = address.replace(/^\[|\]$/g, "");
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(normalized)) {
+    return isPrivateIPv4(normalized);
+  }
+  if (normalized.includes(":")) return isPrivateIPv6(normalized);
   return true;
+}
+
+async function resolveHostAddresses(hostname: string) {
+  const normalizedHostname = hostname.replace(/^\[|\]$/g, "");
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(normalizedHostname)) {
+    return [normalizedHostname];
+  }
+  if (normalizedHostname.includes(":")) return [normalizedHostname];
+
+  const results = await Promise.allSettled([
+    resolve4(normalizedHostname),
+    resolve6(normalizedHostname),
+  ]);
+
+  return results.flatMap((result) =>
+    result.status === "fulfilled" ? result.value : [],
+  );
 }
 
 async function assertPublicHttpUrl(targetUrl: URL) {
@@ -93,9 +119,24 @@ async function assertPublicHttpUrl(targetUrl: URL) {
     return "Unsupported URL";
   }
 
-  const addresses = await lookup(targetUrl.hostname, { all: true, verbatim: true });
-  if (addresses.length === 0 || addresses.some((item) => isBlockedAddress(item.address))) {
+  const normalizedHostname = targetUrl.hostname.replace(/^\[|\]$/g, "");
+  const isLiteralAddress =
+    /^\d{1,3}(?:\.\d{1,3}){3}$/.test(normalizedHostname) ||
+    normalizedHostname.includes(":");
+
+  if (isLiteralAddress && isBlockedAddress(normalizedHostname)) {
     return "Unsupported URL";
+  }
+
+  // Cloudflare Workers mediate outbound fetches and block internal network
+  // services. Their production DNS shim does not implement lookup-style host
+  // checks consistently, so Sites relies on that platform boundary while the
+  // Node.js/Vercel target retains an explicit DNS preflight.
+  if (process.env.DEPLOY_TARGET !== "sites") {
+    const addresses = await resolveHostAddresses(normalizedHostname);
+    if (addresses.length === 0 || addresses.some(isBlockedAddress)) {
+      return "Unsupported URL";
+    }
   }
 
   return null;
@@ -132,7 +173,51 @@ async function readLimitedText(response: Response) {
   return new TextDecoder().decode(Buffer.concat(chunks));
 }
 
+async function fetchPreviewResponse(initialUrl: URL) {
+  let currentUrl = initialUrl;
+
+  for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount += 1) {
+    const validationError = await assertPublicHttpUrl(currentUrl);
+    if (validationError) throw new Error(validationError);
+
+    const response = await fetch(currentUrl.toString(), {
+      redirect: "manual",
+      headers: {
+        "user-agent": "Mozilla/5.0 CoupleSpaceLinkPreview/1.0",
+      },
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (response.status < 300 || response.status >= 400) return response;
+
+    const location = response.headers.get("location");
+    if (!location || redirectCount === maxRedirects) {
+      throw new Error("Too many redirects");
+    }
+
+    currentUrl = new URL(location, currentUrl);
+  }
+
+  throw new Error("Too many redirects");
+}
+
 export async function GET(request: NextRequest) {
+  const adminSupabase = getAdminClient();
+  if (!adminSupabase) {
+    return Response.json({ error: "Предпросмотр временно недоступен" }, { status: 503 });
+  }
+
+  const user = await getAuthenticatedUser(adminSupabase, request);
+  if (!user) return Response.json({ error: "Не выполнен вход" }, { status: 401 });
+
+  const rateLimitResponse = await enforceRateLimit(adminSupabase, request, {
+    route: "link-preview",
+    identity: user.id,
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   const rawUrl = request.nextUrl.searchParams.get("url") || "";
 
   try {
@@ -140,13 +225,7 @@ export async function GET(request: NextRequest) {
     const validationError = await assertPublicHttpUrl(targetUrl);
     if (validationError) return Response.json({ error: validationError }, { status: 400 });
 
-    const response = await fetch(targetUrl.toString(), {
-      redirect: "error",
-      headers: {
-        "user-agent": "Mozilla/5.0 CoupleSpaceLinkPreview/1.0",
-      },
-      signal: AbortSignal.timeout(6000),
-    });
+    const response = await fetchPreviewResponse(targetUrl);
     const html = await readLimitedText(response);
     const title = readMeta(html, ["og:title", "twitter:title"]) || readTitle(html);
     const description = readMeta(html, [

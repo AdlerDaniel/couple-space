@@ -8,6 +8,7 @@ import {
 } from "@/lib/watchList";
 import { AnimatedText, CountUp } from "@/components/AnimeWidgets";
 import { supabase } from "@/lib/supabaseClient";
+import { authorizedFetch } from "@/lib/authorizedFetch";
 import type { WatchSearchResult } from "@/lib/watchSearch";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -219,7 +220,9 @@ export default function WatchPage() {
     const timerId = window.setTimeout(async () => {
       setIsSearching(true);
       try {
-        const response = await fetch(`/api/watch/search?q=${encodeURIComponent(title.trim())}`);
+        const response = await authorizedFetch(
+          `/api/watch/search?q=${encodeURIComponent(title.trim())}`,
+        );
         const data = (await response.json().catch(() => null)) as {
           results?: WatchSearchResult[];
         } | null;

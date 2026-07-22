@@ -1,6 +1,8 @@
 ﻿"use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { authorizedFetch } from "@/lib/authorizedFetch";
+import { toBrowserSupabaseUrl, toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import { compressImageFile } from "@/lib/imageCompression";
 import { profileUpdatedEventName } from "@/lib/profileEvents";
 import Image from "next/image";
@@ -25,10 +27,6 @@ type CoupleProfile = {
   avatar_one?: string | null;
   avatar_two?: string | null;
 };
-
-function generateInviteCode() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
 
 function fallbackName(email?: string) {
   const value = email?.split("@")[0]?.trim();
@@ -197,21 +195,16 @@ export default function ProfilePage() {
     if (!currentUserId) return;
 
     setIsSaving(true);
-    const code = generateInviteCode();
+    const response = await authorizedFetch("/api/couple/membership", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create" }),
+    });
+    const result = (await response.json()) as { couple?: Couple; error?: string };
+    const data = result.couple;
 
-    const { data, error } = await supabase
-      .from("couples")
-      .insert([
-        {
-          invite_code: code,
-          partner_one_id: currentUserId,
-        },
-      ])
-      .select()
-      .single<Couple>();
-
-    if (error || !data) {
-      setMessage(error?.message || "Ошибка создания пары");
+    if (!response.ok || !data) {
+      setMessage(result.error || "Ошибка создания пары");
       setIsSaving(false);
       return;
     }
@@ -231,36 +224,16 @@ export default function ProfilePage() {
     setIsSaving(true);
     const normalizedCode = inviteCode.trim().toUpperCase();
 
-    const { data: foundCouple, error: findError } = await supabase
-      .from("couples")
-      .select("*")
-      .eq("invite_code", normalizedCode)
-      .is("partner_two_id", null)
-      .maybeSingle<Couple>();
+    const response = await authorizedFetch("/api/couple/membership", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "join", inviteCode: normalizedCode }),
+    });
+    const result = (await response.json()) as { couple?: Couple; error?: string };
+    const data = result.couple;
 
-    if (findError || !foundCouple) {
-      setMessage("Код не найден или уже использован");
-      setIsSaving(false);
-      return;
-    }
-
-    if (foundCouple.partner_one_id === currentUserId) {
-      setMessage("Вы уже состоите в этой паре");
-      setIsSaving(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("couples")
-      .update({
-        partner_two_id: currentUserId,
-      })
-      .eq("id", foundCouple.id)
-      .select()
-      .single<Couple>();
-
-    if (error || !data) {
-      setMessage(error?.message || "Ошибка присоединения");
+    if (!response.ok || !data) {
+      setMessage(result.error || "Ошибка присоединения");
       setIsSaving(false);
       return;
     }
@@ -333,10 +306,11 @@ export default function ProfilePage() {
     const { data: publicUrlData } = supabase.storage
       .from("profile-avatars")
       .getPublicUrl(filePath);
+    const publicUrl = toPortableSupabaseUrl(publicUrlData.publicUrl);
 
     const { data, error } = await supabase
       .from("couple_profiles")
-      .update({ [avatarField]: publicUrlData.publicUrl })
+      .update({ [avatarField]: publicUrl })
       .eq("couple_id", couple.id)
       .select()
       .returns<CoupleProfile[]>();
@@ -351,13 +325,13 @@ export default function ProfilePage() {
 
     await supabase.auth.updateUser({
       data: {
-        avatar_url: publicUrlData.publicUrl,
+        avatar_url: publicUrl,
       },
     });
     setProfile(nextProfile);
-    setAvatarUrl(publicUrlData.publicUrl);
+    setAvatarUrl(toBrowserSupabaseUrl(publicUrl));
     setMessage("Фото обновлено");
-    notifyProfileUpdated({ name: displayName, avatar: publicUrlData.publicUrl });
+    notifyProfileUpdated({ name: displayName, avatar: publicUrl });
     setIsSaving(false);
   }
 
@@ -365,17 +339,15 @@ export default function ProfilePage() {
     if (!couple || !currentUserId) return;
 
     setIsSaving(true);
-    const updates =
-      couple.partner_one_id === currentUserId
-        ? couple.partner_two_id
-          ? { partner_one_id: couple.partner_two_id, partner_two_id: null }
-          : { partner_one_id: null, partner_two_id: null }
-        : { partner_two_id: null };
+    const response = await authorizedFetch("/api/couple/membership", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "leave", coupleId: couple.id }),
+    });
+    const result = (await response.json()) as { error?: string };
 
-    const { error } = await supabase.from("couples").update(updates).eq("id", couple.id);
-
-    if (error) {
-      setMessage(error.message);
+    if (!response.ok) {
+      setMessage(result.error || "Не удалось покинуть пару");
       setIsSaving(false);
       return;
     }

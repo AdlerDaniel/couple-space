@@ -10,6 +10,8 @@ import {
 } from "@/lib/mediaFiles";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
+import { authorizedFetch } from "@/lib/authorizedFetch";
+import { toBrowserSupabaseUrl, toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -260,13 +262,18 @@ function extractFirstUrl(text: string) {
 }
 
 function getMessageAttachments(message: ChatMessage): ChatAttachment[] {
-  if (message.attachments?.length) return message.attachments;
+  if (message.attachments?.length) {
+    return message.attachments.map((attachment) => ({
+      ...attachment,
+      url: toBrowserSupabaseUrl(attachment.url) || attachment.url,
+    }));
+  }
   if (!message.attachment_url || !message.attachment_type) return [];
 
   return [
     {
       id: message.id,
-      url: message.attachment_url,
+      url: toBrowserSupabaseUrl(message.attachment_url) || message.attachment_url,
       type: message.attachment_type === "audio" ? "audio" : "image",
       name: message.attachment_name || "Вложение",
       size: 0,
@@ -332,7 +339,9 @@ function LinkPreviewCard({
     async function loadPreview() {
       setIsLoadingPreview(true);
       try {
-        const response = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
+        const response = await authorizedFetch(
+          `/api/link-preview?url=${encodeURIComponent(url)}`,
+        );
         const data = (await response.json()) as LinkPreviewData;
         if (!ignore) setPreview(data);
       } catch {
@@ -1069,7 +1078,7 @@ export default function ChatPage() {
         const { data } = supabase.storage.from("chat-media").getPublicUrl(filePath);
         uploaded.push({
           id: item.id,
-          url: data.publicUrl,
+          url: toPortableSupabaseUrl(data.publicUrl) || data.publicUrl,
           type: item.type,
           name: uploadFile.name,
           size: uploadFile.size,

@@ -15,18 +15,13 @@ type NotificationPayload = {
   href?: string;
 };
 
-type BrowserPushPayload = NotificationPayload & {
-  coupleId: string;
-  recipientId: string;
-};
-
 function emitNotificationsUpdated() {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(notificationsUpdatedEventName));
   }
 }
 
-async function sendBrowserPush(payload: BrowserPushPayload) {
+async function sendBrowserPush(notificationId: string) {
   if (typeof window === "undefined") return;
 
   const {
@@ -41,7 +36,7 @@ async function sendBrowserPush(payload: BrowserPushPayload) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ notificationId }),
   }).catch(() => undefined);
 }
 
@@ -64,28 +59,25 @@ export async function createNotification({
   recipientId: string;
   actorId: string;
 }) {
-  const { error } = await supabase.from("couple_notifications").insert([
-    {
-      couple_id: coupleId,
-      recipient_id: recipientId,
-      actor_id: actorId,
-      type,
-      title,
-      body: body || null,
-      href: href || null,
-    },
-  ]);
+  const { data, error } = await supabase
+    .from("couple_notifications")
+    .insert([
+      {
+        couple_id: coupleId,
+        recipient_id: recipientId,
+        actor_id: actorId,
+        type,
+        title,
+        body: body || null,
+        href: href || null,
+      },
+    ])
+    .select("id")
+    .single<{ id: string }>();
 
-  if (!error) {
+  if (!error && data) {
     emitNotificationsUpdated();
-    await sendBrowserPush({
-      coupleId,
-      recipientId,
-      type,
-      title,
-      body,
-      href,
-    });
+    await sendBrowserPush(data.id);
   }
 }
 

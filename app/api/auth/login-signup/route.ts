@@ -1,41 +1,47 @@
-import { createClient } from "@supabase/supabase-js";
+import { enforceRateLimit, isSameOriginRequest, readJsonObject } from "@/lib/apiSecurity";
 import { loginToEmail, validateLoginCredentials } from "@/lib/loginAuth";
+import { getAdminClient } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!isSameOriginRequest(request)) {
+    return Response.json({ error: "Недопустимый источник запроса" }, { status: 403 });
+  }
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  const adminSupabase = getAdminClient();
+  if (!adminSupabase) {
     return Response.json(
-      {
-        error:
-          "Для регистрации по логину добавьте SUPABASE_SERVICE_ROLE_KEY в .env.local и перезапустите сервер.",
-      },
+      { error: "Регистрация временно недоступна" },
       { status: 500 }
     );
   }
 
-  const body = (await request.json()) as {
-    login?: string;
-    password?: string;
-  };
+  const rateLimitResponse = await enforceRateLimit(adminSupabase, request, {
+    route: "login-signup-ip",
+    limit: 8,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
-  const login = body.login?.trim() || "";
-  const password = body.password || "";
+  const parsed = await readJsonObject(request, 4 * 1024);
+  if (parsed.error) return parsed.error;
+
+  const login = typeof parsed.data.login === "string" ? parsed.data.login.trim() : "";
+  const password = typeof parsed.data.password === "string" ? parsed.data.password : "";
   const validationError = validateLoginCredentials(login, password);
 
   if (validationError) {
     return Response.json({ error: validationError }, { status: 400 });
   }
 
-  const adminSupabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
+  const loginRateLimitResponse = await enforceRateLimit(adminSupabase, request, {
+    route: "login-signup-account",
+    identity: login.toLowerCase(),
+    limit: 4,
+    windowMs: 60 * 60 * 1000,
   });
+  if (loginRateLimitResponse) return loginRateLimitResponse;
 
   const { error } = await adminSupabase.auth.admin.createUser({
     email: loginToEmail(login),
@@ -48,15 +54,9 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    const errorMessage = error.message.toLowerCase();
-    const alreadyExists =
-      errorMessage.includes("already") || errorMessage.includes("registered");
-
     return Response.json(
-      {
-        error: alreadyExists ? "Такой логин уже занят" : error.message,
-      },
-      { status: alreadyExists ? 409 : 400 }
+      { error: "Не удалось создать аккаунт. Проверьте логин и пароль." },
+      { status: 400 }
     );
   }
 

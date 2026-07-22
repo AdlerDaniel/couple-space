@@ -5,6 +5,7 @@ import QuestionComments from "@/components/QuestionComments";
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { parseQuestionDate } from "@/lib/questionArchive";
 import { supabase } from "@/lib/supabaseClient";
+import { toBrowserSupabaseUrl } from "@/lib/supabaseUrls";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -62,18 +63,18 @@ export default function TodayQuestionPage() {
   const isPartnerOne = currentUserId === couple?.partner_one_id;
   const myAnswer = isPartnerOne ? answerRecord?.answer_one : answerRecord?.answer_two;
   const partnerAnswer = isPartnerOne ? answerRecord?.answer_two : answerRecord?.answer_one;
-  const myVoiceUrl = isPartnerOne
+  const myVoiceUrl = toBrowserSupabaseUrl(isPartnerOne
     ? answerRecord?.answer_one_voice_url
-    : answerRecord?.answer_two_voice_url;
-  const partnerVoiceUrl = isPartnerOne
+    : answerRecord?.answer_two_voice_url);
+  const partnerVoiceUrl = toBrowserSupabaseUrl(isPartnerOne
     ? answerRecord?.answer_two_voice_url
-    : answerRecord?.answer_one_voice_url;
-  const myPhotoUrl = isPartnerOne
+    : answerRecord?.answer_one_voice_url);
+  const myPhotoUrl = toBrowserSupabaseUrl(isPartnerOne
     ? answerRecord?.answer_one_photo_url
-    : answerRecord?.answer_two_photo_url;
-  const partnerPhotoUrl = isPartnerOne
+    : answerRecord?.answer_two_photo_url);
+  const partnerPhotoUrl = toBrowserSupabaseUrl(isPartnerOne
     ? answerRecord?.answer_two_photo_url
-    : answerRecord?.answer_one_photo_url;
+    : answerRecord?.answer_one_photo_url);
   const myEditedAt = isPartnerOne
     ? answerRecord?.answer_one_edited_at
     : answerRecord?.answer_two_edited_at;
@@ -201,19 +202,23 @@ export default function TodayQuestionPage() {
   useEffect(() => {
     if (!couple || !answerRecord || !hasMyAnswer || hasPartnerAnswer) return;
 
-    const intervalId = window.setInterval(async () => {
-      const { data } = await supabase
-        .from("question_answers")
-        .select("*")
-        .eq("id", answerRecord.id)
-        .single();
+    const channel = supabase
+      .channel(`question-answer-${answerRecord.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "question_answers",
+          filter: `id=eq.${answerRecord.id}`,
+        },
+        (payload) => setAnswerRecord(payload.new as Answer),
+      )
+      .subscribe();
 
-      if (data) {
-        setAnswerRecord(data);
-      }
-    }, 4000);
-
-    return () => window.clearInterval(intervalId);
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [answerRecord, couple, hasMyAnswer, hasPartnerAnswer]);
 
   if (isLoading) {

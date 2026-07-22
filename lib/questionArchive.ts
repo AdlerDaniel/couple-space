@@ -10,6 +10,8 @@ export const questionCategories = [
 export type QuestionCategory = (typeof questionCategories)[number];
 export type QuestionArchiveGroup = "Сегодня" | "Вчера" | "Эта неделя" | "Этот месяц" | "Раньше";
 
+const virtualQuestionArchivePrefix = "day-";
+
 export function getQuestionCategory(question: string): Exclude<QuestionCategory, "Все"> {
   const normalized = question.toLowerCase();
 
@@ -29,6 +31,11 @@ export function parseQuestionDate(value: string) {
 
   if (parts.length === 3 && parts.every((part) => Number.isFinite(part))) {
     const [first, second, third] = parts;
+
+    if (first > 999) {
+      return new Date(first, second - 1, third);
+    }
+
     const year = third < 100 ? 2000 + third : third;
 
     if (first > 12) {
@@ -44,6 +51,29 @@ export function parseQuestionDate(value: string) {
 
   const parsed = new Date(trimmed);
   return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
+export function getQuestionDateKey(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+export function createVirtualQuestionArchiveId(dateKey: string) {
+  return `${virtualQuestionArchivePrefix}${dateKey}`;
+}
+
+export function parseVirtualQuestionArchiveId(value: string) {
+  const dateKey = value.startsWith(virtualQuestionArchivePrefix)
+    ? value.slice(virtualQuestionArchivePrefix.length)
+    : "";
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return null;
+
+  const parsedDate = parseQuestionDate(dateKey);
+  return getQuestionDateKey(parsedDate) === dateKey ? dateKey : null;
 }
 
 export function getQuestionArchiveGroup(date: Date): QuestionArchiveGroup {

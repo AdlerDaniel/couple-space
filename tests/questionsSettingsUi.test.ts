@@ -15,6 +15,18 @@ test("question pages do not display the configured time zone", async () => {
   assert.doesNotMatch(source, /\{dailyQuestionState\.timeZone\}/);
 });
 
+test("question archive includes missed days and allows a late answer", async () => {
+  const [archiveSource, detailSource] = await Promise.all([
+    readFile(new URL("../app/questions/archive/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/questions/archive/[id]/page.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(archiveSource, /getDailyQuestionHistory/);
+  assert.match(archiveSource, /Вопрос был пропущен — можно ответить/);
+  assert.match(detailSource, /saveArchivedAnswer/);
+  assert.match(detailSource, /После сохранения откроется ответ партнёра/);
+});
+
 test("settings keep account, couple, notification controls and time zone only", async () => {
   const source = await readFile(new URL("../app/settings/page.tsx", import.meta.url), "utf8");
 

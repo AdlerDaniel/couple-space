@@ -1,7 +1,6 @@
 import {
+  getCanonicalSupabaseRealtimeUrl,
   getSupabaseClientUrl,
-  shouldUseVercelRealtimeProxy,
-  vercelRealtimeProxyUrl,
 } from "./supabaseUrls.ts";
 
 export const networkDiagnosticsStorageKey = "couple-space:network-diagnostics-report";
@@ -173,17 +172,10 @@ function normalizeSupabaseRestCheck(check: NetworkDiagnosticCheck): NetworkDiagn
 }
 
 function getRealtimeUrl() {
-  const supabaseUrl = getSupabaseClientUrl();
-  if (!supabaseUrl || !supabaseAnonKey) return "";
-  if (shouldUseVercelRealtimeProxy()) {
-    const url = new URL(vercelRealtimeProxyUrl);
-    url.searchParams.set("apikey", supabaseAnonKey);
-    url.searchParams.set("vsn", "1.0.0");
-    return url.toString();
-  }
-  const url = new URL(supabaseUrl);
-  url.pathname = `${url.pathname.replace(/\/$/, "")}/realtime/v1/websocket`;
-  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  const realtimeUrl = getCanonicalSupabaseRealtimeUrl();
+  if (!realtimeUrl || !supabaseAnonKey) return "";
+
+  const url = new URL(realtimeUrl);
   url.searchParams.set("apikey", supabaseAnonKey);
   url.searchParams.set("vsn", "1.0.0");
   return url.toString();

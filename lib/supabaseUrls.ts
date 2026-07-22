@@ -1,13 +1,21 @@
 export const supabaseProxyPath = "/supabase";
-export const vercelRealtimeProxyUrl =
-  "wss://couple-space-kappa.vercel.app/supabase/realtime/v1/websocket";
-
-export function shouldUseVercelRealtimeProxy() {
-  return process.env.DEPLOY_TARGET === "sites";
-}
 
 function getCanonicalSupabaseUrl() {
   return process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+}
+
+export function getCanonicalSupabaseRealtimeUrl(requestedUrl?: string | URL) {
+  try {
+    const realtimeUrl = new URL(getCanonicalSupabaseUrl());
+    realtimeUrl.protocol = realtimeUrl.protocol === "https:" ? "wss:" : "ws:";
+    realtimeUrl.pathname = `${realtimeUrl.pathname.replace(/\/$/, "")}/realtime/v1/websocket`;
+
+    if (requestedUrl) realtimeUrl.search = new URL(requestedUrl).search;
+
+    return realtimeUrl.toString();
+  } catch {
+    return "";
+  }
 }
 
 export function getSupabaseClientUrl() {

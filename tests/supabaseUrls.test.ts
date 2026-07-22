@@ -2,11 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  getCanonicalSupabaseRealtimeUrl,
   getSupabaseAuthStorageKey,
   getSupabaseClientUrl,
-  shouldUseVercelRealtimeProxy,
   toPortableSupabaseUrl,
-  vercelRealtimeProxyUrl,
 } from "../lib/supabaseUrls.ts";
 
 test("Supabase URLs use a provider-neutral same-origin path", () => {
@@ -29,14 +28,13 @@ test("portable media URLs stay unchanged across Vercel and Sites", () => {
   );
 });
 
-test("Sites uses the public Vercel WebSocket gateway for live updates", () => {
-  process.env.DEPLOY_TARGET = "sites";
+test("Realtime connects directly to Supabase and preserves client parameters", () => {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example-project.supabase.co";
 
-  assert.equal(shouldUseVercelRealtimeProxy(), true);
   assert.equal(
-    vercelRealtimeProxyUrl,
-    "wss://couple-space-kappa.vercel.app/supabase/realtime/v1/websocket",
+    getCanonicalSupabaseRealtimeUrl(
+      "wss://couple-space.example/supabase/realtime/v1/websocket?apikey=anon-key&vsn=1.0.0",
+    ),
+    "wss://example-project.supabase.co/realtime/v1/websocket?apikey=anon-key&vsn=1.0.0",
   );
-
-  delete process.env.DEPLOY_TARGET;
 });

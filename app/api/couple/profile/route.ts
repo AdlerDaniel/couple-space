@@ -90,22 +90,38 @@ export async function POST(request: Request) {
   const partnerOne = await getUserName(adminSupabase, couple.partner_one_id);
   const partnerTwo = await getUserName(adminSupabase, couple.partner_two_id);
 
-  const { data: profile, error: profileError } = await adminSupabase
+  const { data: createdProfile, error: profileError } = await adminSupabase
     .from("couple_profiles")
-    .insert([
+    .upsert(
       {
         couple_id: couple.id,
         partner_one: partnerOne,
         partner_two: partnerTwo,
         start_date: new Date().toISOString().slice(0, 10),
       },
-    ])
+      { onConflict: "couple_id", ignoreDuplicates: true },
+    )
     .select()
-    .single();
+    .maybeSingle();
 
   if (profileError) {
     return Response.json({ error: profileError.message }, { status: 400 });
   }
 
-  return Response.json({ profile });
+  if (createdProfile) return Response.json({ profile: createdProfile });
+
+  const { data: concurrentProfile, error: concurrentError } = await adminSupabase
+    .from("couple_profiles")
+    .select("*")
+    .eq("couple_id", couple.id)
+    .single();
+
+  if (concurrentError || !concurrentProfile) {
+    return Response.json(
+      { error: concurrentError?.message || "Не удалось создать профиль пары" },
+      { status: 400 },
+    );
+  }
+
+  return Response.json({ profile: concurrentProfile });
 }

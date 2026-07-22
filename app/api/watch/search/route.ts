@@ -4,6 +4,8 @@ import {
   mapTmdbSearchItem,
   type WatchSearchResult,
 } from "@/lib/watchSearch";
+import { enforceRateLimit } from "@/lib/apiSecurity";
+import { getAdminClient, getAuthenticatedUser } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
@@ -85,6 +87,22 @@ async function searchImdb(query: string): Promise<WatchSearchResult[]> {
 }
 
 export async function GET(request: Request) {
+  const adminSupabase = getAdminClient();
+  if (!adminSupabase) {
+    return Response.json({ error: "Поиск временно недоступен" }, { status: 503 });
+  }
+
+  const user = await getAuthenticatedUser(adminSupabase, request);
+  if (!user) return Response.json({ error: "Не выполнен вход" }, { status: 401 });
+
+  const rateLimitResponse = await enforceRateLimit(adminSupabase, request, {
+    route: "watch-search",
+    identity: user.id,
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   const query = getSafeQuery(request);
   if (query.length < 2) {
     return Response.json({ results: [] });

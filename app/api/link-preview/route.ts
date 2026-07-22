@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 import { resolve4, resolve6 } from "node:dns/promises";
+import { enforceRateLimit } from "@/lib/apiSecurity";
+import { getAdminClient, getAuthenticatedUser } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
@@ -200,6 +202,22 @@ async function fetchPreviewResponse(initialUrl: URL) {
 }
 
 export async function GET(request: NextRequest) {
+  const adminSupabase = getAdminClient();
+  if (!adminSupabase) {
+    return Response.json({ error: "Предпросмотр временно недоступен" }, { status: 503 });
+  }
+
+  const user = await getAuthenticatedUser(adminSupabase, request);
+  if (!user) return Response.json({ error: "Не выполнен вход" }, { status: 401 });
+
+  const rateLimitResponse = await enforceRateLimit(adminSupabase, request, {
+    route: "link-preview",
+    identity: user.id,
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   const rawUrl = request.nextUrl.searchParams.get("url") || "";
 
   try {

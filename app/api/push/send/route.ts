@@ -1,5 +1,6 @@
 import { sendPushToUser } from "@/lib/pushServer";
-import { getAdminClient } from "@/lib/supabaseAdmin";
+import { enforceRateLimit, isSameOriginRequest, readJsonObject } from "@/lib/apiSecurity";
+import { getAdminClient, getAuthenticatedUser } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
@@ -13,36 +14,6 @@ type CoupleNotification = {
   href: string | null;
   type: string;
 };
-
-type Couple = {
-  id: string;
-  partner_one_id: string;
-  partner_two_id: string | null;
-};
-
-type PushSendRequest = {
-  notificationId?: string;
-  coupleId?: string;
-  recipientId?: string;
-  type?: string;
-  title?: string;
-  body?: string | null;
-  href?: string | null;
-};
-
-async function getUserFromRequest(
-  adminSupabase: NonNullable<ReturnType<typeof getAdminClient>>,
-  request: Request
-) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!token) return null;
-
-  const {
-    data: { user },
-  } = await adminSupabase.auth.getUser(token);
-
-  return user;
-}
 
 async function sendStoredNotification(
   adminSupabase: NonNullable<ReturnType<typeof getAdminClient>>,
@@ -77,59 +48,37 @@ async function sendStoredNotification(
   return Response.json({ ok: true, ...result });
 }
 
-async function sendDirectNotification(
-  adminSupabase: NonNullable<ReturnType<typeof getAdminClient>>,
-  payload: PushSendRequest,
-  actorId: string
-) {
-  if (!payload.coupleId || !payload.recipientId || !payload.title || !payload.type) {
-    return Response.json({ error: "Missing push payload" }, { status: 400 });
-  }
-
-  const { data: couple, error } = await adminSupabase
-    .from("couples")
-    .select("id, partner_one_id, partner_two_id")
-    .eq("id", payload.coupleId)
-    .maybeSingle<Couple>();
-
-  if (error) {
-    return Response.json({ error: error.message }, { status: 500 });
-  }
-
-  const coupleUserIds = [couple?.partner_one_id, couple?.partner_two_id].filter(Boolean);
-  const actorBelongsToCouple = coupleUserIds.includes(actorId);
-  const recipientBelongsToCouple = coupleUserIds.includes(payload.recipientId);
-
-  if (!couple || !actorBelongsToCouple || !recipientBelongsToCouple) {
+export async function POST(request: Request) {
+  if (!isSameOriginRequest(request)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const result = await sendPushToUser(payload.recipientId, {
-    title: payload.title,
-    body: payload.body || null,
-    href: payload.href || null,
-    tag: payload.type,
-  });
-
-  return Response.json({ ok: true, ...result });
-}
-
-export async function POST(request: Request) {
   const adminSupabase = getAdminClient();
   if (!adminSupabase) {
     return Response.json({ error: "Supabase admin is not configured" }, { status: 500 });
   }
 
-  const user = await getUserFromRequest(adminSupabase, request);
+  const user = await getAuthenticatedUser(adminSupabase, request);
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const payload = (await request.json()) as PushSendRequest;
+  const rateLimitResponse = await enforceRateLimit(adminSupabase, request, {
+    route: "push-send",
+    identity: user.id,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
-  if (payload.notificationId) {
-    return sendStoredNotification(adminSupabase, payload.notificationId, user.id);
+  const parsed = await readJsonObject(request, 4 * 1024);
+  if (parsed.error) return parsed.error;
+  const notificationId =
+    typeof parsed.data.notificationId === "string" ? parsed.data.notificationId : "";
+
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(notificationId)) {
+    return Response.json({ error: "Invalid notification" }, { status: 400 });
   }
 
-  return sendDirectNotification(adminSupabase, payload, user.id);
+  return sendStoredNotification(adminSupabase, notificationId, user.id);
 }

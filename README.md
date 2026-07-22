@@ -1,47 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Couple Space
 
-## Getting Started
+Личное пространство для пары на Next.js 16 и Supabase: вопрос дня и архив,
+воспоминания, чат, викторины, совместный трекер, список фильмов и push-уведомления.
 
-First, run the development server:
+## Локальный запуск
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Требуется Node.js 20.9 или новее.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Установите зависимости: `npm ci`.
+2. Создайте `.env.local` по списку переменных ниже.
+3. Запустите `npm run dev`.
+4. Откройте `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Основные переменные окружения:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` — только на сервере
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `CRON_SECRET`
+- `TMDB_READ_ACCESS_TOKEN` или `TMDB_API_KEY`
 
-## Learn More
+Не добавляйте `.env.local` и service-role ключ в Git.
 
-To learn more about Next.js, take a look at the following resources:
+## Проверки
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `npm run check` — TypeScript, ESLint и unit/contract-тесты.
+- `npm run build` — production-сборка Next.js/Vercel.
+- `npm run build:sites` — production-сборка Sites/vinext.
+- `npm run screenshots:mobile` — визуальные мобильные сценарии Playwright.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Supabase
 
-## Deploy on Vercel
+Авторитетная история схемы находится в `supabase/migrations/`. Миграции нужно
+применять в порядке timestamp и координировать с соответствующим деплоем сайта.
+Перед изменениями production-базы обязательно сделайте резервную копию и
+проверьте Security/Performance Advisors.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Root-файлы `supabase-*.sql` сохранены как исторические снимки отдельных функций.
+Не применяйте их поверх рабочей базы вместо versioned migrations.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# Deployment targets
+## Архитектура безопасности
 
-The project supports two production targets without sharing build output:
+- браузер работает с publishable/anon ключом и ограничен RLS;
+- service-role ключ используется только в Route Handlers;
+- создание, вступление и выход из пары проходят через авторизованный серверный API;
+- личные таблицы доступны только участникам соответствующей пары;
+- пути загружаемых медиа начинаются с UUID пары или пользователя;
+- ресурсоёмкие API требуют сессию и ограничивают частоту запросов.
 
-- Vercel uses the standard Next.js commands: `npm run build` and `npm run start`.
-- Sites uses the Cloudflare-compatible vinext commands: `npm run build:sites` and `npm run start:sites`.
-- The Sites build defines `DEPLOY_TARGET=sites`; Vercel intentionally leaves it unset.
+## Deployment targets
 
-Vercel remains the single scheduler for the daily-question cron in `vercel.json`.
-Both deployments use the same Supabase project and VAPID keys, so the scheduled
-job processes subscriptions created from either origin without duplicate runs.
+- Vercel: `npm run build` и `npm run start`.
+- Sites: `npm run build:sites` и `npm run start:sites`.
+- Sites определяет `DEPLOY_TARGET=sites`; на Vercel переменная не задаётся.
+
+Vercel остаётся единственным scheduler для ежедневного вопроса из `vercel.json`.
+Оба deployment используют один проект Supabase и одни VAPID-ключи.

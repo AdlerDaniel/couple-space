@@ -158,18 +158,23 @@ export default function QuestionArchiveDetailPage() {
     const partnerAnswer = isPartnerOne ? answerRecord.answer_two : answerRecord.answer_one;
     if (!myAnswer || partnerAnswer) return;
 
-    const intervalId = window.setInterval(async () => {
-      const { data } = await supabase
-        .from("question_answers")
-        .select("*")
-        .eq("id", answerRecord.id)
-        .eq("couple_id", couple.id)
-        .single();
+    const channel = supabase
+      .channel(`archive-answer-${answerRecord.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "question_answers",
+          filter: `id=eq.${answerRecord.id}`,
+        },
+        (payload) => setAnswerRecord(payload.new as AnswerRow),
+      )
+      .subscribe();
 
-      if (data) setAnswerRecord(data);
-    }, 4000);
-
-    return () => window.clearInterval(intervalId);
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [answerRecord, couple, currentUserId]);
 
   async function saveArchivedAnswer() {
@@ -201,7 +206,7 @@ export default function QuestionArchiveDetailPage() {
     }
 
     const query = parseVirtualQuestionArchiveId(latestRecord.id)
-      ? supabase.from("question_answers").insert([
+      ? supabase.from("question_answers").upsert(
           {
             question: latestRecord.question,
             date: latestRecord.date,
@@ -209,7 +214,8 @@ export default function QuestionArchiveDetailPage() {
             [answerField]: answerToSave,
             [editedAtField]: firstSavedAt,
           },
-        ])
+          { onConflict: "couple_id,date,question" },
+        )
       : supabase
           .from("question_answers")
           .update({

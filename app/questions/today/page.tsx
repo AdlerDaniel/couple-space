@@ -202,19 +202,23 @@ export default function TodayQuestionPage() {
   useEffect(() => {
     if (!couple || !answerRecord || !hasMyAnswer || hasPartnerAnswer) return;
 
-    const intervalId = window.setInterval(async () => {
-      const { data } = await supabase
-        .from("question_answers")
-        .select("*")
-        .eq("id", answerRecord.id)
-        .single();
+    const channel = supabase
+      .channel(`question-answer-${answerRecord.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "question_answers",
+          filter: `id=eq.${answerRecord.id}`,
+        },
+        (payload) => setAnswerRecord(payload.new as Answer),
+      )
+      .subscribe();
 
-      if (data) {
-        setAnswerRecord(data);
-      }
-    }, 4000);
-
-    return () => window.clearInterval(intervalId);
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [answerRecord, couple, hasMyAnswer, hasPartnerAnswer]);
 
   if (isLoading) {

@@ -10,6 +10,7 @@ import {
 } from "@/lib/mediaFiles";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
+import { authorizedFetch } from "@/lib/authorizedFetch";
 import { toBrowserSupabaseUrl, toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import Image from "next/image";
 import Link from "next/link";
@@ -338,7 +339,9 @@ function LinkPreviewCard({
     async function loadPreview() {
       setIsLoadingPreview(true);
       try {
-        const response = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
+        const response = await authorizedFetch(
+          `/api/link-preview?url=${encodeURIComponent(url)}`,
+        );
         const data = (await response.json()) as LinkPreviewData;
         if (!ignore) setPreview(data);
       } catch {

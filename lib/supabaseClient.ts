@@ -7,8 +7,36 @@ import {
 } from "./supabaseUrls.ts";
 
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const rememberPreferenceKey = "couple-space:remember-me";
 
 let client: SupabaseClient | null = null;
+
+function getBrowserAuthStorage() {
+  return {
+    getItem(key: string) {
+      if (typeof window === "undefined") return null;
+      return window.sessionStorage.getItem(key) ?? window.localStorage.getItem(key);
+    },
+    setItem(key: string, value: string) {
+      if (typeof window === "undefined") return;
+      const remember = window.localStorage.getItem(rememberPreferenceKey) !== "false";
+      const activeStorage = remember ? window.localStorage : window.sessionStorage;
+      const inactiveStorage = remember ? window.sessionStorage : window.localStorage;
+      activeStorage.setItem(key, value);
+      inactiveStorage.removeItem(key);
+    },
+    removeItem(key: string) {
+      if (typeof window === "undefined") return;
+      window.localStorage.removeItem(key);
+      window.sessionStorage.removeItem(key);
+    },
+  };
+}
+
+export function setAuthPersistencePreference(remember: boolean) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(rememberPreferenceKey, remember ? "true" : "false");
+}
 
 function getRealtimeOptions() {
   if (!shouldUseVercelRealtimeProxy() || typeof WebSocket === "undefined") {
@@ -31,6 +59,7 @@ export function getSupabaseClient() {
     client = createClient(getSupabaseClientUrl(), supabaseAnonKey, {
       auth: {
         storageKey: getSupabaseAuthStorageKey(),
+        storage: getBrowserAuthStorage(),
       },
       realtime: getRealtimeOptions(),
     });

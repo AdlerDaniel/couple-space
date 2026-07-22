@@ -1,9 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
+  getCanonicalSupabaseRealtimeUrl,
   getSupabaseAuthStorageKey,
   getSupabaseClientUrl,
-  shouldUseVercelRealtimeProxy,
-  vercelRealtimeProxyUrl,
 } from "./supabaseUrls.ts";
 
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -39,19 +38,17 @@ export function setAuthPersistencePreference(remember: boolean) {
 }
 
 function getRealtimeOptions() {
-  if (!shouldUseVercelRealtimeProxy() || typeof WebSocket === "undefined") {
+  if (typeof WebSocket === "undefined" || !getCanonicalSupabaseRealtimeUrl()) {
     return undefined;
   }
 
-  class SitesRealtimeWebSocket extends WebSocket {
+  class DirectSupabaseRealtimeWebSocket extends WebSocket {
     constructor(url: string | URL, protocols?: string | string[]) {
-      const upstreamUrl = new URL(vercelRealtimeProxyUrl);
-      upstreamUrl.search = new URL(url).search;
-      super(upstreamUrl, protocols);
+      super(getCanonicalSupabaseRealtimeUrl(url), protocols);
     }
   }
 
-  return { transport: SitesRealtimeWebSocket };
+  return { transport: DirectSupabaseRealtimeWebSocket };
 }
 
 export function getSupabaseClient() {

@@ -328,9 +328,53 @@ function getDayIndex(date: Date, timeZone: string) {
   return Math.floor(utcDate / (1000 * 60 * 60 * 24));
 }
 
+const millisecondsPerDay = 1000 * 60 * 60 * 24;
+
+export type DailyQuestionHistoryEntry = {
+  dateKey: string;
+  date: string;
+  question: string;
+};
+
+function getQuestionByDayIndex(dayIndex: number) {
+  const normalizedIndex =
+    ((dayIndex % dailyQuestions.length) + dailyQuestions.length) % dailyQuestions.length;
+  return dailyQuestions[normalizedIndex];
+}
+
+function getHistoryEntryByDayIndex(dayIndex: number): DailyQuestionHistoryEntry {
+  const calendarDate = new Date(dayIndex * millisecondsPerDay);
+  const year = calendarDate.getUTCFullYear();
+  const month = calendarDate.getUTCMonth() + 1;
+  const day = calendarDate.getUTCDate();
+  const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const date = `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${year}`;
+
+  return {
+    dateKey,
+    date,
+    question: getQuestionByDayIndex(dayIndex),
+  };
+}
+
+export function getDailyQuestionHistory(
+  startDate: Date,
+  endDate = new Date(),
+  timeZone = getStoredCoupleTimeZone(),
+) {
+  const startDayIndex = getDayIndex(startDate, timeZone);
+  const endDayIndex = getDayIndex(endDate, timeZone);
+
+  if (endDayIndex < startDayIndex) return [];
+
+  return Array.from(
+    { length: endDayIndex - startDayIndex + 1 },
+    (_, offset) => getHistoryEntryByDayIndex(startDayIndex + offset),
+  );
+}
+
 export function getDailyQuestion(date = new Date(), timeZone = getStoredCoupleTimeZone()) {
-  const questionIndex = getDayIndex(date, timeZone) % dailyQuestions.length;
-  return dailyQuestions[questionIndex];
+  return getQuestionByDayIndex(getDayIndex(date, timeZone));
 }
 
 export function getDailyQuestionDate(date = new Date(), timeZone = getStoredCoupleTimeZone()) {

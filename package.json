@@ -2,6 +2,9 @@
   "name": "couple-space",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,6 +16,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.ts",
     "check": "npm run typecheck && npm run lint && npm test",
+    "test:e2e:archive-realtime": "playwright test --config=playwright.realtime.config.ts",
     "screenshots:mobile": "playwright test tests/mobile-screenshots.spec.ts"
   },
   "dependencies": {
@@ -31,6 +35,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
+    "@next/env": "16.2.11",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

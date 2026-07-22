@@ -49,7 +49,6 @@ export function getPartnerId(couple: CoupleLike, currentUserId: string) {
 export async function createNotification({
   coupleId,
   recipientId,
-  actorId,
   type,
   title,
   body,
@@ -57,27 +56,22 @@ export async function createNotification({
 }: NotificationPayload & {
   coupleId: string;
   recipientId: string;
-  actorId: string;
 }) {
-  const { data, error } = await supabase
-    .from("couple_notifications")
-    .insert([
-      {
-        couple_id: coupleId,
-        recipient_id: recipientId,
-        actor_id: actorId,
-        type,
-        title,
-        body: body || null,
-        href: href || null,
-      },
-    ])
-    .select("id")
-    .single<{ id: string }>();
+  const { data: notificationId, error } = await supabase.rpc(
+    "create_couple_notification",
+    {
+      p_couple_id: coupleId,
+      p_recipient_id: recipientId,
+      p_type: type,
+      p_title: title,
+      p_body: body || null,
+      p_href: href || null,
+    }
+  );
 
-  if (!error && data) {
+  if (!error && typeof notificationId === "string") {
     emitNotificationsUpdated();
-    await sendBrowserPush(data.id);
+    await sendBrowserPush(notificationId);
   }
 }
 
@@ -92,7 +86,6 @@ export async function createPartnerNotification(
   await createNotification({
     coupleId: couple.id,
     recipientId: partnerId,
-    actorId: currentUserId,
     ...payload,
   });
 }
@@ -105,7 +98,6 @@ export async function createOwnNotification(
   await createNotification({
     coupleId,
     recipientId: currentUserId,
-    actorId: currentUserId,
     ...payload,
   });
 }

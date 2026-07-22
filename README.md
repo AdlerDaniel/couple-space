@@ -5,7 +5,7 @@
 
 ## Локальный запуск
 
-Требуется Node.js 20.9 или новее.
+Требуется Node.js 22 или новее.
 
 1. Установите зависимости: `npm ci`.
 2. Создайте `.env.local` по списку переменных ниже.
@@ -29,7 +29,13 @@
 - `npm run check` — TypeScript, ESLint и unit/contract-тесты.
 - `npm run build` — production-сборка Next.js/Vercel.
 - `npm run build:sites` — production-сборка Sites/vinext.
+- `npm run test:e2e:archive-realtime` — двухпользовательский архив и Realtime.
 - `npm run screenshots:mobile` — визуальные мобильные сценарии Playwright.
+
+E2E-проверка создаёт двух временных подтверждённых пользователей и пару через
+server-only service-role ключ. После сценария ответы, уведомления, пара и
+пользователи удаляются. Если задан `E2E_BASE_URL`, проверяется этот deployment;
+иначе Playwright собирает и запускает сайт локально на `127.0.0.1:3101`.
 
 ## Supabase
 

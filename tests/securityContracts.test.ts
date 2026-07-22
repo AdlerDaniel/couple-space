@@ -8,7 +8,7 @@ async function readSource(path: string) {
 
 test("security migration closes anonymous reads and adds integrity constraints", async () => {
   const migration = await readSource(
-    "supabase/migrations/20260722092723_secure_private_data_and_integrity.sql",
+    "supabase/migrations/20260722100818_secure_private_data_and_integrity.sql",
   );
 
   assert.match(migration, /revoke all on table public\.couple_profiles from anon/);

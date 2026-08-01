@@ -2,11 +2,11 @@
 
 import { createPartnerNotification } from "@/lib/notifications";
 import { PulseBurst } from "@/components/AnimeWidgets";
+import EmojiPicker from "@/components/EmojiPicker";
+import { quickReactionEmojis } from "@/lib/emojis";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-
-const reactions = ["❤️", "😂", "🥺", "👍", "👎", "😡", "😮", "🤢"];
 
 type JsonMap = Record<string, string | boolean | undefined>;
 
@@ -58,6 +58,7 @@ export default function AnswerSocialControls<TRecord extends object>({
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
   const [commentText, setCommentText] = useState("");
   const [commentMessage, setCommentMessage] = useState("");
+  const [isReactionPickerOpen, setIsReactionPickerOpen] = useState(false);
   const [reactionBurst, setReactionBurst] = useState<{ emoji: string; key: number } | null>(null);
   const socialRecord = record as Record<string, unknown>;
   const userReaction = currentUserId
@@ -71,6 +72,14 @@ export default function AnswerSocialControls<TRecord extends object>({
     : undefined;
   const isFavorite = favoriteAnswer === answerKey;
   const currentReactions = readMap(socialRecord[reactionColumn]);
+  const reactionOptions = Array.from(
+    new Set([
+      ...quickReactionEmojis,
+      ...Object.values(currentReactions).filter(
+        (reaction): reaction is string => typeof reaction === "string",
+      ),
+    ]),
+  );
   const isCurrentUsersAnswer =
     (answerKey === "answer_one" && currentUserId === couple?.partner_one_id) ||
     (answerKey === "answer_two" && currentUserId === couple?.partner_two_id);
@@ -249,8 +258,8 @@ export default function AnswerSocialControls<TRecord extends object>({
 
   return (
     <div className="mt-4 space-y-3">
-      <div className="flex flex-wrap gap-2">
-        {reactions.map((reaction) => {
+      <div className="relative flex flex-wrap gap-2">
+        {reactionOptions.map((reaction) => {
           const userIds = getReactionUsers(reaction);
           const singleUser = userIds.length === 1 ? getUserMeta(userIds[0]) : null;
           return (
@@ -278,6 +287,30 @@ export default function AnswerSocialControls<TRecord extends object>({
             </button>
           );
         })}
+        <button
+          type="button"
+          onClick={() => setIsReactionPickerOpen((current) => !current)}
+          disabled={disabled || isSaving}
+          className="grid h-10 min-w-10 place-items-center rounded-full border border-dashed border-emerald-300/70 bg-white/48 px-2 text-lg font-black text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50 disabled:opacity-45 dark:border-emerald-200/25 dark:bg-white/6 dark:text-emerald-100"
+          aria-label="Выбрать другую реакцию"
+          aria-expanded={isReactionPickerOpen}
+          title="Другой эмодзи"
+        >
+          ＋
+        </button>
+        {isReactionPickerOpen && (
+          <EmojiPicker
+            selectedEmoji={typeof userReaction === "string" ? userReaction : undefined}
+            onSelect={(reaction) => {
+              setIsReactionPickerOpen(false);
+              void toggleReaction(reaction);
+            }}
+            tone="emerald"
+            storageKey="couple-space:question-recent-emojis"
+            className="absolute left-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] shadow-[0_20px_60px_rgba(5,150,105,0.2)]"
+            compact
+          />
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">

@@ -14,6 +14,7 @@ import {
   dashboardThemeAccents,
 } from "@/lib/dashboardTheme";
 import { CountUp, PulseBurst } from "@/components/AnimeWidgets";
+import EmojiPicker from "@/components/EmojiPicker";
 import NextImage from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -104,8 +105,6 @@ const theme = {
   darkPage: "dark:from-[#2a080c] dark:via-[#21070b] dark:to-[#140704]",
   darkPanel: "dark:from-[#3a1017] dark:to-[#24070c]",
 };
-
-const statusEmojis = ["❤️", "🥰", "😊", "✨", "🌙", "💌", "🌸", "😴"];
 
 function localKey(coupleId: string, key: string) {
   return `couple-space:dashboard:${coupleId}:${key}`;
@@ -1711,21 +1710,21 @@ export default function DashboardPage() {
             </p>
 
             <div className="mt-5 rounded-2xl bg-white/35 p-5 shadow-inner dark:bg-white/5">
-              <div className="flex flex-wrap gap-2">
-                {statusEmojis.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => setStatusEmoji(emoji)}
-                    className={`h-11 w-11 rounded-full text-xl shadow-inner transition ${
-                      statusEmoji === emoji
-                        ? "bg-white shadow-lg ring-2 ring-[#dc2626]/40"
-                        : "bg-white/40 hover:bg-red-50/80"
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+              <div className="mb-3 flex items-center gap-3">
+                <span className="native-emoji grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/80 text-2xl shadow-inner dark:bg-white/10" aria-label={`Выбранный эмодзи ${statusEmoji}`}>
+                  {statusEmoji}
+                </span>
+                <p className={`text-xs font-bold ${theme.muted} dark:text-white/55`}>
+                  Выберите любой эмодзи для своего статуса.
+                </p>
               </div>
+              <EmojiPicker
+                selectedEmoji={statusEmoji}
+                onSelect={setStatusEmoji}
+                tone="red"
+                storageKey="couple-space:status-recent-emojis"
+                compact
+              />
 
               <div className="mt-4 flex gap-3">
                 <input

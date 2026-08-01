@@ -6,6 +6,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --emoji-font: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
   --ui-radius-sm: 0.75rem;
   --ui-radius-md: 1rem;
   --ui-radius-lg: 1.25rem;
@@ -27,8 +28,18 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Arial, Helvetica, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-variant-emoji: emoji;
   text-rendering: optimizeLegibility;
+}
+
+.native-emoji,
+.chat-emoji-button,
+.chat-big-emoji-message,
+.chat-reaction-pill,
+[data-anime-burst] {
+  font-family: var(--emoji-font);
+  font-variant-emoji: emoji;
 }
 
 html,

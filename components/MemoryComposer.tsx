@@ -1,5 +1,6 @@
 "use client";
 
+import EmojiPicker from "@/components/EmojiPicker";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
   createCompatibleAudioRecorder,
@@ -42,12 +43,6 @@ type MemoryComposerProps = {
   embedded?: boolean;
   onCreated?: (memory: CreatedMemory) => void;
 };
-
-const memoryEmojis = [
-  "❤️", "💕", "💌", "✨", "🥰", "😍", "😘", "😊", "😂", "🥹",
-  "🌸", "🌙", "☀️", "⭐", "🎀", "🎁", "📸", "🍓", "🍷", "☕",
-  "🌊", "🏡", "🎬", "🎵", "💫", "🫶", "💍", "🌹", "🍰", "🧸",
-];
 
 function formatRecordingTime(seconds: number) {
   const minutes = Math.floor(seconds / 60);
@@ -411,20 +406,13 @@ export default function MemoryComposer({
             </button>
 
             {isEmojiPickerOpen && (
-              <div className="absolute right-0 top-full z-30 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-blue-100 bg-white/96 p-3 shadow-[0_20px_60px_rgba(37,99,235,0.22)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#071526]/96">
-                <div className="grid grid-cols-6 gap-2">
-                  {memoryEmojis.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => addEmojiToCaption(emoji)}
-                      className="grid h-9 w-9 place-items-center rounded-xl bg-blue-50 text-lg transition hover:scale-105 hover:bg-blue-100 dark:bg-white/10 dark:hover:bg-white/15"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <EmojiPicker
+                onSelect={addEmojiToCaption}
+                tone="blue"
+                storageKey="couple-space:memory-recent-emojis"
+                className="absolute right-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] shadow-[0_20px_60px_rgba(37,99,235,0.22)]"
+                compact
+              />
             )}
           </div>
 

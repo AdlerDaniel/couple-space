@@ -1,6 +1,7 @@
 "use client";
 
 import EmptyState from "@/components/EmptyState";
+import EmojiPicker from "@/components/EmojiPicker";
 import { getCountdownTimeParts, sortCountdowns, toLocalDateTimeValue } from "@/lib/countdowns";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
@@ -46,8 +47,6 @@ type CountdownDraft = {
 };
 
 type Filter = "upcoming" | "all" | "completed";
-
-const iconOptions = ["💗", "✈️", "🎂", "🏡", "💍", "🎟️", "🌸", "🌊", "🎄", "✨", "🫶", "📅"];
 
 const panelClass =
   "border border-pink-900/10 bg-white/68 shadow-[0_22px_70px_rgba(190,24,93,0.12)] backdrop-blur-xl dark:border-pink-100/10 dark:bg-[#240b1c]/74 dark:shadow-[0_24px_80px_rgba(0,0,0,0.34)]";
@@ -729,15 +728,20 @@ function CountdownEditor({
           <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,0.75fr)]">
             <fieldset>
               <legend className="text-sm font-black">Значок</legend>
-              <div className="mt-2 grid grid-cols-6 gap-2">
-                {iconOptions.map((icon) => (
-                  <button key={icon} type="button" onClick={() => setDraft((current) => ({ ...current, icon }))} aria-label={`Выбрать значок ${icon}`} aria-pressed={draft.icon === icon} className={`grid aspect-square min-h-11 place-items-center rounded-xl border text-xl transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${draft.icon === icon ? "border-[#db2777] bg-pink-100 shadow-[0_8px_22px_rgba(219,39,119,0.16)] dark:bg-pink-400/16" : "border-pink-200/65 bg-white/70 hover:bg-pink-50 dark:border-pink-100/10 dark:bg-white/6 dark:hover:bg-pink-400/10"}`}>
-                    {icon}
-                  </button>
-                ))}
+              <div className="mt-2 flex items-center gap-3 rounded-2xl bg-pink-50/72 p-3 dark:bg-pink-400/7">
+                <span className="native-emoji grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-2xl shadow-inner dark:bg-white/10" aria-label={`Выбранный значок ${draft.icon}`}>
+                  {draft.icon}
+                </span>
+                <p className="text-xs font-bold leading-5 opacity-55">Выберите любой Unicode-эмодзи из полного набора.</p>
               </div>
-              <label htmlFor="countdown-custom-icon" className="mt-3 block text-xs font-bold opacity-55">Или свой эмодзи</label>
-              <input id="countdown-custom-icon" value={draft.icon} onChange={(event) => setDraft((current) => ({ ...current, icon: event.target.value.slice(0, 16) }))} className="mt-1 w-full rounded-xl border border-pink-200/80 bg-white/82 px-3 py-2.5 text-center text-xl outline-none focus:border-[#db2777] dark:border-pink-100/10 dark:bg-white/7" aria-label="Свой значок" />
+              <EmojiPicker
+                selectedEmoji={draft.icon}
+                onSelect={(icon) => setDraft((current) => ({ ...current, icon }))}
+                tone="pink"
+                storageKey="couple-space:countdown-recent-emojis"
+                className="mt-2"
+                compact
+              />
             </fieldset>
 
             <div>

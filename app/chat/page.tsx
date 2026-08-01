@@ -9,6 +9,7 @@ import {
   MAX_AUDIO_SIZE,
 } from "@/lib/mediaFiles";
 import { createPartnerNotification } from "@/lib/notifications";
+import { emojiCategories, quickReactionEmojis, type EmojiCategory } from "@/lib/emojis";
 import { supabase } from "@/lib/supabaseClient";
 import { authorizedFetch } from "@/lib/authorizedFetch";
 import { toBrowserSupabaseUrl, toPortableSupabaseUrl } from "@/lib/supabaseUrls";
@@ -105,13 +106,6 @@ type ProfileAttachmentItem = {
   body?: string | null;
 };
 
-type EmojiCategory = {
-  id: string;
-  label: string;
-  icon: string;
-  emojis: string[];
-};
-
 type StickerPack = {
   id: string;
   name: string;
@@ -150,22 +144,10 @@ const frequentEmojiStorageKey = "couple-space:chat-frequent-emojis";
 const recentStickerStorageKey = "couple-space:chat-recent-stickers";
 const favoriteStickerStorageKey = "couple-space:chat-favorite-stickers";
 const externalChatDraftKey = "couple-space:chat-draft";
-const reactions = ["❤️", "😂", "🥺", "👍", "👎", "😡", "😮", "🤢"];
+const reactions = quickReactionEmojis;
 const CHAT_PAGE_SIZE = 80;
 const maxMediaSize = 25 * 1024 * 1024;
 const maxFileSize = 50 * 1024 * 1024;
-
-const emojiCategories: EmojiCategory[] = [
-  { id: "smiles", label: "Улыбки", icon: "😊", emojis: ["😀", "😃", "😄", "😁", "😆", "😂", "🤣", "😊", "😇", "🙂", "😉", "😍", "🥰", "😘", "😋", "😎", "🤩", "🥳", "🥺", "😭", "😤", "😡", "😮", "🤢"] },
-  { id: "people", label: "Люди", icon: "👋", emojis: ["👋", "🤚", "✋", "👌", "🤌", "🤏", "✌️", "🤞", "🫶", "🤟", "🤘", "👍", "👎", "👏", "🙌", "🙏", "💅", "💃", "🕺", "🧑", "👩", "👨", "👫", "💑"] },
-  { id: "animals", label: "Животные", icon: "🐾", emojis: ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐧", "🐦", "🦋", "🐢", "🐙", "🦄", "🐝", "🐞", "🐾"] },
-  { id: "food", label: "Еда", icon: "🍓", emojis: ["🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍒", "🍑", "🥭", "🍍", "🥐", "🥞", "🍕", "🍟", "🍣", "🍰", "🧁", "🍫", "☕", "🍷"] },
-  { id: "activity", label: "Активность", icon: "🎮", emojis: ["⚽", "🏀", "🎾", "🏐", "🎱", "🏓", "🎮", "🎲", "🎯", "🎳", "🎧", "🎤", "🎬", "🎨", "🎭", "🎪", "🎟️", "🏆", "🥇", "🧘", "🏃", "🚴", "🛼", "🎁"] },
-  { id: "travel", label: "Путешествия", icon: "✈️", emojis: ["🚗", "🚕", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚲", "🛴", "🚄", "✈️", "🚀", "🛶", "⛵", "🏝️", "🏔️", "🌋", "🗽", "🗼", "🏰", "⛺", "🌅", "🌃", "🧳"] },
-  { id: "objects", label: "Объекты", icon: "💡", emojis: ["⌚", "📱", "💻", "⌨️", "📷", "🎥", "💡", "🔦", "🕯️", "📚", "📌", "✂️", "🔐", "🔑", "🧸", "🛍️", "🎀", "💎", "💌", "📝", "📅", "⏰", "🛏️", "🪞"] },
-  { id: "symbols", label: "Символы", icon: "❤️", emojis: ["❤️", "🩷", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "💔", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "✨", "⭐", "🌙", "☀️", "🔥"] },
-  { id: "flags", label: "Флаги", icon: "🏳️", emojis: ["🏳️", "🏴", "🏁", "🚩", "🇷🇺", "🇺🇸", "🇬🇧", "🇫🇷", "🇩🇪", "🇮🇹", "🇪🇸", "🇯🇵", "🇰🇷", "🇨🇳", "🇧🇷", "🇨🇦", "🇦🇺", "🇺🇦", "🇰🇿", "🇹🇷"] },
-];
 
 function notoStickerUrl(code: string) {
   return `https://fonts.gstatic.com/s/e/notoemoji/latest/${code}/512.webp`;
@@ -636,6 +618,7 @@ export default function ChatPage() {
           (emoji) =>
             emoji.includes(query) ||
             category.label.toLowerCase().includes(query) ||
+            category.keywords?.toLowerCase().includes(query) ||
             category.id.includes(query)
         ),
       }))

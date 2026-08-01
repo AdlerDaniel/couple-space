@@ -17,6 +17,7 @@ type EmptyStateProps = {
   text: string;
   actionHref?: string;
   actionLabel?: string;
+  onAction?: () => void;
   accent?: string;
 };
 
@@ -26,6 +27,7 @@ export default function EmptyState({
   text,
   actionHref,
   actionLabel,
+  onAction,
   accent = "#ca8a04",
 }: EmptyStateProps) {
   const Icon = legacyIcons[icon as keyof typeof legacyIcons];
@@ -56,6 +58,16 @@ export default function EmptyState({
         >
           {actionLabel}
         </Link>
+      )}
+      {!actionHref && onAction && actionLabel && (
+        <button
+          type="button"
+          onClick={onAction}
+          className="ui-button mt-4 max-sm:w-full"
+          style={{ backgroundColor: accent }}
+        >
+          {actionLabel}
+        </button>
       )}
     </div>
   );

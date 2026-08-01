@@ -8,6 +8,7 @@ export type NavIconName =
   | "dashboard"
   | "memories"
   | "tracker"
+  | "countdown"
   | "achievements"
   | "profile"
   | "settings"
@@ -30,6 +31,7 @@ export const primaryNavLinks: NavLinkItem[] = [
   { label: "Викторины", href: "/quizzes", icon: "quizzes", description: "Тесты для пары" },
   { label: "Фильмы", href: "/watch", icon: "watch", description: "Список и рулетка" },
   { label: "Воспоминания", href: "/memories", icon: "memories", description: "Фото и моменты" },
+  { label: "Отсчёт", href: "/countdown", icon: "countdown", description: "Таймеры до важных событий" },
 ];
 
 export const mobileMainLinks: NavLinkItem[] = [
@@ -44,6 +46,7 @@ export const mobileMoreLinks: NavLinkItem[] = [
   { label: "Кабинет", href: "/dashboard", icon: "dashboard", description: "Аналитика пары" },
   { label: "Викторины", href: "/quizzes", icon: "quizzes", description: "Тесты для пары" },
   { label: "Чат", href: "/chat", icon: "chat", description: "Сообщения" },
+  { label: "Отсчёт", href: "/countdown", icon: "countdown", description: "Таймеры до важных событий" },
 ];
 
 export const secondaryNavLinks: NavLinkItem[] = [
@@ -122,6 +125,11 @@ export const routeMeta: Record<
     label: "Трекер",
     description: "Цели, привычки и прогресс",
     icon: "tracker",
+  },
+  "/countdown": {
+    label: "Отсчёт",
+    description: "Таймеры до важных событий пары",
+    icon: "countdown",
   },
   "/profile": {
     label: "Профиль",

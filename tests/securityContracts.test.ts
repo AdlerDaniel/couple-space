@@ -20,6 +20,21 @@ test("security migration closes anonymous reads and adds integrity constraints",
   assert.doesNotMatch(migration, /create policy "Anyone can read memory images"/);
 });
 
+test("countdowns are private to the couple and authorship columns cannot be rewritten", async () => {
+  const migration = await readSource(
+    "supabase/migrations/20260801120000_create_countdowns.sql",
+  );
+
+  assert.match(migration, /alter table public\.countdowns enable row level security/);
+  assert.match(migration, /revoke all on table public\.countdowns from anon/);
+  assert.match(migration, /Couple members can view countdowns/);
+  assert.match(migration, /Couple members can create countdowns/);
+  assert.match(migration, /Couple members can update countdowns/);
+  assert.match(migration, /Couple members can delete countdowns/);
+  assert.match(migration, /grant update \(title, description, icon, target_at, updated_by, updated_at\)/);
+  assert.doesNotMatch(migration, /grant select, insert, update, delete/);
+});
+
 test("public server routes authenticate or rate-limit expensive operations", async () => {
   const [signup, watchSearch, linkPreview, pushSend, membership] = await Promise.all([
     readSource("app/api/auth/login-signup/route.ts"),

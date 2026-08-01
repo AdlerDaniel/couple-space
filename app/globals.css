@@ -2870,6 +2870,86 @@ html.dark:has(.today-page-movies) {
   contain-intrinsic-size: auto 18rem;
 }
 
+html:has(.countdown-page) {
+  --scroll-accent: #db2777;
+}
+
+html.dark:has(.countdown-page) {
+  --scroll-accent: #f472b6;
+}
+
+.countdown-grain {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.72) 0 1px, transparent 1px),
+    radial-gradient(circle at 76% 34%, rgba(190, 24, 93, 0.14) 0 1px, transparent 1px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 44%, rgba(244, 114, 182, 0.1));
+  background-size:
+    22px 22px,
+    31px 31px,
+    100% 100%;
+  mix-blend-mode: soft-light;
+}
+
+.countdown-orb {
+  animation: countdownFloat 9s ease-in-out infinite;
+}
+
+.countdown-orb-delay {
+  animation-delay: -4.5s;
+}
+
+.countdown-dialog-in {
+  animation: countdownDialogIn 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.countdown-soft-pulse {
+  animation: countdownSoftPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes countdownFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.08);
+  }
+}
+
+@keyframes countdownDialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes countdownSoftPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 22px 70px rgba(190, 24, 93, 0.12);
+  }
+
+  50% {
+    transform: scale(1.025);
+    box-shadow: 0 28px 90px rgba(190, 24, 93, 0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .countdown-orb,
+  .countdown-dialog-in,
+  .countdown-soft-pulse {
+    animation: none;
+  }
+}
+
 @media (max-width: 767px), (pointer: coarse) {
   main [class*="backdrop-blur"],
   main .app-glass,

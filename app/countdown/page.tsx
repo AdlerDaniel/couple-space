@@ -604,7 +604,7 @@ function CountdownDigits({ countdown, now, featured = false }: { countdown: Coun
     <div className={`grid grid-cols-4 ${featured ? "gap-2 sm:gap-3" : "gap-1.5"}`} aria-label={`До события: ${time.days} дней, ${time.hours} часов, ${time.minutes} минут, ${time.seconds} секунд`}>
       {parts.map(([value, label]) => (
         <div key={String(label)} className={`rounded-[1.15rem] border border-pink-200/70 bg-gradient-to-b from-white/90 to-pink-50/72 text-center shadow-inner dark:border-pink-100/10 dark:from-white/10 dark:to-pink-400/5 ${featured ? "px-1 py-4 sm:py-6" : "px-1 py-3"}`}>
-          <p className={`font-black tabular-nums text-[#be185d] dark:text-pink-200 ${featured ? "text-2xl sm:text-4xl lg:text-5xl" : "text-xl sm:text-2xl"}`}>
+          <p className={`countdown-number font-black tabular-nums text-[#be185d] dark:text-pink-200 ${featured ? "text-2xl sm:text-4xl lg:text-5xl" : "text-xl sm:text-2xl"}`}>
             {String(value).padStart(2, "0")}
           </p>
           <p className={`mt-1 truncate font-black uppercase tracking-wide text-[#831843]/42 dark:text-pink-100/42 ${featured ? "text-[9px] sm:text-[11px]" : "text-[8px] sm:text-[10px]"}`}>

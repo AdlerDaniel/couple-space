@@ -25,3 +25,16 @@ test("all user-facing emoji insertion points use the system picker", async () =>
 
   files.forEach((source) => assert.match(source, /EmojiPicker/));
 });
+
+test("emoji presentation stays scoped away from countdown digits", async () => {
+  const [styles, countdown] = await Promise.all([
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/countdown/page.tsx", import.meta.url), "utf8"),
+  ]);
+
+  const bodyRule = styles.match(/body\s*\{[\s\S]*?\}/)?.[0] ?? "";
+  assert.doesNotMatch(bodyRule, /font-variant-emoji:\s*emoji/);
+  assert.match(styles, /\.native-emoji,[\s\S]*font-variant-emoji:\s*emoji/);
+  assert.match(styles, /\.countdown-number\s*\{[\s\S]*font-variant-numeric:\s*tabular-nums/);
+  assert.match(countdown, /countdown-number/);
+});

@@ -1,5 +1,6 @@
 "use client";
 
+import EmojiPicker from "@/components/EmojiPicker";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
   createCompatibleAudioRecorder,
@@ -9,7 +10,7 @@ import {
   MAX_AUDIO_SIZE,
 } from "@/lib/mediaFiles";
 import { createPartnerNotification } from "@/lib/notifications";
-import { emojiCategories, quickReactionEmojis, type EmojiCategory } from "@/lib/emojis";
+import { quickReactionEmojis } from "@/lib/emojis";
 import { supabase } from "@/lib/supabaseClient";
 import { authorizedFetch } from "@/lib/authorizedFetch";
 import { toBrowserSupabaseUrl, toPortableSupabaseUrl } from "@/lib/supabaseUrls";
@@ -140,7 +141,6 @@ type ChatMessage = {
 const chatSelect =
   "id, couple_id, sender_id, body, created_at, edited_at, read_at, reply_to_id, reactions, attachment_url, attachment_type, attachment_name, attachments, pinned_at, deleted_for, deleted_for_everyone";
 const draftStoragePrefix = "couple-space:chat-draft:";
-const frequentEmojiStorageKey = "couple-space:chat-frequent-emojis";
 const recentStickerStorageKey = "couple-space:chat-recent-stickers";
 const favoriteStickerStorageKey = "couple-space:chat-favorite-stickers";
 const externalChatDraftKey = "couple-space:chat-draft";
@@ -425,11 +425,8 @@ export default function ChatPage() {
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<"emoji" | "stickers" | null>(null);
-  const [emojiSearch, setEmojiSearch] = useState("");
   const [stickerSearch, setStickerSearch] = useState("");
-  const [activeEmojiCategory, setActiveEmojiCategory] = useState("frequent");
   const [activeStickerPack, setActiveStickerPack] = useState(stickerPacks[0]?.id || "love");
-  const [frequentEmojis, setFrequentEmojis] = useState<string[]>(() => readStoredStringList(frequentEmojiStorageKey));
   const [recentStickerIds, setRecentStickerIds] = useState<string[]>(() => readStoredStringList(recentStickerStorageKey));
   const [favoriteStickerIds, setFavoriteStickerIds] = useState<string[]>(() => readStoredStringList(favoriteStickerStorageKey));
   const [draftSelection, setDraftSelection] = useState({ start: 0, end: 0 });
@@ -595,35 +592,6 @@ export default function ChatPage() {
       gifs: gifs.sort(sortNewest),
     };
   }, [visibleMessages]);
-
-  const emojiCategoryOptions = useMemo(() => {
-    const frequentCategory: EmojiCategory = {
-      id: "frequent",
-      label: "Часто",
-      icon: "🕘",
-      emojis: frequentEmojis.length ? frequentEmojis : ["❤️", "😂", "🥺", "👍", "😮", "😍", "😘", "✨"],
-    };
-
-    return [frequentCategory, ...emojiCategories];
-  }, [frequentEmojis]);
-
-  const visibleEmojiCategories = useMemo(() => {
-    const query = emojiSearch.trim().toLowerCase();
-    if (!query) return emojiCategoryOptions;
-
-    return emojiCategoryOptions
-      .map((category) => ({
-        ...category,
-        emojis: category.emojis.filter(
-          (emoji) =>
-            emoji.includes(query) ||
-            category.label.toLowerCase().includes(query) ||
-            category.keywords?.toLowerCase().includes(query) ||
-            category.id.includes(query)
-        ),
-      }))
-      .filter((category) => category.emojis.length > 0);
-  }, [emojiCategoryOptions, emojiSearch]);
 
   const visibleStickers = useMemo(() => {
     const query = stickerSearch.trim().toLowerCase();
@@ -1230,17 +1198,7 @@ export default function ChatPage() {
     }
   }
 
-  function rememberEmoji(emoji: string) {
-    setFrequentEmojis((current) => {
-      const next = [emoji, ...current.filter((item) => item !== emoji)].slice(0, 28);
-      localStorage.setItem(frequentEmojiStorageKey, JSON.stringify(next));
-      return next;
-    });
-  }
-
   function handleEmojiSelect(emoji: string) {
-    rememberEmoji(emoji);
-
     if (reactionTargetId) {
       const targetMessage = messages.find((message) => message.id === reactionTargetId);
       if (targetMessage) toggleReaction(targetMessage, emoji);
@@ -2409,56 +2367,12 @@ export default function ChatPage() {
               </div>
 
               {pickerMode === "emoji" ? (
-                <div>
-                  <input
-                    value={emojiSearch}
-                    onChange={(event) => setEmojiSearch(event.target.value)}
-                    placeholder="Поиск emoji"
-                    className="mb-3 h-11 w-full rounded-2xl border border-sky-100 bg-white/85 px-4 text-sm font-bold outline-none shadow-inner transition focus:border-[#0ea5e9] focus:shadow-[0_0_0_4px_rgba(14,165,233,0.12)] dark:border-white/10 dark:bg-white/8"
-                  />
-                  <div className="mb-3 flex gap-1 overflow-x-auto pb-1">
-                    {emojiCategoryOptions.map((category) => (
-                      <button
-                        key={category.id}
-                        type="button"
-                        onClick={() => setActiveEmojiCategory(category.id)}
-                        className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg transition hover:scale-105 ${
-                          activeEmojiCategory === category.id
-                            ? "bg-[#0284c7] text-white shadow-lg"
-                            : "bg-sky-50 dark:bg-white/8"
-                        }`}
-                        title={category.label}
-                      >
-                        {category.icon}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="max-h-[42vh] overflow-y-auto pr-1 md:max-h-72">
-                    {(emojiSearch ? visibleEmojiCategories : visibleEmojiCategories.filter((category) => category.id === activeEmojiCategory)).length === 0 ? (
-                      <div className="grid h-36 place-items-center rounded-2xl bg-sky-50 text-sm font-black opacity-70 dark:bg-white/8">
-                        Нет результатов
-                      </div>
-                    ) : (
-                      (emojiSearch ? visibleEmojiCategories : visibleEmojiCategories.filter((category) => category.id === activeEmojiCategory)).map((category) => (
-                        <div key={category.id} className="mb-3">
-                          <p className="mb-1 px-1 text-xs font-black uppercase tracking-wide opacity-45">{category.label}</p>
-                          <div className="grid grid-cols-8 gap-1">
-                            {category.emojis.map((emoji) => (
-                              <button
-                                key={`${category.id}-${emoji}`}
-                                type="button"
-                                onClick={() => handleEmojiSelect(emoji)}
-                                className="chat-emoji-button grid h-10 place-items-center rounded-xl text-2xl transition hover:scale-110 hover:bg-sky-50 active:scale-95 dark:hover:bg-white/10"
-                              >
-                                {emoji}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                <EmojiPicker
+                  onSelect={handleEmojiSelect}
+                  tone="sky"
+                  multiple={!reactionTargetId}
+                  autoFocus
+                />
               ) : (
                 <div>
                   <input
@@ -2560,7 +2474,6 @@ export default function ChatPage() {
               onClick={() => {
                 setReactionTargetId(null);
                 setPickerMode((current) => (current === "emoji" ? null : "emoji"));
-                window.requestAnimationFrame(() => textareaRef.current?.focus());
               }}
               className={`order-1 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg shadow-inner transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${
                 pickerMode === "emoji" ? "bg-[#0284c7] text-white" : "bg-white/85 dark:bg-white/10"

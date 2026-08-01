@@ -2,18 +2,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { emojiCategories, searchEmojiCategories } from "../lib/emojis.ts";
+test("emoji picker delegates the complete choice to the device keyboard", async () => {
+  const source = await readFile(new URL("../components/EmojiPicker.tsx", import.meta.url), "utf8");
 
-test("shared emoji catalog is broad, categorized and searchable in Russian", () => {
-  const emojis = emojiCategories.flatMap((category) => category.emojis);
-
-  assert.ok(emojiCategories.length >= 8);
-  assert.ok(emojis.length >= 700);
-  assert.ok(searchEmojiCategories("сердце").flatMap((category) => category.emojis).includes("❤️"));
-  assert.ok(searchEmojiCategories("поездка").some((category) => category.id === "travel"));
+  assert.match(source, /virtualKeyboard/);
+  assert.match(source, /inputMode="text"/);
+  assert.match(source, /Windows: Win \+ \./);
+  assert.match(source, /Mac: Control \+ Command \+ Space/);
+  assert.doesNotMatch(source, /emojiCategories/);
 });
 
-test("all user-facing emoji choices use the shared catalog or picker", async () => {
+test("all user-facing emoji insertion points use the system picker", async () => {
   const files = await Promise.all(
     [
       "../app/chat/page.tsx",
@@ -24,6 +23,5 @@ test("all user-facing emoji choices use the shared catalog or picker", async () 
     ].map((path) => readFile(new URL(path, import.meta.url), "utf8")),
   );
 
-  assert.match(files[0], /emojiCategories/);
-  files.slice(1).forEach((source) => assert.match(source, /EmojiPicker/));
+  files.forEach((source) => assert.match(source, /EmojiPicker/));
 });

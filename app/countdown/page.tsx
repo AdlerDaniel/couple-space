@@ -738,7 +738,6 @@ function CountdownEditor({
                 selectedEmoji={draft.icon}
                 onSelect={(icon) => setDraft((current) => ({ ...current, icon }))}
                 tone="pink"
-                storageKey="couple-space:countdown-recent-emojis"
                 className="mt-2"
                 compact
               />

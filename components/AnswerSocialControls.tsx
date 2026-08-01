@@ -306,9 +306,9 @@ export default function AnswerSocialControls<TRecord extends object>({
               void toggleReaction(reaction);
             }}
             tone="emerald"
-            storageKey="couple-space:question-recent-emojis"
             className="absolute left-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] shadow-[0_20px_60px_rgba(5,150,105,0.2)]"
             compact
+            autoFocus
           />
         )}
       </div>

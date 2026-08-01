@@ -1722,7 +1722,6 @@ export default function DashboardPage() {
                 selectedEmoji={statusEmoji}
                 onSelect={setStatusEmoji}
                 tone="red"
-                storageKey="couple-space:status-recent-emojis"
                 compact
               />
 

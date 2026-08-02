@@ -691,7 +691,7 @@ export default function TrackerPage() {
   });
   const maxYearScore = Math.max(1, ...filteredYearDays.map((day) => day.score));
   return (
-    <main className="tracker-theme min-h-screen px-3 pb-28 pt-7 text-[#713f12] dark:text-amber-50 sm:px-5 lg:px-8 lg:pb-12 lg:pt-8">
+    <main className="tracker-theme mobile-redesign-page min-h-screen px-3 pb-28 pt-7 text-[#713f12] dark:text-amber-50 sm:px-5 lg:px-8 lg:pb-12 lg:pt-8">
       <div className="mx-auto max-w-[1480px] space-y-4 sm:space-y-5">
         <TrackerHeader
           total={sumEvents(rangeEvents)}
@@ -787,33 +787,42 @@ export default function TrackerPage() {
             />
           </div>
 
-          <div className="tracker-charts">
-            <TrackerCharts categories={categories} events={events} />
-          </div>
+          <details className="mobile-disclosure tracker-charts-disclosure">
+            <summary>Графики и сводка</summary>
+            <div className="tracker-charts">
+              <TrackerCharts categories={categories} events={events} />
+            </div>
+          </details>
         </section>
 
         <section className="grid gap-4 xl:grid-cols-2">
-          <PairGoalsPanel
-            goals={goals}
-            categories={categories}
-            events={events}
-            currentUserId={currentUserId}
-            selectedCategoryId={goalCategoryId}
-            period={goalPeriod}
-            targetCount={goalTargetCount}
-            onCategoryChange={setGoalCategoryId}
-            onPeriodChange={setGoalPeriod}
-            onTargetCountChange={setGoalTargetCount}
-            onCreate={createGoal}
-            onDelete={deleteGoal}
-            onReload={reloadGoals}
-          />
-          <ActivityHistory
-            events={events}
-            categories={categories}
-            currentUserId={currentUserId}
-            onReload={reloadEvents}
-          />
+          <details className="mobile-disclosure">
+            <summary>Цели пары</summary>
+            <PairGoalsPanel
+              goals={goals}
+              categories={categories}
+              events={events}
+              currentUserId={currentUserId}
+              selectedCategoryId={goalCategoryId}
+              period={goalPeriod}
+              targetCount={goalTargetCount}
+              onCategoryChange={setGoalCategoryId}
+              onPeriodChange={setGoalPeriod}
+              onTargetCountChange={setGoalTargetCount}
+              onCreate={createGoal}
+              onDelete={deleteGoal}
+              onReload={reloadGoals}
+            />
+          </details>
+          <details className="mobile-disclosure">
+            <summary>История отметок</summary>
+            <ActivityHistory
+              events={events}
+              categories={categories}
+              currentUserId={currentUserId}
+              onReload={reloadEvents}
+            />
+          </details>
         </section>
       </div>
     </main>

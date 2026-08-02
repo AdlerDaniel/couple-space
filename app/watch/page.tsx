@@ -84,6 +84,8 @@ export default function WatchPage() {
   const [selectedSearchResult, setSelectedSearchResult] = useState<WatchSearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [mobileList, setMobileList] = useState<"wish" | "watched">("wish");
   const deleteTimerRef = useRef<number | null>(null);
   const autoSpinDoneRef = useRef(false);
   const rouletteWheelRef = useRef<HTMLDivElement | null>(null);
@@ -297,6 +299,7 @@ export default function WatchPage() {
     setSearchResults([]);
     setIsSearchOpen(false);
     setMessage("Добавлено в список на просмотр.");
+    setIsAddOpen(false);
     setIsSaving(false);
   }
 
@@ -459,7 +462,7 @@ export default function WatchPage() {
       <article
         key={item.id}
         data-anime-draggable={!item.is_watched ? "true" : undefined}
-        className={`performance-list-item group rounded-[1.4rem] border p-4 shadow-[0_18px_45px_rgba(77,124,15,0.12)] transition duration-300 hover:-translate-y-1 dark:shadow-black/20 ${
+        className={`watch-card performance-list-item group rounded-[1.4rem] border p-4 shadow-[0_18px_45px_rgba(77,124,15,0.12)] transition duration-300 hover:-translate-y-1 dark:shadow-black/20 ${
           item.is_watched
             ? "border-lime-200/60 bg-white/58 opacity-78 dark:border-lime-100/10 dark:bg-white/7"
             : "border-white/65 bg-white/68 dark:border-white/10 dark:bg-white/8"
@@ -467,7 +470,7 @@ export default function WatchPage() {
       >
         {item.poster_url && (
           <div
-            className="mb-4 aspect-[16/10] rounded-[1rem] bg-lime-100 bg-cover bg-center shadow-inner dark:bg-white/8"
+            className="watch-card-poster mb-4 aspect-[16/10] rounded-[1rem] bg-lime-100 bg-cover bg-center shadow-inner dark:bg-white/8"
             style={{ backgroundImage: `url("${item.poster_url}")` }}
             aria-label={`Постер: ${item.title}`}
           />
@@ -495,7 +498,7 @@ export default function WatchPage() {
           <span className="min-w-0 [overflow-wrap:anywhere]">Добавил: {getAddedByName(item.added_by)}</span>
         </div>
 
-        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+        <div className="watch-card-actions mt-5 grid gap-2 sm:grid-cols-2">
           <Link
             href={`/watch/${item.id}`}
             className="min-w-0 rounded-full bg-white/75 px-4 py-2.5 text-center text-sm font-black leading-tight text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
@@ -544,11 +547,11 @@ export default function WatchPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7fee7] px-4 pb-28 pt-24 text-lime-950 dark:bg-[#0b1303] dark:text-white md:px-6 md:pt-28">
+    <main className="watch-page mobile-redesign-page min-h-screen bg-[#f7fee7] px-4 pb-28 pt-24 text-lime-950 dark:bg-[#0b1303] dark:text-white md:px-6 md:pt-28">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_10%,rgba(132,204,22,0.24),transparent_30%),radial-gradient(circle_at_88%_16%,rgba(190,242,100,0.18),transparent_28%),linear-gradient(135deg,#f7fee7_0%,#ecfccb_48%,#f0fdf4_100%)] dark:bg-[radial-gradient(circle_at_18%_10%,rgba(132,204,22,0.16),transparent_30%),linear-gradient(135deg,#0b1303_0%,#132006_48%,#071002_100%)]" />
 
       <section className="mx-auto max-w-6xl">
-        <div className="text-center">
+        <div className="mobile-page-header watch-header text-center">
           <p className="text-sm font-black uppercase tracking-[0.22em] text-lime-700/58 dark:text-lime-100/58">
             Что посмотрим?
           </p>
@@ -560,7 +563,7 @@ export default function WatchPage() {
           </p>
         </div>
 
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
+        <div className="watch-stats mt-6 grid gap-3 md:grid-cols-3">
           {[
             ["Всего в списке", visibleItems.length],
             ["Осталось посмотреть", wishItems.length],
@@ -632,7 +635,16 @@ export default function WatchPage() {
           </div>
         </section>
 
-        <section className="mt-6 rounded-[1.7rem] border border-white/70 bg-white/64 p-4 shadow-inner backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:p-5">
+        <button type="button" onClick={() => setIsAddOpen(true)} className="watch-add-mobile">
+          <span aria-hidden="true">+</span>
+          Добавить фильм
+        </button>
+        {isAddOpen && <button type="button" className="watch-add-backdrop" onClick={() => setIsAddOpen(false)} aria-label="Закрыть добавление фильма" />}
+        <section className={`watch-add-sheet mt-6 rounded-[1.7rem] border border-white/70 bg-white/64 p-4 shadow-inner backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:p-5 ${isAddOpen ? "is-open" : ""}`}>
+          <div className="watch-add-mobile-head">
+            <div><p>Новый вариант</p><strong>Добавить фильм</strong></div>
+            <button type="button" onClick={() => setIsAddOpen(false)} aria-label="Закрыть">×</button>
+          </div>
           <div className="grid gap-3 lg:grid-cols-[1fr_220px_auto]">
             <div className="relative">
               <input
@@ -747,8 +759,12 @@ export default function WatchPage() {
           )}
         </section>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <section>
+        <div className="watch-mobile-tabs" role="tablist" aria-label="Списки фильмов">
+          <button type="button" role="tab" aria-selected={mobileList === "wish"} onClick={() => setMobileList("wish")}>Хотим · {wishItems.length}</button>
+          <button type="button" role="tab" aria-selected={mobileList === "watched"} onClick={() => setMobileList("watched")}>Посмотрели · {watchedItems.length}</button>
+        </div>
+        <div className="watch-lists mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <section className={`watch-list-section ${mobileList === "wish" ? "is-mobile-active" : ""}`}>
             <div className="flex items-end justify-between gap-3">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-lime-800/55 dark:text-white/45">
@@ -773,7 +789,7 @@ export default function WatchPage() {
             </div>
           </section>
 
-          <section>
+          <section className={`watch-list-section ${mobileList === "watched" ? "is-mobile-active" : ""}`}>
             <div className="flex items-end justify-between gap-3">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-lime-800/55 dark:text-white/45">

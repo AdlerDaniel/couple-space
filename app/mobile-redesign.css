@@ -1,0 +1,989 @@
+/* Mobile-first composition layer. Desktop styling remains owned by each section theme. */
+.memories-add-mobile,
+.memories-composer-backdrop,
+.memories-composer-mobile-head,
+.watch-add-mobile,
+.watch-add-backdrop,
+.watch-add-mobile-head,
+.question-primary-mobile,
+.chat-mobile-attach-option {
+  display: none;
+}
+
+.watch-mobile-tabs {
+  display: none;
+}
+
+@media (min-width: 641px) {
+  .mobile-disclosure > summary {
+    display: none;
+  }
+
+  .mobile-disclosure:not([open]) > :not(summary) {
+    display: block !important;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --mobile-page-gutter: 0.875rem;
+    --mobile-section-gap: 0.875rem;
+    --mobile-card-radius: 1.15rem;
+  }
+
+  body {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  main:not(.mobile-fullscreen) {
+    padding-inline: var(--mobile-page-gutter) !important;
+    padding-top: max(0.875rem, env(safe-area-inset-top)) !important;
+  }
+
+  main:not(.mobile-fullscreen) h1 {
+    font-size: clamp(1.95rem, 9.4vw, 2.3rem) !important;
+    line-height: 1.02 !important;
+    letter-spacing: -0.035em !important;
+  }
+
+  main:not(.mobile-fullscreen) h2 {
+    font-size: clamp(1.4rem, 6.8vw, 1.75rem) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  main:not(.mobile-fullscreen) h3 {
+    font-size: 1.05rem !important;
+    line-height: 1.22 !important;
+  }
+
+  .mobile-redesign-page .ui-card,
+  .mobile-redesign-page .ui-action-card,
+  .mobile-redesign-page .performance-list-item {
+    border-radius: var(--mobile-card-radius) !important;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.075) !important;
+  }
+
+  .mobile-page-header {
+    margin-bottom: 1rem !important;
+    gap: 0.75rem !important;
+  }
+
+  .mobile-page-header > div > p:first-child {
+    font-size: 0.68rem !important;
+    letter-spacing: 0.14em !important;
+  }
+
+  .mobile-matte-dock {
+    left: 0.5rem !important;
+    right: 0.5rem !important;
+    padding: 0.3rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .mobile-matte-tab {
+    min-height: 3.55rem;
+    border-radius: 1rem !important;
+    padding-block: 0.3rem !important;
+  }
+
+  .mobile-matte-dock .nav-icon,
+  .mobile-matte-dock .nav-icon svg {
+    width: 1.35rem !important;
+    height: 1.35rem !important;
+  }
+
+  .mobile-matte-label {
+    font-size: 0.61rem !important;
+    line-height: 1 !important;
+  }
+
+  /* Memories: creation moves to a bottom sheet; the feed becomes the first task. */
+  .memories-page .memories-header {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .memories-page .memories-header h1 {
+    margin-top: 0.2rem !important;
+  }
+
+  .memories-page .memories-header > button {
+    width: auto !important;
+    min-height: 2.65rem !important;
+    padding: 0.65rem 0.85rem !important;
+    font-size: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .memories-page .memories-header > button::before {
+    content: "Случайный";
+    font-size: 0.78rem;
+  }
+
+  .memories-add-mobile,
+  .watch-add-mobile {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+    z-index: 35;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    width: auto !important;
+    border-radius: 999px;
+    padding: 0.7rem 1rem;
+    color: white;
+    font-size: 0.82rem;
+    font-weight: 900;
+    box-shadow: 0 14px 34px rgba(37, 99, 235, 0.28);
+  }
+
+  .memories-add-mobile {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  }
+
+  .memories-add-mobile span,
+  .watch-add-mobile span {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .memories-composer-sheet,
+  .watch-add-sheet {
+    display: none;
+  }
+
+  .memories-composer-sheet.is-open,
+  .watch-add-sheet.is-open {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 61;
+    display: block;
+    max-height: 88dvh;
+    overflow-y: auto;
+    margin: 0 !important;
+    border-radius: 1.5rem 1.5rem 0 0 !important;
+    padding: 0.85rem !important;
+    background: #eff6ff;
+    box-shadow: 0 -20px 60px rgba(15, 23, 42, 0.24);
+  }
+
+  .dark .memories-composer-sheet.is-open {
+    background: #071227;
+  }
+
+  .memories-composer-backdrop,
+  .watch-add-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: block;
+    width: 100% !important;
+    background: rgba(2, 6, 23, 0.48);
+  }
+
+  .memories-composer-mobile-head,
+  .watch-add-mobile-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.2rem 0.25rem 0.75rem;
+  }
+
+  .memories-composer-mobile-head p,
+  .watch-add-mobile-head p {
+    font-size: 0.68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    opacity: 0.55;
+  }
+
+  .memories-composer-mobile-head strong,
+  .watch-add-mobile-head strong {
+    font-size: 1.15rem;
+  }
+
+  .memories-composer-mobile-head button,
+  .watch-add-mobile-head button {
+    display: grid;
+    place-items: center;
+    width: 2.5rem !important;
+    height: 2.5rem;
+    min-height: 0 !important;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    font-size: 1.4rem;
+  }
+
+  .memories-page section > .mb-8.flex.gap-3 {
+    position: sticky;
+    top: 0.5rem;
+    z-index: 20;
+    margin-bottom: 0.85rem !important;
+    gap: 0.35rem !important;
+    padding: 0.25rem;
+    border-radius: 999px;
+    background: rgba(239, 246, 255, 0.88);
+  }
+
+  .dark .memories-page section > .mb-8.flex.gap-3 {
+    background: rgba(2, 6, 23, 0.88);
+  }
+
+  .memories-page section > .mb-8.flex.gap-3 button {
+    min-height: 2.5rem;
+    padding: 0.55rem 0.8rem !important;
+    font-size: 0.78rem;
+    box-shadow: none !important;
+  }
+
+  .memory-card {
+    margin-bottom: 0.8rem !important;
+    padding: 0 !important;
+    border-width: 0 !important;
+  }
+
+  .memory-card img {
+    max-height: 28rem;
+    min-height: 0 !important;
+  }
+
+  .memory-card-body {
+    padding: 0.85rem !important;
+  }
+
+  .memory-card-body > h2 {
+    font-size: 1.2rem !important;
+  }
+
+  .memory-card-body > h2 + p {
+    display: -webkit-box;
+    margin-top: 0.35rem !important;
+    overflow: hidden;
+    font-size: 0.9rem;
+    line-height: 1.45 !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .memory-meta {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem !important;
+    margin-top: 0.65rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  .memory-comments {
+    margin-top: 0.7rem !important;
+    padding: 0.7rem !important;
+  }
+
+  .memory-comments > .space-y-2 {
+    max-height: 7rem;
+    overflow-y: auto;
+  }
+
+  /* Question: primary answer action appears immediately after the prompt. */
+  .questions-today-page {
+    padding-top: 0.75rem !important;
+  }
+
+  .questions-today-page .questions-reveal {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .question-hero {
+    margin-bottom: 0.8rem !important;
+  }
+
+  .question-hero > div:first-child {
+    justify-content: space-between !important;
+  }
+
+  .question-hero > div:first-child > * {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.72rem !important;
+    box-shadow: none !important;
+  }
+
+  .question-hero h1 {
+    margin-top: 0.9rem !important;
+    font-size: clamp(1.8rem, 8.5vw, 2.15rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  .question-primary-mobile {
+    display: block;
+    width: 100%;
+    min-height: 3.2rem;
+    margin-top: 1rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #15803d, #14b8a6);
+    color: white;
+    font-weight: 900;
+    box-shadow: 0 12px 28px rgba(21, 128, 61, 0.22);
+  }
+
+  .question-summary,
+  .question-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+  }
+
+  .question-summary {
+    margin-top: 0.75rem !important;
+  }
+
+  .question-summary > div,
+  .question-status-grid > div {
+    min-height: 0 !important;
+    border-radius: 1rem !important;
+    padding: 0.7rem !important;
+    box-shadow: none !important;
+  }
+
+  .question-summary p:first-child,
+  .question-status-grid p:first-child {
+    font-size: 0.62rem !important;
+  }
+
+  .question-summary p:last-child,
+  .question-status-grid p:last-child {
+    margin-top: 0.3rem !important;
+    font-size: 0.92rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .question-status-grid {
+    order: 2;
+    margin-bottom: 0.8rem !important;
+  }
+
+  .question-answer-grid {
+    order: 1;
+    gap: 0.75rem !important;
+  }
+
+  .question-answer-grid > article {
+    border-radius: 1.15rem !important;
+    padding: 0.9rem !important;
+    box-shadow: 0 8px 22px rgba(21, 128, 61, 0.09) !important;
+  }
+
+  .question-answer-grid article > div[class*="min-h-48"] {
+    min-height: 6.5rem !important;
+    margin-top: 0.65rem !important;
+    border-radius: 0.95rem !important;
+    padding: 0.85rem !important;
+  }
+
+  .question-my-answer > button {
+    display: none;
+  }
+
+  /* Tracker: calendar and selected day precede analytics. */
+  .tracker-theme > div {
+    gap: 0.75rem !important;
+  }
+
+  .tracker-theme header {
+    gap: 0.75rem !important;
+  }
+
+  .tracker-theme header h1 {
+    margin-top: 0.25rem !important;
+  }
+
+  .tracker-theme header h1 + p {
+    display: none;
+  }
+
+  .tracker-theme header > div:last-child {
+    gap: 0.4rem !important;
+  }
+
+  .tracker-theme header > div:last-child > div {
+    min-height: 0 !important;
+    padding: 0.55rem 0.25rem !important;
+    border-radius: 0.95rem !important;
+  }
+
+  .tracker-theme header > div:last-child p:first-child {
+    font-size: 1.05rem !important;
+  }
+
+  .tracker-theme .tracker-content-grid {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.75rem !important;
+  }
+
+  .tracker-view { order: 1; }
+  .tracker-day { order: 2; }
+  .tracker-summary { order: 3; }
+  .tracker-charts-disclosure { order: 4; }
+
+  .mobile-disclosure {
+    min-width: 0;
+  }
+
+  .mobile-disclosure > summary {
+    display: flex;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid rgba(120, 53, 15, 0.1);
+    border-radius: 1rem;
+    padding: 0.75rem 0.9rem;
+    background: rgba(255, 255, 255, 0.58);
+    font-size: 0.9rem;
+    font-weight: 900;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .mobile-disclosure > summary::after {
+    content: "+";
+    font-size: 1.15rem;
+  }
+
+  .mobile-disclosure[open] > summary::after {
+    content: "−";
+  }
+
+  .mobile-disclosure > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobile-disclosure[open] > :not(summary) {
+    margin-top: 0.5rem;
+  }
+
+  .tracker-theme .tracker-view > section,
+  .tracker-theme .tracker-day > aside,
+  .tracker-theme .tracker-summary > section,
+  .tracker-theme .tracker-charts > section,
+  .tracker-theme > div > section {
+    border-radius: 1.1rem !important;
+    padding: 0.75rem !important;
+  }
+
+  .tracker-theme .tracker-summary > section {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    overflow-x: auto;
+  }
+
+  .tracker-theme .tracker-summary-item {
+    min-width: 5.2rem;
+    min-height: 3.8rem !important;
+    padding: 0.45rem !important;
+  }
+
+  /* Watch list: stats in one row, add form in a sheet, compact horizontal cards. */
+  .watch-page .watch-header h1 {
+    margin-top: 0.35rem !important;
+  }
+
+  .watch-page .watch-header h1 + p {
+    margin-top: 0.5rem !important;
+    font-size: 0.88rem !important;
+    line-height: 1.45 !important;
+  }
+
+  .watch-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.45rem !important;
+    margin-top: 0.8rem !important;
+  }
+
+  .watch-stats > div {
+    min-height: 4.2rem;
+    padding: 0.55rem 0.25rem !important;
+    border-radius: 1rem !important;
+  }
+
+  .watch-stats p:first-child {
+    font-size: 1.35rem !important;
+  }
+
+  .watch-stats p:last-child {
+    font-size: 0.58rem !important;
+  }
+
+  .watch-page > section > section:first-of-type {
+    min-height: 0 !important;
+    margin-top: 0.8rem !important;
+    padding: 0.9rem !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .watch-page > section > section:first-of-type .anime-roulette-wheel {
+    width: 6rem !important;
+    height: 6rem !important;
+    border-width: 0.4rem !important;
+    font-size: 2rem !important;
+  }
+
+  .watch-add-mobile {
+    background: linear-gradient(135deg, #65a30d, #3f6212);
+    box-shadow: 0 14px 34px rgba(77, 124, 15, 0.28);
+  }
+
+  .watch-add-sheet.is-open {
+    background: #f7fee7;
+  }
+
+  .dark .watch-add-sheet.is-open {
+    background: #101906;
+  }
+
+  .watch-card {
+    display: grid;
+    grid-template-columns: 5.25rem minmax(0, 1fr);
+    align-items: start;
+    gap: 0.4rem 0.75rem;
+    min-height: 0;
+    padding: 0.7rem !important;
+  }
+
+  .watch-card:not(:has(.watch-card-poster)) {
+    grid-template-columns: 1fr;
+  }
+
+  .watch-card-poster {
+    grid-row: 1 / span 4;
+    width: 5.25rem;
+    height: 7.4rem;
+    margin: 0 !important;
+    aspect-ratio: auto !important;
+  }
+
+  .watch-card > div:first-of-type,
+  .watch-card > h3,
+  .watch-card > h3 + div {
+    grid-column: 2;
+    margin-top: 0 !important;
+  }
+
+  .watch-card:not(:has(.watch-card-poster)) > div:first-of-type,
+  .watch-card:not(:has(.watch-card-poster)) > h3,
+  .watch-card:not(:has(.watch-card-poster)) > h3 + div {
+    grid-column: 1;
+  }
+
+  .watch-card > div:first-of-type > span:first-child {
+    display: none;
+  }
+
+  .watch-card > div:first-of-type > span:last-child {
+    max-width: none !important;
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.62rem !important;
+  }
+
+  .watch-card h3 {
+    font-size: 1rem !important;
+  }
+
+  .watch-card h3 + div {
+    gap: 0.25rem !important;
+    font-size: 0.62rem !important;
+  }
+
+  .watch-card-actions {
+    grid-column: 1 / -1;
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 0.4rem !important;
+    margin-top: 0.35rem !important;
+  }
+
+  .watch-card-actions > * {
+    min-height: 2.3rem !important;
+    width: auto !important;
+    flex: 1 1 auto;
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .watch-card > a:last-child {
+    grid-column: 1 / -1;
+    margin-top: 0 !important;
+    font-size: 0.7rem !important;
+  }
+
+  .watch-mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+    margin-top: 0.9rem;
+    padding: 0.25rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.62);
+  }
+
+  .watch-mobile-tabs button {
+    min-height: 2.65rem;
+    border-radius: 999px;
+    padding: 0.5rem;
+    color: rgba(54, 83, 20, 0.62);
+    font-size: 0.75rem;
+    font-weight: 900;
+  }
+
+  .watch-mobile-tabs button[aria-selected="true"] {
+    background: #65a30d;
+    color: white;
+  }
+
+  .watch-lists {
+    margin-top: 0.75rem !important;
+  }
+
+  .watch-list-section {
+    display: none;
+  }
+
+  .watch-list-section.is-mobile-active {
+    display: block;
+  }
+
+  /* Countdown: compact intro, horizontal stats and a floating create action. */
+  .countdown-hero {
+    gap: 0.65rem !important;
+  }
+
+  .countdown-hero h1 {
+    margin-top: 0.45rem !important;
+  }
+
+  .countdown-hero h1 + p {
+    display: -webkit-box;
+    margin-top: 0.6rem !important;
+    overflow: hidden;
+    font-size: 0.88rem !important;
+    line-height: 1.45 !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .countdown-hero > button {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+    z-index: 35;
+    width: 3.25rem !important;
+    min-height: 3.25rem !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    box-shadow: 0 14px 34px rgba(219, 39, 119, 0.3) !important;
+  }
+
+  .countdown-hero > button > span {
+    width: 100%;
+    height: 100%;
+    background: transparent !important;
+  }
+
+  .countdown-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.45rem !important;
+    margin-top: 0.8rem !important;
+  }
+
+  .countdown-stats > div {
+    min-height: 4.2rem;
+    padding: 0.55rem 0.3rem !important;
+    border-radius: 1rem !important;
+  }
+
+  .countdown-stats > div > div {
+    justify-content: center;
+    gap: 0.4rem !important;
+  }
+
+  .countdown-stats span {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+
+  .countdown-stats p:first-child {
+    font-size: 1.15rem !important;
+  }
+
+  .countdown-stats p:last-child {
+    font-size: 0.52rem !important;
+  }
+
+  .countdown-featured {
+    margin-top: 0.7rem !important;
+    border-radius: 1.15rem !important;
+    padding: 0.9rem !important;
+  }
+
+  .countdown-featured > div {
+    gap: 0.8rem !important;
+  }
+
+  .countdown-featured span[class*="h-16"] {
+    width: 3.25rem !important;
+    height: 3.25rem !important;
+    border-radius: 1rem !important;
+    font-size: 1.6rem !important;
+  }
+
+  .countdown-featured .countdown-number {
+    font-size: 1.3rem !important;
+  }
+
+  .countdown-featured .grid-cols-4 > div {
+    padding-block: 0.65rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  .countdown-collection-head {
+    margin-top: 1rem !important;
+    gap: 0.55rem !important;
+  }
+
+  .countdown-collection-head > div:first-child > p {
+    display: none;
+  }
+
+  .countdown-collection-head > div:last-child button {
+    min-height: 2.5rem !important;
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  .countdown-card {
+    padding: 0.8rem !important;
+  }
+
+  .countdown-card .countdown-number {
+    font-size: 1.15rem !important;
+  }
+
+  .countdown-card .grid-cols-4 > div {
+    padding-block: 0.55rem !important;
+  }
+
+  /* Dashboard: a compact relationship hero and scannable 2-column summary. */
+  .dashboard-page > div {
+    gap: 0.8rem !important;
+  }
+
+  .dashboard-hero,
+  .dashboard-hero-content {
+    min-height: 17rem !important;
+  }
+
+  .dashboard-hero {
+    padding: 0.9rem !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .dashboard-hero-actions {
+    display: none !important;
+  }
+
+  .dashboard-hero-content {
+    justify-content: flex-end !important;
+    gap: 0.75rem !important;
+  }
+
+  .dashboard-avatars {
+    justify-content: flex-start !important;
+    margin-bottom: 0.65rem !important;
+    transform: scale(0.82);
+    transform-origin: left bottom;
+  }
+
+  .dashboard-hero h1 {
+    font-size: 2rem !important;
+  }
+
+  .dashboard-hero h1 + p {
+    margin-top: 0.35rem !important;
+    font-size: 1.25rem !important;
+  }
+
+  .dashboard-hero h1 + p + div {
+    margin-top: 0.65rem !important;
+    gap: 0.35rem !important;
+  }
+
+  .dashboard-hero h1 + p + div > * {
+    min-height: 2.25rem !important;
+    padding: 0.45rem 0.7rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .dashboard-summary {
+    padding: 0.85rem !important;
+  }
+
+  .dashboard-summary > div:first-child > p {
+    display: none;
+  }
+
+  .dashboard-summary > div:last-child {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+    margin-top: 0.75rem !important;
+  }
+
+  .dashboard-summary article {
+    min-height: 7.5rem;
+    padding: 0.7rem !important;
+  }
+
+  .dashboard-summary article > p[class*="text-5xl"] {
+    margin-top: 0.45rem !important;
+    font-size: 1.8rem !important;
+  }
+
+  .dashboard-page > div > section:not(.dashboard-hero):not(.dashboard-summary) {
+    border-radius: 1.15rem !important;
+    padding: 0.85rem !important;
+  }
+
+  .achievement-toast {
+    top: max(0.6rem, env(safe-area-inset-top)) !important;
+    padding: 0.8rem !important;
+    border-radius: 1rem !important;
+  }
+
+  /* Profile and settings become compact grouped lists. */
+  .profile-page,
+  .settings-page {
+    padding-top: 0.875rem !important;
+  }
+
+  .profile-page > div,
+  .settings-page > div {
+    gap: 0.8rem !important;
+  }
+
+  .profile-page section,
+  .profile-page form,
+  .settings-page section,
+  .settings-page form {
+    border-radius: 1.15rem !important;
+    padding: 0.9rem !important;
+  }
+
+  .profile-page img[class*="h-32"],
+  .profile-page div[class*="h-32"] {
+    width: 5.5rem !important;
+    height: 5.5rem !important;
+  }
+
+  .profile-page button,
+  .settings-page button {
+    min-height: 2.8rem !important;
+  }
+
+  /* Chat is a dedicated full-screen surface with a 56px header and roomy input. */
+  .chat-page .chat-mobile-header {
+    min-height: 3.5rem;
+    padding: 0.35rem 0.55rem 0.35rem 3.25rem !important;
+  }
+
+  .chat-page .chat-mobile-header > a {
+    left: 0.5rem !important;
+    top: 0.45rem !important;
+  }
+
+  .chat-page .chat-mobile-header > div > button {
+    width: 100%;
+    justify-content: flex-start !important;
+    padding: 0.25rem 0.4rem !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .chat-page .chat-mobile-header h1 {
+    max-width: none !important;
+    font-size: 1rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .chat-page .chat-mobile-header h1 + p {
+    max-width: 14rem !important;
+    font-size: 0.64rem !important;
+  }
+
+  .chat-page .chat-mobile-header img,
+  .chat-page .chat-mobile-header img + span {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+  }
+
+  .chat-page form {
+    padding: 0.45rem !important;
+    padding-bottom: max(0.45rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  .chat-composer-row {
+    gap: 0.4rem !important;
+  }
+
+  .chat-quick-emoji,
+  .chat-quick-stickers {
+    display: none !important;
+  }
+
+  .chat-mobile-attach-option {
+    display: flex;
+  }
+
+  .chat-composer-row > div[class*="order-4"] {
+    order: 1 !important;
+  }
+
+  .chat-composer-input {
+    order: 2 !important;
+    min-height: 2.75rem !important;
+    padding: 0.65rem 0.75rem !important;
+    font-size: 0.95rem !important;
+  }
+
+  .chat-composer-row > button[class*="order-5"] {
+    order: 3 !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+  }
+
+  .chat-sticker-message .chat-sticker-send {
+    width: 7rem !important;
+    height: 7rem !important;
+  }
+
+  .chat-big-emoji-message > div {
+    font-size: 3.75rem !important;
+  }
+
+  .chat-page div[class*="max-w-[84%]"] {
+    max-width: 80% !important;
+  }
+
+  /* Secondary pages inherit the same compact rhythm without losing their themes. */
+  main:not(.mobile-fullscreen) .ui-section-title {
+    font-size: 1.5rem !important;
+  }
+
+  main:not(.mobile-fullscreen) .ui-eyebrow {
+    font-size: 0.65rem !important;
+    letter-spacing: 0.14em !important;
+  }
+
+  main:not(.mobile-fullscreen) [class*="rounded-[2rem]"] {
+    border-radius: 1.15rem !important;
+  }
+}

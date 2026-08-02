@@ -90,6 +90,7 @@ export default function MemoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
 
   useEffect(() => {
     async function loadMemories() {
@@ -374,12 +375,12 @@ export default function MemoriesPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#eff6ff] px-4 pb-32 pt-24 text-[#172554] transition-colors dark:bg-[#020617] dark:text-white sm:px-6 md:pt-28">
+    <main className="memories-page mobile-redesign-page relative min-h-screen overflow-hidden bg-[#eff6ff] px-4 pb-32 pt-24 text-[#172554] transition-colors dark:bg-[#020617] dark:text-white sm:px-6 md:pt-28">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(37,99,235,0.2),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(29,78,216,0.14),transparent_30%),linear-gradient(135deg,#eff6ff_0%,#f8fbff_48%,#dbeafe_100%)] dark:bg-[radial-gradient(circle_at_18%_12%,rgba(37,99,235,0.16),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(29,78,216,0.12),transparent_30%),linear-gradient(135deg,#020617_0%,#0f172a_48%,#020617_100%)]" />
       <div className="memories-grain pointer-events-none absolute inset-0 opacity-[0.16]" />
 
       <section className="relative mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div className="mobile-page-header memories-header mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-sm font-black uppercase tracking-wide text-[#2563eb]/70 dark:text-blue-200/70">
               Воспоминания
@@ -397,14 +398,43 @@ export default function MemoriesPage() {
         </div>
 
         {couple && currentUserId && (
-          <MemoryComposer
-            couple={couple}
-            currentUserId={currentUserId}
-            onCreated={(memory: CreatedMemory) => {
-              setMemories((current) => [memory, ...current]);
-              setMessage("");
-            }}
-          />
+          <>
+            <button
+              type="button"
+              onClick={() => setIsComposerOpen(true)}
+              className="memories-add-mobile"
+              aria-label="Добавить воспоминание"
+            >
+              <span aria-hidden="true">+</span>
+              Добавить момент
+            </button>
+            {isComposerOpen && (
+              <button
+                type="button"
+                className="memories-composer-backdrop"
+                onClick={() => setIsComposerOpen(false)}
+                aria-label="Закрыть добавление воспоминания"
+              />
+            )}
+            <div className={`memories-composer-sheet ${isComposerOpen ? "is-open" : ""}`}>
+              <div className="memories-composer-mobile-head">
+                <div>
+                  <p>Новый момент</p>
+                  <strong>Добавить воспоминание</strong>
+                </div>
+                <button type="button" onClick={() => setIsComposerOpen(false)} aria-label="Закрыть">×</button>
+              </div>
+              <MemoryComposer
+                couple={couple}
+                currentUserId={currentUserId}
+                onCreated={(memory: CreatedMemory) => {
+                  setMemories((current) => [memory, ...current]);
+                  setMessage("");
+                  setIsComposerOpen(false);
+                }}
+              />
+            </div>
+          </>
         )}
 
         {message && (
@@ -455,7 +485,7 @@ export default function MemoriesPage() {
               return (
                 <article
                   key={memory.id}
-                  className="performance-list-item group mb-5 break-inside-avoid overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] dark:border-white/10 dark:bg-white/8"
+                  className="memory-card performance-list-item group mb-5 break-inside-avoid overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] dark:border-white/10 dark:bg-white/8"
                 >
                   {media.photoUrl && (
                     <div className="relative overflow-hidden rounded-[1.35rem] bg-blue-100 dark:bg-white/8">
@@ -484,7 +514,7 @@ export default function MemoriesPage() {
                     </div>
                   )}
 
-                  <div className="p-3">
+                  <div className="memory-card-body p-3">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       {memory.is_pinned ? (
                         <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-[#2563eb] dark:bg-white/10 dark:text-blue-100">
@@ -526,7 +556,7 @@ export default function MemoriesPage() {
                         <audio controls preload="none" src={media.voiceUrl} className="w-full" />
                       </div>
                     )}
-                    <div className="mt-4 grid gap-2 text-sm font-bold text-[#172554]/58 dark:text-white/45">
+                    <div className="memory-meta mt-4 grid gap-2 text-sm font-bold text-[#172554]/58 dark:text-white/45">
                       <span>Загрузил: {author}</span>
                       <span>Дата: {formatTime(memory.created_at)}</span>
                     </div>
@@ -566,7 +596,7 @@ export default function MemoriesPage() {
                       })}
                     </div>
 
-                    <div className="mt-4 rounded-2xl bg-blue-50/70 p-3 dark:bg-white/8">
+                    <div className="memory-comments mt-4 rounded-2xl bg-blue-50/70 p-3 dark:bg-white/8">
                       <p className="mb-2 text-sm font-black text-[#2563eb] dark:text-blue-100">
                         Комментарии
                       </p>

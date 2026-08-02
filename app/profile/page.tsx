@@ -379,7 +379,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#fff7ed] via-[#fffbf5] to-[#fde7c8] px-6 pb-24 pt-28 text-[#5f2d12] dark:from-[#1c0f08] dark:via-[#0d0704] dark:to-black dark:text-white">
+    <main className="profile-page mobile-redesign-page min-h-screen bg-gradient-to-br from-[#fff7ed] via-[#fffbf5] to-[#fde7c8] px-6 pb-24 pt-28 text-[#5f2d12] dark:from-[#1c0f08] dark:via-[#0d0704] dark:to-black dark:text-white">
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[0.85fr_1.15fr]">
         <section className="overflow-hidden rounded-[1.5rem] border border-white/45 bg-white/48 p-3 shadow-[0_32px_110px_rgba(146,64,14,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/5 sm:rounded-[2rem] sm:p-6">
           <div className="rounded-[1.25rem] bg-white/45 p-4 shadow-inner dark:bg-black/20 sm:rounded-[1.6rem] sm:p-6">

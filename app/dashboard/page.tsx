@@ -1399,12 +1399,12 @@ export default function DashboardPage() {
 
   return (
     <main
-      className={`min-h-screen bg-gradient-to-b ${theme.page} ${theme.darkPage} px-4 pb-28 pt-20 ${theme.text} transition-colors dark:text-white md:px-6 md:pt-28`}
+      className={`dashboard-page mobile-redesign-page min-h-screen bg-gradient-to-b ${theme.page} ${theme.darkPage} px-4 pb-28 pt-20 ${theme.text} transition-colors dark:text-white md:px-6 md:pt-28`}
       style={{ ["--scroll-accent" as string]: "#dc2626" }}
     >
       <div className="mx-auto max-w-6xl space-y-5 md:space-y-8">
         <section
-          className={`relative min-h-[300px] overflow-hidden rounded-[1.5rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-5 shadow-2xl md:min-h-[360px] md:rounded-3xl md:p-8`}
+          className={`dashboard-hero relative min-h-[300px] overflow-hidden rounded-[1.5rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-5 shadow-2xl md:min-h-[360px] md:rounded-3xl md:p-8`}
         >
           <div className="absolute inset-0 opacity-60">
             <div className="grid h-full w-full grid-cols-2">
@@ -1432,8 +1432,8 @@ export default function DashboardPage() {
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-white/10 dark:from-black/60" />
 
-          <div className="relative flex min-h-[300px] flex-col justify-between gap-8">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="dashboard-hero-content relative flex min-h-[300px] flex-col justify-between gap-8">
+            <div className="dashboard-hero-actions flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <label className="cursor-pointer rounded-full bg-white/55 px-5 py-2 text-sm font-semibold shadow-lg backdrop-blur transition hover:bg-red-50/90 dark:bg-black/25 dark:hover:bg-red-500/15">
                 <input
                   type="file"
@@ -1467,7 +1467,7 @@ export default function DashboardPage() {
             </div>
 
             <div>
-              <div className="mb-8 flex items-center justify-center gap-3 sm:gap-4 md:justify-start">
+              <div className="dashboard-avatars mb-8 flex items-center justify-center gap-3 sm:gap-4 md:justify-start">
                 <AvatarBubble
                   name={profile.partner_one}
                   image={avatarOneUrl}
@@ -1507,7 +1507,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="ui-card p-4 md:p-6">
+        <section className="dashboard-summary ui-card p-4 md:p-6">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="ui-eyebrow">

@@ -36,7 +36,7 @@ export const primaryNavLinks: NavLinkItem[] = [
 
 export const mobileMainLinks: NavLinkItem[] = [
   { label: "Моменты", href: "/memories", icon: "memories" },
-  { label: "Вопрос дня", href: "/questions", icon: "questions" },
+  { label: "Вопрос", href: "/questions", icon: "questions" },
   { label: "Трекер", href: "/tracker", icon: "tracker" },
   { label: "Фильмы", href: "/watch", icon: "watch" },
 ];

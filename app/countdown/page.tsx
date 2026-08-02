@@ -399,14 +399,14 @@ export default function CountdownPage() {
   }
 
   return (
-    <main className="countdown-page relative min-h-screen overflow-hidden bg-[#fff4f8] px-4 pb-32 pt-7 text-[#831843] transition-colors dark:bg-[#160811] dark:text-pink-50 sm:px-6 lg:px-8 lg:pb-14 lg:pt-9">
+    <main className="countdown-page mobile-redesign-page relative min-h-screen overflow-hidden bg-[#fff4f8] px-4 pb-32 pt-7 text-[#831843] transition-colors dark:bg-[#160811] dark:text-pink-50 sm:px-6 lg:px-8 lg:pb-14 lg:pt-9">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_14%_10%,rgba(244,114,182,0.28),transparent_31rem),radial-gradient(circle_at_88%_18%,rgba(251,113,133,0.2),transparent_30rem),linear-gradient(145deg,#fff7fb_0%,#fff1f6_48%,#fce7f3_100%)] dark:bg-[radial-gradient(circle_at_14%_10%,rgba(219,39,119,0.2),transparent_31rem),radial-gradient(circle_at_88%_18%,rgba(244,63,94,0.13),transparent_30rem),linear-gradient(145deg,#160811_0%,#260b1b_52%,#12070d_100%)]" />
       <div className="countdown-grain pointer-events-none fixed inset-0 opacity-50 dark:opacity-25" />
       <div className="countdown-orb pointer-events-none fixed left-[8%] top-28 h-28 w-28 rounded-full bg-pink-300/30 blur-3xl dark:bg-pink-500/12" />
       <div className="countdown-orb countdown-orb-delay pointer-events-none fixed bottom-24 right-[8%] h-40 w-40 rounded-full bg-rose-300/25 blur-3xl dark:bg-rose-500/10" />
 
       <div className="relative mx-auto max-w-[1440px]">
-        <header className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <header className="countdown-hero mobile-page-header grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
             <div className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-[#db2777] dark:text-pink-300">
               <Heart className="h-4 w-4 fill-current" aria-hidden="true" />
@@ -435,7 +435,7 @@ export default function CountdownPage() {
           </button>
         </header>
 
-        <section className="mt-8 grid gap-3 sm:grid-cols-3" aria-label="Краткая статистика отсчётов">
+        <section className="countdown-stats mt-8 grid gap-3 sm:grid-cols-3" aria-label="Краткая статистика отсчётов">
           {[
             { value: countdowns.length, label: "всего дат", Icon: CalendarHeart },
             { value: upcomingCount, label: "в ожидании", Icon: Hourglass },
@@ -456,7 +456,7 @@ export default function CountdownPage() {
         </section>
 
         {nearestCountdown && (
-          <section className={`${panelClass} relative mt-5 overflow-hidden rounded-[2rem] p-5 sm:p-7 lg:p-9`}>
+          <section className={`${panelClass} countdown-featured relative mt-5 overflow-hidden rounded-[2rem] p-5 sm:p-7 lg:p-9`}>
             <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-gradient-to-br from-pink-300/42 to-rose-300/8 blur-2xl dark:from-pink-500/16" />
             <div className="relative grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
               <div>
@@ -482,7 +482,7 @@ export default function CountdownPage() {
           </section>
         )}
 
-        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="countdown-collection-head mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[#db2777]/75 dark:text-pink-300/70">Ваша коллекция</p>
             <h2 className="mt-1 text-2xl font-black text-[#831843] dark:text-white sm:text-3xl">Все важные даты</h2>
@@ -632,7 +632,7 @@ function CountdownCard({
   const isCompleted = new Date(countdown.target_at).getTime() <= now;
 
   return (
-    <article className={`${panelClass} performance-list-item group relative overflow-hidden rounded-[1.7rem] p-4 transition hover:-translate-y-1 hover:border-pink-300/55 hover:shadow-[0_28px_90px_rgba(190,24,93,0.2)] sm:p-5`}>
+    <article className={`${panelClass} countdown-card performance-list-item group relative overflow-hidden rounded-[1.7rem] p-4 transition hover:-translate-y-1 hover:border-pink-300/55 hover:shadow-[0_28px_90px_rgba(190,24,93,0.2)] sm:p-5`}>
       <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-pink-200/35 blur-2xl transition group-hover:scale-125 dark:bg-pink-500/8" />
       <div className="relative flex items-start gap-3">
         <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[1.15rem] bg-gradient-to-br from-pink-100 to-rose-100 text-2xl shadow-inner dark:from-pink-400/15 dark:to-rose-400/8">

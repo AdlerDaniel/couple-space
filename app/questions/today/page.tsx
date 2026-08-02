@@ -232,11 +232,11 @@ export default function TodayQuestionPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f0fff7] px-4 pb-32 pt-24 text-[#14532d] transition-colors dark:bg-[#02140b] dark:text-white sm:px-6 md:pt-28">
+    <main className="questions-today-page mobile-redesign-page relative min-h-screen overflow-hidden bg-[#f0fff7] px-4 pb-32 pt-24 text-[#14532d] transition-colors dark:bg-[#02140b] dark:text-white sm:px-6 md:pt-28">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(34,197,94,0.24),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(20,184,166,0.18),transparent_30%),linear-gradient(135deg,#e7fff2_0%,#f4fff9_48%,#e9fff7_100%)] dark:bg-[radial-gradient(circle_at_18%_16%,rgba(34,197,94,0.16),transparent_34%),radial-gradient(circle_at_82%_20%,rgba(20,184,166,0.15),transparent_30%),linear-gradient(135deg,#03170c_0%,#062315_48%,#02100a_100%)]" />
 
       <section className="questions-reveal relative mx-auto max-w-5xl">
-        <div className="mb-8 text-center">
+        <div className="question-hero mb-8 text-center">
           <div className="flex flex-wrap items-center justify-center gap-3">
             <p className="inline-flex rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-black text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
               💌 Вопрос дня
@@ -251,7 +251,15 @@ export default function TodayQuestionPage() {
           <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-black leading-tight text-[#15803d] dark:text-white md:text-6xl">
             {questionOfTheDay}
           </h1>
-          <div className="mx-auto mt-6 grid max-w-3xl gap-3 md:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => router.push("/questions/answer")}
+            disabled={hasMyAnswer && !canEdit}
+            className="question-primary-mobile"
+          >
+            {hasMyAnswer ? "Редактировать ответ" : "Ответить на вопрос"}
+          </button>
+          <div className="question-summary mx-auto mt-6 grid max-w-3xl gap-3 md:grid-cols-2">
             <div className="answer-reveal rounded-[1.4rem] border border-emerald-200/70 bg-white/55 p-4 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12">
               <p className="text-sm font-black uppercase text-emerald-600/70 dark:text-emerald-200/70">
                 Серия дней ответов
@@ -271,7 +279,7 @@ export default function TodayQuestionPage() {
           </div>
         </div>
 
-        <div className="mb-6 grid gap-4 md:grid-cols-2">
+        <div className="question-status-grid mb-6 grid gap-4 md:grid-cols-2">
           <div className={`answer-reveal rounded-[1.6rem] border border-white/70 bg-white/58 p-5 shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12 ${hasMyAnswer ? "answered-glow" : ""}`}>
             <p className="text-sm font-black uppercase text-emerald-600/70 dark:text-emerald-200/70">
               Ваш статус
@@ -290,8 +298,8 @@ export default function TodayQuestionPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <article className={`answer-reveal rounded-[2rem] border border-emerald-200/70 bg-gradient-to-br from-white/78 via-emerald-50/86 to-lime-50/75 p-6 shadow-[0_28px_90px_rgba(21,128,61,0.18)] backdrop-blur-2xl transition hover:-translate-y-1 hover:shadow-[0_34px_110px_rgba(21,128,61,0.24)] dark:border-emerald-300/10 dark:from-emerald-500/12 dark:via-white/8 dark:to-lime-500/8 ${hasMyAnswer ? "answered-glow" : ""}`}>
+        <div className="question-answer-grid grid gap-6 md:grid-cols-2">
+          <article className={`question-my-answer answer-reveal rounded-[2rem] border border-emerald-200/70 bg-gradient-to-br from-white/78 via-emerald-50/86 to-lime-50/75 p-6 shadow-[0_28px_90px_rgba(21,128,61,0.18)] backdrop-blur-2xl transition hover:-translate-y-1 hover:shadow-[0_34px_110px_rgba(21,128,61,0.24)] dark:border-emerald-300/10 dark:from-emerald-500/12 dark:via-white/8 dark:to-lime-500/8 ${hasMyAnswer ? "answered-glow" : ""}`}>
             <p className="text-sm font-black uppercase text-emerald-700/72 dark:text-emerald-200/70">
               Мой ответ
             </p>
@@ -342,7 +350,7 @@ export default function TodayQuestionPage() {
             )}
           </article>
 
-          <article className={`answer-reveal rounded-[2rem] border border-cyan-200/70 bg-gradient-to-br from-white/78 via-cyan-50/88 to-teal-50/78 p-6 shadow-[0_28px_90px_rgba(20,184,166,0.18)] backdrop-blur-2xl transition hover:-translate-y-1 hover:shadow-[0_34px_110px_rgba(20,184,166,0.24)] dark:border-cyan-300/10 dark:from-cyan-500/12 dark:via-white/8 dark:to-teal-500/8 ${hasPartnerAnswer ? "answered-glow" : ""}`}>
+          <article className={`question-partner-answer answer-reveal rounded-[2rem] border border-cyan-200/70 bg-gradient-to-br from-white/78 via-cyan-50/88 to-teal-50/78 p-6 shadow-[0_28px_90px_rgba(20,184,166,0.18)] backdrop-blur-2xl transition hover:-translate-y-1 hover:shadow-[0_34px_110px_rgba(20,184,166,0.24)] dark:border-cyan-300/10 dark:from-cyan-500/12 dark:via-white/8 dark:to-teal-500/8 ${hasPartnerAnswer ? "answered-glow" : ""}`}>
             <p className="text-sm font-black uppercase text-cyan-700/72 dark:text-cyan-200/70">
               Ответ партнёра
             </p>

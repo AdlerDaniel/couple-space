@@ -153,7 +153,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7efe8] px-4 pb-28 pt-24 text-[#5f321f] dark:bg-[#130b08] dark:text-white md:px-6 md:pt-28">
+    <main className="settings-page mobile-redesign-page min-h-screen bg-[#f7efe8] px-4 pb-28 pt-24 text-[#5f321f] dark:bg-[#130b08] dark:text-white md:px-6 md:pt-28">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_10%,rgba(120,53,15,0.20),transparent_30%),radial-gradient(circle_at_88%_18%,rgba(146,64,14,0.14),transparent_28%),linear-gradient(135deg,#f7efe8_0%,#ead8c8_46%,#f4e7dc_100%)] dark:bg-[radial-gradient(circle_at_18%_10%,rgba(146,64,14,0.16),transparent_30%),linear-gradient(135deg,#170b07_0%,#241209_48%,#0f0704_100%)]" />
 
       <section className="mx-auto max-w-5xl">

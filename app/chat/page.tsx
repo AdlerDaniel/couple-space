@@ -1640,7 +1640,7 @@ export default function ChatPage() {
         setIsDraggingFile(false);
         addPendingFiles(Array.from(event.dataTransfer.files));
       }}
-      className="mobile-fullscreen relative h-[100dvh] overflow-hidden bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] px-0 pb-0 pt-0 text-[#075985] dark:from-[#031b2e] dark:via-[#021526] dark:to-black dark:text-white md:min-h-screen md:px-6 md:pb-8 md:pt-28"
+      className="chat-page mobile-fullscreen relative h-[100dvh] overflow-hidden bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] px-0 pb-0 pt-0 text-[#075985] dark:from-[#031b2e] dark:via-[#021526] dark:to-black dark:text-white md:min-h-screen md:px-6 md:pb-8 md:pt-28"
     >
       <div className="pointer-events-none absolute inset-0">
         <div className="chat-blob absolute left-[-8rem] top-24 h-80 w-80 rounded-full bg-sky-300/35 blur-3xl dark:bg-sky-500/12" />
@@ -1653,7 +1653,7 @@ export default function ChatPage() {
             Отпустите файл, чтобы добавить вложение
           </div>
         )}
-        <header className="sticky top-0 z-20 shrink-0 overflow-hidden border-b border-white/50 bg-white/70 px-14 py-2.5 backdrop-blur-2xl dark:border-white/10 dark:bg-black/35 md:px-6 md:py-3">
+        <header className="chat-mobile-header sticky top-0 z-20 shrink-0 overflow-hidden border-b border-white/50 bg-white/70 px-14 py-2.5 backdrop-blur-2xl dark:border-white/10 dark:bg-black/35 md:px-6 md:py-3">
           <Link
             href="/dashboard"
             className="absolute left-3 top-2.5 grid h-10 w-10 place-items-center rounded-full bg-white/72 text-xl font-black text-[#0284c7] shadow-inner backdrop-blur transition hover:bg-sky-50 dark:bg-white/10 dark:text-white md:hidden"
@@ -2435,7 +2435,7 @@ export default function ChatPage() {
               )}
             </div>
           )}
-          <div className="flex min-w-0 items-end gap-1.5 md:gap-2">
+          <div className="chat-composer-row flex min-w-0 items-end gap-1.5 md:gap-2">
             <input
               ref={mediaInputRef}
               type="file"
@@ -2475,7 +2475,7 @@ export default function ChatPage() {
                 setReactionTargetId(null);
                 setPickerMode((current) => (current === "emoji" ? null : "emoji"));
               }}
-              className={`order-1 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg shadow-inner transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${
+              className={`chat-quick-emoji order-1 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg shadow-inner transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${
                 pickerMode === "emoji" ? "bg-[#0284c7] text-white" : "bg-white/85 dark:bg-white/10"
               }`}
               aria-label="Emoji"
@@ -2489,7 +2489,7 @@ export default function ChatPage() {
                 setReactionTargetId(null);
                 setPickerMode((current) => (current === "stickers" ? null : "stickers"));
               }}
-              className={`order-2 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg shadow-inner transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${
+              className={`chat-quick-stickers order-2 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg shadow-inner transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${
                 pickerMode === "stickers" ? "bg-[#0284c7] text-white" : "bg-white/85 dark:bg-white/10"
               }`}
               aria-label="Стикеры"
@@ -2502,6 +2502,12 @@ export default function ChatPage() {
               </button>
               {isAttachMenuOpen && (
                 <div className="chat-menu-in absolute bottom-14 left-0 z-30 w-52 overflow-hidden rounded-2xl bg-white/95 p-2 text-[#075985] shadow-[0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl dark:bg-black/90 dark:text-white">
+                  <button type="button" onClick={() => { setReactionTargetId(null); setPickerMode("emoji"); setIsAttachMenuOpen(false); }} className="chat-mobile-attach-option flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
+                    <Smile aria-hidden="true" size={18} /> Эмодзи
+                  </button>
+                  <button type="button" onClick={() => { setReactionTargetId(null); setPickerMode("stickers"); setIsAttachMenuOpen(false); }} className="chat-mobile-attach-option flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
+                    <Sticker aria-hidden="true" size={18} /> Стикеры
+                  </button>
                   <button type="button" onClick={() => { mediaInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
                     <ImageIcon aria-hidden="true" size={18} /> Фото/Видео
                   </button>
@@ -2537,7 +2543,7 @@ export default function ChatPage() {
               placeholder="Напишите сообщение..."
               rows={1}
               maxLength={1000}
-              className="order-3 max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-[1rem] border border-sky-200/70 bg-white/86 px-3 py-2.5 text-sm font-semibold text-[#075985] outline-none shadow-inner transition placeholder:text-sky-400/70 focus:border-[#0ea5e9] focus:shadow-[0_0_0_5px_rgba(14,165,233,0.14)] dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/38 md:max-h-36 md:min-h-12 md:rounded-[1.25rem] md:px-4 md:py-3 md:text-base"
+              className="chat-composer-input order-3 max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-[1rem] border border-sky-200/70 bg-white/86 px-3 py-2.5 text-sm font-semibold text-[#075985] outline-none shadow-inner transition placeholder:text-sky-400/70 focus:border-[#0ea5e9] focus:shadow-[0_0_0_5px_rgba(14,165,233,0.14)] dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/38 md:max-h-36 md:min-h-12 md:rounded-[1.25rem] md:px-4 md:py-3 md:text-base"
             />
             {draft.trim() || editingId || pendingAttachments.length > 0 ? (
               <button type="submit" disabled={isSending} aria-label="Отправить сообщение" className={`order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-xl font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.34)] transition hover:-translate-y-0.5 disabled:opacity-45 md:h-12 md:w-12 md:rounded-[1rem] md:text-2xl ${isSending ? "chat-send-pulse" : ""}`}>

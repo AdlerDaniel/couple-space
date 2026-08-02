@@ -7,7 +7,7 @@ import { decodeMemoryMedia } from "@/lib/memoryMedia";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, MoreHorizontal, Pin, Send, Trash2 } from "lucide-react";
 
 const PAGE_SIZE = 12;
 const reactions = ["❤️", "😂", "🥺", "👍", "😮"];
@@ -463,7 +463,7 @@ export default function MemoriesPage() {
         </div>
 
         {isLoading ? (
-          <div className="columns-1 gap-5 md:columns-2 xl:columns-3">
+          <div className="memories-grid columns-1 gap-5 md:columns-2 xl:columns-3">
             {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
@@ -476,7 +476,7 @@ export default function MemoriesPage() {
             <p className="text-2xl font-black">Пока нет воспоминаний</p>
           </div>
         ) : (
-          <div className="columns-1 gap-5 md:columns-2 xl:columns-3">
+          <div className="memories-grid columns-1 gap-5 md:columns-2 xl:columns-3">
             {visibleMemories.map((memory, index) => {
               const media = decodeMemoryMedia(memory.image);
               const isLoaded = !media.photoUrl || loadedImages[memory.id];
@@ -503,7 +503,7 @@ export default function MemoriesPage() {
                             setLoadedImages((current) => ({ ...current, [memory.id]: true }))
                           }
                           onClick={() => setSelectedIndex(index)}
-                          className={`h-auto min-h-72 w-full cursor-zoom-in object-cover transition duration-500 group-hover:scale-105 ${
+                          className={`memory-photo h-auto min-h-72 w-full cursor-zoom-in object-cover transition duration-500 group-hover:scale-105 ${
                             isLoaded ? "blur-0" : "blur-md"
                           }`}
                         />
@@ -515,7 +515,7 @@ export default function MemoriesPage() {
                   )}
 
                   <div className="memory-card-body p-3">
-                    <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="memory-card-toolbar mb-3 flex items-center justify-between gap-3">
                       {memory.is_pinned ? (
                         <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-[#2563eb] dark:bg-white/10 dark:text-blue-100">
                           Закреплено
@@ -523,24 +523,21 @@ export default function MemoriesPage() {
                       ) : (
                         <span />
                       )}
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => togglePinned(memory)}
-                          className={`rounded-full px-3 py-1 text-xs font-black shadow transition hover:-translate-y-0.5 ${
-                            memory.is_pinned
-                              ? "bg-[#2563eb] text-white shadow-[0_10px_28px_rgba(37,99,235,0.28)]"
-                              : "bg-white/70 text-[#2563eb] dark:bg-white/10 dark:text-blue-100"
-                          }`}
-                        >
-                          {memory.is_pinned ? "Закреплено" : "Закрепить"}
-                        </button>
-                        <button
-                          onClick={() => deleteMemory(memory)}
-                          className="rounded-full bg-rose-50 px-3 py-1 text-xs font-black text-rose-600 shadow transition hover:-translate-y-0.5 hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-100"
-                        >
-                          Удалить
-                        </button>
-                      </div>
+                      <details className="memory-actions-menu relative">
+                        <summary aria-label="Действия с воспоминанием" title="Действия">
+                          <MoreHorizontal aria-hidden="true" size={18} />
+                        </summary>
+                        <div>
+                          <button type="button" onClick={() => togglePinned(memory)}>
+                            <Pin aria-hidden="true" size={15} />
+                            {memory.is_pinned ? "Открепить" : "Закрепить"}
+                          </button>
+                          <button type="button" onClick={() => deleteMemory(memory)} className="is-danger">
+                            <Trash2 aria-hidden="true" size={15} />
+                            Удалить
+                          </button>
+                        </div>
+                      </details>
                     </div>
                     <h2 className="text-2xl font-black text-[#172554] dark:text-white">
                       {memory.title || "Без названия"}
@@ -561,8 +558,14 @@ export default function MemoriesPage() {
                       <span>Дата: {formatTime(memory.created_at)}</span>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {reactions.map((reaction) => {
+                    <details className="memory-interactions mt-4">
+                      <summary>
+                        <MessageCircle aria-hidden="true" size={16} />
+                        Реакции и комментарии
+                        <span>{Object.keys(memory.reactions || {}).length + (comments[memory.id] || []).length}</span>
+                      </summary>
+                      <div className="memory-reactions mt-3 flex flex-wrap gap-2">
+                        {reactions.map((reaction) => {
                         const userIds = getReactionUsers(memory, reaction);
                         const singleUser = userIds.length === 1 ? getMemoryUserMeta(userIds[0]) : null;
                         const isMyReaction = memory.reactions?.[currentUserId || ""] === reaction;
@@ -593,10 +596,10 @@ export default function MemoriesPage() {
                             ) : null}
                           </button>
                         );
-                      })}
-                    </div>
+                        })}
+                      </div>
 
-                    <div className="memory-comments mt-4 rounded-2xl bg-blue-50/70 p-3 dark:bg-white/8">
+                      <div className="memory-comments mt-3 rounded-2xl bg-blue-50/70 p-3 dark:bg-white/8">
                       <p className="mb-2 text-sm font-black text-[#2563eb] dark:text-blue-100">
                         Комментарии
                       </p>
@@ -623,13 +626,17 @@ export default function MemoriesPage() {
                           className="min-w-0 flex-1 rounded-full bg-white/80 px-4 py-2 text-sm font-semibold outline-none dark:bg-white/10"
                         />
                         <button
+                          type="button"
                           onClick={() => addComment(memory)}
+                          aria-label="Отправить комментарий"
+                          title="Отправить"
                           className="rounded-full bg-[#2563eb] px-4 py-2 text-sm font-black text-white"
                         >
-                          Отправить
+                          <Send aria-hidden="true" size={16} />
                         </button>
                       </div>
                     </div>
+                    </details>
                   </div>
                 </article>
               );

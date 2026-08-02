@@ -338,24 +338,13 @@ export default function QuestionArchiveDetailPage() {
                 {saveMessage}
               </p>
             )}
-            {myAnswer && (
-              <AnswerSocialControls
-                record={answerRecord}
-                recordId={answerRecord.id}
-                currentUserId={currentUserId}
-                reactionColumn={isPartnerOne ? "answer_one_reactions" : "answer_two_reactions"}
-                likeColumn={isPartnerOne ? "answer_one_likes" : "answer_two_likes"}
-                answerKey={isPartnerOne ? "answer_one" : "answer_two"}
-                onUpdate={setAnswerRecord}
-              />
-            )}
           </article>
 
           <article className="rounded-[2rem] border border-cyan-200/70 bg-gradient-to-br from-white/78 via-cyan-50/88 to-teal-50/78 p-6 shadow-[0_28px_90px_rgba(20,184,166,0.18)] backdrop-blur-2xl dark:border-cyan-300/10 dark:from-cyan-500/12 dark:via-white/8 dark:to-teal-500/8">
             <p className="text-sm font-black uppercase text-cyan-700/72 dark:text-cyan-200/70">
               Ответ партнёра
             </p>
-            <div className="relative mt-5 min-h-48 overflow-hidden rounded-[1.5rem] border border-cyan-200/60 bg-white/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_55px_rgba(20,184,166,0.1)] dark:border-white/10 dark:bg-black/20">
+            <div className="question-partner-answer-body relative mt-5 min-h-48 overflow-visible rounded-[1.5rem] border border-cyan-200/60 bg-white/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_55px_rgba(20,184,166,0.1)] dark:border-white/10 dark:bg-black/20">
               {myAnswer ? (
                 <>
                   <p className="break-words text-lg font-semibold leading-8 text-emerald-950 dark:text-white">
@@ -369,8 +358,6 @@ export default function QuestionArchiveDetailPage() {
                       reactionColumn={
                         isPartnerOne ? "answer_two_reactions" : "answer_one_reactions"
                       }
-                      likeColumn={isPartnerOne ? "answer_two_likes" : "answer_one_likes"}
-                      answerKey={isPartnerOne ? "answer_two" : "answer_one"}
                       onUpdate={setAnswerRecord}
                     />
                   )}
@@ -401,7 +388,6 @@ export default function QuestionArchiveDetailPage() {
         {isStoredRecord ? (
           <QuestionComments
             answerId={answerRecord.id}
-            question={answerRecord.question}
             couple={couple}
             currentUserId={currentUserId}
             profile={profile}

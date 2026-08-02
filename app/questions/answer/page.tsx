@@ -85,6 +85,26 @@ export default function QuestionAnswerPage() {
   const photoUrl = (answerRecord?.[photoField] as string | null | undefined) || null;
   const hasSavedAnswer = Boolean(lastSavedAnswer.trim() || voiceUrl || photoUrl);
 
+  function openAnswers() {
+    if (answerRecord && couple && currentUserId) {
+      sessionStorage.setItem(
+        "couple-space:today-question-cache",
+        JSON.stringify({
+          answerRecord,
+          couple,
+          currentUserId,
+          dailyQuestionState: {
+            date: todayDate,
+            question: questionOfTheDay,
+            timeZone: "Europe/Moscow",
+          },
+          savedAt: Date.now(),
+        }),
+      );
+    }
+    router.push("/questions/today");
+  }
+
   function formatRecordingTime(seconds: number) {
     const minutes = Math.floor(seconds / 60);
     const rest = Math.floor(seconds % 60)
@@ -716,7 +736,7 @@ export default function QuestionAnswerPage() {
                 </div>
 
                 <button
-                  onClick={() => router.push("/questions/today")}
+                  onClick={openAnswers}
                   disabled={!hasSavedAnswer || isSaving}
                   className="rounded-full bg-gradient-to-r from-[#15803d] to-[#14b8a6] px-8 py-3 font-black text-white shadow-[0_18px_55px_rgba(21,128,61,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(21,128,61,0.38)] disabled:cursor-not-allowed disabled:opacity-55"
                 >

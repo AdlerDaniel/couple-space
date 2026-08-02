@@ -9,6 +9,7 @@ import { toBrowserSupabaseUrl } from "@/lib/supabaseUrls";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { LockKeyhole, Mail } from "lucide-react";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
 
@@ -44,20 +45,44 @@ type Answer = {
   couple_id: string;
 };
 
+type CachedQuestionState = {
+  answerRecord: Answer;
+  couple: Couple;
+  currentUserId: string;
+  dailyQuestionState: { date: string; question: string; timeZone: string };
+  savedAt: number;
+};
+
+function readCachedQuestionState() {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = sessionStorage.getItem("couple-space:today-question-cache");
+    if (!value) return null;
+    const parsed = JSON.parse(value) as CachedQuestionState;
+    if (!parsed.answerRecord || Date.now() - parsed.savedAt > 30 * 60 * 1000) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export default function TodayQuestionPage() {
   const router = useRouter();
-  const [couple, setCouple] = useState<Couple | null>(null);
+  const [cachedState] = useState(readCachedQuestionState);
+  const [couple, setCouple] = useState<Couple | null>(cachedState?.couple || null);
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
-  const [answerRecord, setAnswerRecord] = useState<Answer | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [answerRecord, setAnswerRecord] = useState<Answer | null>(cachedState?.answerRecord || null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(cachedState?.currentUserId || null);
+  const [isLoading, setIsLoading] = useState(!cachedState);
   const [nowMs, setNowMs] = useState(0);
   const [answerStreak, setAnswerStreak] = useState(0);
-  const [dailyQuestionState, setDailyQuestionState] = useState(() => ({
-    date: getDailyQuestionDate(),
-    question: getDailyQuestion(),
-    timeZone: "Europe/Moscow",
-  }));
+  const [dailyQuestionState, setDailyQuestionState] = useState(() =>
+    cachedState?.dailyQuestionState || {
+      date: getDailyQuestionDate(),
+      question: getDailyQuestion(),
+      timeZone: "Europe/Moscow",
+    },
+  );
 
   const questionOfTheDay = dailyQuestionState.question;
   const isPartnerOne = currentUserId === couple?.partner_one_id;
@@ -177,6 +202,7 @@ export default function TodayQuestionPage() {
         .single();
 
       if (!answerData) {
+        sessionStorage.removeItem("couple-space:today-question-cache");
         setAnswerRecord(null);
         setIsLoading(false);
         setNowMs(Date.now());
@@ -184,6 +210,16 @@ export default function TodayQuestionPage() {
       }
 
       setAnswerRecord(answerData);
+      sessionStorage.setItem(
+        "couple-space:today-question-cache",
+        JSON.stringify({
+          answerRecord: answerData,
+          couple: coupleData,
+          currentUserId: user.id,
+          dailyQuestionState: { date: activeDate, question: activeQuestion, timeZone },
+          savedAt: Date.now(),
+        }),
+      );
       setIsLoading(false);
       setNowMs(Date.now());
     }
@@ -223,9 +259,19 @@ export default function TodayQuestionPage() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#e2fff2] to-[#f0fff7] px-6 pb-10 pt-28 text-[#27ae60] transition-colors dark:from-[#041f0f] dark:to-[#000e07]">
-        <div className="mx-auto max-w-3xl rounded-3xl bg-gradient-to-b from-[#d1eedd] to-[#e0f4e8] p-8 text-center shadow-lg dark:from-[#142825] dark:to-[#131b1f]">
-          <p className="font-bold text-[#27ae60]">Загружаем ответы...</p>
+      <main className="question-skeleton-page min-h-screen bg-gradient-to-b from-[#e2fff2] to-[#f0fff7] px-4 pb-28 pt-24 dark:from-[#041f0f] dark:to-[#000e07]">
+        <div className="mx-auto max-w-5xl animate-pulse">
+          <div className="mx-auto h-8 w-32 rounded-full bg-emerald-200/60 dark:bg-white/10" />
+          <div className="mx-auto mt-5 h-10 w-4/5 rounded-2xl bg-emerald-200/55 dark:bg-white/10" />
+          <div className="mx-auto mt-3 h-10 w-3/5 rounded-2xl bg-emerald-200/45 dark:bg-white/8" />
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {[0, 1].map((item) => (
+              <div key={item} className="rounded-[1.5rem] border border-white/60 bg-white/50 p-4 shadow-xl dark:border-white/10 dark:bg-white/7">
+                <div className="h-4 w-28 rounded-full bg-emerald-200/60 dark:bg-white/10" />
+                <div className="mt-4 h-36 rounded-[1.1rem] bg-white/65 dark:bg-white/8" />
+              </div>
+            ))}
+          </div>
         </div>
       </main>
     );
@@ -239,7 +285,7 @@ export default function TodayQuestionPage() {
         <div className="question-hero mb-8 text-center">
           <div className="flex flex-wrap items-center justify-center gap-3">
             <p className="inline-flex rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-black text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
-              💌 Вопрос дня
+              <Mail aria-hidden="true" size={14} /> Вопрос дня
             </p>
             <button
               onClick={() => router.push("/questions/archive")}
@@ -259,42 +305,9 @@ export default function TodayQuestionPage() {
           >
             {hasMyAnswer ? "Редактировать ответ" : "Ответить на вопрос"}
           </button>
-          <div className="question-summary mx-auto mt-6 grid max-w-3xl gap-3 md:grid-cols-2">
-            <div className="answer-reveal rounded-[1.4rem] border border-emerald-200/70 bg-white/55 p-4 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12">
-              <p className="text-sm font-black uppercase text-emerald-600/70 dark:text-emerald-200/70">
-                Серия дней ответов
-              </p>
-              <p className="mt-2 text-3xl font-black text-[#15803d] dark:text-white">
-                {answerStreak} дней
-              </p>
-            </div>
-            <div className="answer-reveal rounded-[1.4rem] border border-emerald-200/70 bg-white/55 p-4 text-left shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12">
-              <p className="text-sm font-black uppercase text-emerald-600/70 dark:text-emerald-200/70">
-                Напоминание
-              </p>
-              <p className="mt-2 text-lg font-black text-[#15803d] dark:text-white">
-                {hasMyAnswer ? "Сегодня ответ сохранён" : "Ответьте сегодня, чтобы не потерять серию"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="question-status-grid mb-6 grid gap-4 md:grid-cols-2">
-          <div className={`answer-reveal rounded-[1.6rem] border border-white/70 bg-white/58 p-5 shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12 ${hasMyAnswer ? "answered-glow" : ""}`}>
-            <p className="text-sm font-black uppercase text-emerald-600/70 dark:text-emerald-200/70">
-              Ваш статус
-            </p>
-            <p className="mt-2 text-2xl font-black text-[#15803d] dark:text-white">
-              {hasMyAnswer ? "Вы ответили" : "Вы ещё не ответили"}
-            </p>
-          </div>
-          <div className={`answer-reveal rounded-[1.6rem] border border-white/70 bg-white/58 p-5 shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12 ${hasPartnerAnswer ? "answered-glow" : ""}`}>
-            <p className="text-sm font-black uppercase text-emerald-600/70 dark:text-emerald-200/70">
-              Статус партнёра
-            </p>
-            <p className="mt-2 text-2xl font-black text-[#15803d] dark:text-white">
-              {hasPartnerAnswer ? "Партнёр ответил" : "Партнёр ещё отвечает"}
-            </p>
+          <div className="question-summary-strip mx-auto mt-5 flex max-w-3xl flex-wrap items-center justify-center gap-2">
+            <span>Серия: <strong>{answerStreak} дней</strong></span>
+            <span>{hasMyAnswer ? "Ответ сохранён" : "Ответьте сегодня"}</span>
           </div>
         </div>
 
@@ -325,17 +338,6 @@ export default function TodayQuestionPage() {
                 </div>
               )}
             </div>
-            {hasMyAnswer && answerRecord && (
-              <AnswerSocialControls
-                record={answerRecord}
-                recordId={answerRecord.id}
-                currentUserId={currentUserId}
-                reactionColumn={isPartnerOne ? "answer_one_reactions" : "answer_two_reactions"}
-                likeColumn={isPartnerOne ? "answer_one_likes" : "answer_two_likes"}
-                answerKey={isPartnerOne ? "answer_one" : "answer_two"}
-                onUpdate={setAnswerRecord}
-              />
-            )}
             <button
               onClick={() => router.push("/questions/answer")}
               disabled={hasMyAnswer && !canEdit}
@@ -354,7 +356,7 @@ export default function TodayQuestionPage() {
             <p className="text-sm font-black uppercase text-cyan-700/72 dark:text-cyan-200/70">
               Ответ партнёра
             </p>
-            <div className="relative mt-5 min-h-48 overflow-hidden rounded-[1.5rem] border border-cyan-200/60 bg-white/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_55px_rgba(20,184,166,0.1)] dark:border-white/10 dark:bg-black/20">
+            <div className="question-partner-answer-body relative mt-5 min-h-48 overflow-visible rounded-[1.5rem] border border-cyan-200/60 bg-white/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_55px_rgba(20,184,166,0.1)] dark:border-white/10 dark:bg-black/20">
               {hasMyAnswer ? (
                 <>
                   <p className="break-words text-lg font-semibold leading-8 text-emerald-950 dark:text-white">
@@ -385,8 +387,6 @@ export default function TodayQuestionPage() {
                       reactionColumn={
                         isPartnerOne ? "answer_two_reactions" : "answer_one_reactions"
                       }
-                      likeColumn={isPartnerOne ? "answer_two_likes" : "answer_one_likes"}
-                      answerKey={isPartnerOne ? "answer_two" : "answer_one"}
                       onUpdate={setAnswerRecord}
                     />
                   )}
@@ -400,7 +400,7 @@ export default function TodayQuestionPage() {
                     <div className="h-5 w-7/12 rounded-full bg-teal-200/55 dark:bg-white/8" />
                   </div>
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/58 text-center backdrop-blur-md dark:bg-black/34">
-                    <p className="text-4xl">🔒</p>
+                    <LockKeyhole aria-hidden="true" size={36} />
                     <p className="mt-3 text-lg font-black text-cyan-800 dark:text-white">
                       Ответ партнёра скрыт
                     </p>
@@ -417,7 +417,6 @@ export default function TodayQuestionPage() {
         {answerRecord && (
           <QuestionComments
             answerId={answerRecord.id}
-            question={questionOfTheDay}
             couple={couple}
             currentUserId={currentUserId}
             profile={profile}

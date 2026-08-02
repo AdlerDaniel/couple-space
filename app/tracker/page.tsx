@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import EmptyState from "@/components/EmptyState";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import { trackerCategoryColors, trackerDefaultCategories } from "@/lib/trackerCategories";
@@ -10,11 +9,16 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  CirclePlus,
+  Dumbbell,
+  Gamepad2,
   Heart,
   Minus,
+  Palette,
   Plus,
   RefreshCw,
   Trash2,
+  Utensils,
 } from "lucide-react";
 
 type Period = "day" | "week" | "month" | "year";
@@ -85,12 +89,43 @@ const goalPeriods: { key: GoalPeriod; label: string }[] = [
 ];
 
 const moods: { key: Mood; label: string; icon: string }[] = [
-  { key: "great", label: "отлично", icon: "😍" },
-  { key: "good", label: "хорошо", icon: "😊" },
-  { key: "normal", label: "нормально", icon: "🙂" },
-  { key: "tired", label: "устали", icon: "😴" },
-  { key: "bad", label: "плохо", icon: "😔" },
+  { key: "bad", label: "Злость", icon: "😠" },
+  { key: "great", label: "Радость", icon: "😄" },
+  { key: "tired", label: "Грусть", icon: "😢" },
+  { key: "good", label: "С любовью", icon: "🥰" },
+  { key: "normal", label: "Заигрывание", icon: "😏" },
 ];
+
+const DAY_MOOD_MARKER = "[[day-mood]]";
+
+function hasDayMood(event: TrackerEvent) {
+  return event.note?.startsWith(DAY_MOOD_MARKER) || false;
+}
+
+function getDayMood(events: TrackerEvent[]) {
+  const marker = events.find(hasDayMood);
+  return marker ? moods.find((mood) => mood.key === marker.mood) || null : null;
+}
+
+function getVisibleEventNote(event: TrackerEvent) {
+  if (!event.note) return "";
+  return event.note.startsWith(DAY_MOOD_MARKER)
+    ? event.note.slice(DAY_MOOD_MARKER.length).trim()
+    : event.note;
+}
+
+function CategoryIcon({ category, size = 18 }: { category: TrackerCategory; size?: number }) {
+  const Icon = category.slug === "food"
+    ? Utensils
+    : category.slug === "sex"
+      ? Heart
+      : category.slug === "sport"
+        ? Dumbbell
+        : category.slug === "games"
+          ? Gamepad2
+          : Palette;
+  return <Icon aria-hidden="true" size={size} strokeWidth={2.25} />;
+}
 
 const trackerPanelClass =
   "border border-amber-900/12 bg-white/64 shadow-[0_20px_55px_rgba(146,64,14,0.09)] backdrop-blur-xl dark:border-amber-200/10 dark:bg-[#211a0c]/78 dark:shadow-[0_24px_70px_rgba(0,0,0,0.26)]";
@@ -226,7 +261,7 @@ function getMostFrequent(events: TrackerEvent[], categories: TrackerCategory[]) 
       value: countOnly(events, category.id),
     }))
     .sort((a, b) => b.value - a.value)[0];
-  return best && best.value > 0 ? `${best.category.icon} ${best.category.name}` : "пока нет";
+  return best && best.value > 0 ? best.category.name : "пока нет";
 }
 
 function compareWithPreviousMonth(events: TrackerEvent[], selectedDate: Date) {
@@ -273,6 +308,8 @@ export default function TrackerPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSpark, setShowSpark] = useState(false);
 
+  const activityEvents = useMemo(() => events.filter((event) => event.count > 0), [events]);
+
   const selectedDayEvents = useMemo(
     () => events.filter((event) => event.date === selectedDate),
     [events, selectedDate]
@@ -284,17 +321,17 @@ export default function TrackerPage() {
   const monthEvents = useMemo(() => {
     const start = startOfMonth(viewDate);
     const end = endOfMonth(viewDate);
-    return events.filter((event) => {
+    return activityEvents.filter((event) => {
       const date = parseDateKey(event.date);
       return date >= start && date <= end;
     });
-  }, [events, viewDate]);
+  }, [activityEvents, viewDate]);
   const weekDays = useMemo(() => getWeekDays(parseDateKey(selectedDate)), [selectedDate]);
   const eventsByDate = useMemo(() => groupByDate(events), [events]);
   const selectedRange = useMemo(() => getDateRange(parseDateKey(selectedDate), period), [period, selectedDate]);
   const rangeEvents = useMemo(
-    () => events.filter((event) => event.date >= selectedRange.from && event.date <= selectedRange.to),
-    [events, selectedRange]
+    () => activityEvents.filter((event) => event.date >= selectedRange.from && event.date <= selectedRange.to),
+    [activityEvents, selectedRange]
   );
 
   useEffect(() => {
@@ -564,7 +601,7 @@ export default function TrackerPage() {
 
     const nextCount = Math.max(0, existing.count + delta);
 
-    if (nextCount === 0) {
+    if (nextCount === 0 && !hasDayMood(existing)) {
       const { error } = await supabase
         .from("tracker_events")
         .delete()
@@ -596,21 +633,56 @@ export default function TrackerPage() {
     setIsSaving(false);
   }
 
-  async function updateEvent(eventId: string, patch: Partial<TrackerEvent>) {
-    if (!currentUserId) return;
+  async function saveDayMood(mood: Mood) {
+    if (!couple || !currentUserId || categories.length === 0) return;
+    const markerEvent = mySelectedDayEvents.find(hasDayMood);
+    const targetEvent = markerEvent || mySelectedDayEvents[0];
+
+    if (targetEvent) {
+      const cleanNote = targetEvent.note?.startsWith(DAY_MOOD_MARKER)
+        ? targetEvent.note.slice(DAY_MOOD_MARKER.length).trimStart()
+        : targetEvent.note || "";
+      const { data, error } = await supabase
+        .from("tracker_events")
+        .update({
+          mood,
+          note: `${DAY_MOOD_MARKER}${cleanNote ? `\n${cleanNote}` : ""}`,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", targetEvent.id)
+        .eq("created_by", currentUserId)
+        .select("*")
+        .single<TrackerEvent>();
+
+      if (!error && data) {
+        setEvents((current) => current.map((event) => (event.id === data.id ? data : event)));
+      } else {
+        setMessage(error?.message || "Не удалось сохранить эмодзи дня.");
+      }
+      return;
+    }
 
     const { data, error } = await supabase
       .from("tracker_events")
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq("id", eventId)
-      .eq("created_by", currentUserId)
+      .insert({
+        couple_id: couple.id,
+        category_id: categories[0].id,
+        date: selectedDate,
+        time: null,
+        count: 0,
+        duration_minutes: 0,
+        note: DAY_MOOD_MARKER,
+        mood,
+        participants: "me",
+        created_by: currentUserId,
+      })
       .select("*")
       .single<TrackerEvent>();
 
     if (!error && data) {
-      setEvents((current) => current.map((event) => (event.id === data.id ? data : event)));
+      setEvents((current) => [data, ...current]);
     } else {
-      setMessage(error?.message || "Не удалось сохранить изменения.");
+      setMessage(error?.message || "Не удалось сохранить эмодзи дня.");
     }
   }
 
@@ -696,7 +768,7 @@ export default function TrackerPage() {
         <TrackerHeader
           total={sumEvents(rangeEvents)}
           activeDays={new Set(rangeEvents.map((event) => event.date)).size}
-          streak={getStreak(events)}
+          streak={getStreak(activityEvents)}
         />
 
         <div className="grid gap-3 lg:grid-cols-[minmax(17rem,0.68fr)_minmax(32rem,1fr)] lg:items-center">
@@ -714,7 +786,7 @@ export default function TrackerPage() {
           <div className="tracker-summary">
             <TrackerStatsCards
               monthEvents={monthEvents}
-              allEvents={events}
+              allEvents={activityEvents}
               categories={categories}
               selectedDate={viewDate}
             />
@@ -783,14 +855,14 @@ export default function TrackerPage() {
               }
               onSaveCategoryName={saveCategoryName}
               onAdjust={adjustCategory}
-              onUpdate={updateEvent}
+              onMoodChange={saveDayMood}
             />
           </div>
 
           <details className="mobile-disclosure tracker-charts-disclosure">
             <summary>Графики и сводка</summary>
             <div className="tracker-charts">
-              <TrackerCharts categories={categories} events={events} />
+              <TrackerCharts categories={categories} events={activityEvents} />
             </div>
           </details>
         </section>
@@ -801,7 +873,7 @@ export default function TrackerPage() {
             <PairGoalsPanel
               goals={goals}
               categories={categories}
-              events={events}
+              events={activityEvents}
               currentUserId={currentUserId}
               selectedCategoryId={goalCategoryId}
               period={goalPeriod}
@@ -817,7 +889,7 @@ export default function TrackerPage() {
           <details className="mobile-disclosure">
             <summary>История отметок</summary>
             <ActivityHistory
-              events={events}
+              events={activityEvents}
               categories={categories}
               currentUserId={currentUserId}
               onReload={reloadEvents}
@@ -858,8 +930,9 @@ function PairGoalsPanel({
   onDelete: (goalId: string) => void;
   onReload: () => void;
 }) {
+  const [isFormOpen, setIsFormOpen] = useState(false);
   return (
-    <section className={`${trackerPanelClass} rounded-[1.35rem] p-4 sm:p-5`}>
+    <section className={`${trackerPanelClass} pair-goals-panel rounded-[1.35rem] p-4 sm:p-5`}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700/70 dark:text-amber-100/70">
@@ -867,22 +940,35 @@ function PairGoalsPanel({
           </p>
           <h2 className="mt-1 text-xl font-black">Ваши цели</h2>
         </div>
-        <button
-          type="button"
-          onClick={onReload}
-          className="grid h-9 w-9 place-items-center rounded-full border border-amber-900/10 bg-white/45 text-[#713f12]/60 transition hover:bg-amber-100 hover:text-[#a16207] dark:border-amber-100/10 dark:bg-white/[0.05] dark:text-amber-100/60"
-          aria-label="Обновить цели"
-          title="Обновить цели"
-        >
-          <RefreshCw className="h-4 w-4" aria-hidden="true" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onReload}
+            className="grid h-9 w-9 place-items-center rounded-full border border-amber-900/10 bg-white/45 text-[#713f12]/60 transition hover:bg-amber-100 hover:text-[#a16207] dark:border-amber-100/10 dark:bg-white/[0.05] dark:text-amber-100/60"
+            aria-label="Обновить цели"
+            title="Обновить цели"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsFormOpen((current) => !current)}
+            className="grid h-9 w-9 place-items-center rounded-full bg-[#ca8a04] text-white shadow-sm"
+            aria-label={isFormOpen ? "Закрыть добавление цели" : "Добавить цель"}
+            aria-expanded={isFormOpen}
+            title={isFormOpen ? "Закрыть" : "Добавить цель"}
+          >
+            <Plus className={`h-4 w-4 transition ${isFormOpen ? "rotate-45" : ""}`} aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
-      <form
-        className="mt-4 space-y-3"
+      {isFormOpen && <form
+        className="pair-goal-form mt-4 space-y-3"
         onSubmit={(event) => {
           event.preventDefault();
           onCreate();
+          setIsFormOpen(false);
         }}
       >
         <div className="flex gap-2">
@@ -893,7 +979,7 @@ function PairGoalsPanel({
           >
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
-                {category.icon} {category.name}
+                {category.name}
               </option>
             ))}
           </select>
@@ -930,18 +1016,14 @@ function PairGoalsPanel({
             aria-label="Количество"
           />
         </div>
-      </form>
+      </form>}
 
-      <div className="mt-4 space-y-3">
+      <div className="pair-goals-list mt-4 space-y-2">
         {goals.length === 0 ? (
-          <EmptyState
-            icon="◫"
-            title="Целей пока нет"
-            text="Выберите категорию, период и количество, чтобы поставить первую цель пары."
-            actionHref="/tracker"
-            actionLabel="Остаться здесь"
-            accent="#ca8a04"
-          />
+          <button type="button" onClick={() => setIsFormOpen(true)} className="flex w-full items-center gap-3 rounded-xl border border-dashed border-amber-700/25 bg-amber-50/45 p-3 text-left dark:border-amber-100/15 dark:bg-amber-300/5">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-100 text-[#a16207] dark:bg-amber-300/10 dark:text-amber-200"><Plus aria-hidden="true" size={17} /></span>
+            <span><strong className="block text-sm">Добавьте первую цель</strong><small className="opacity-55">Выберите действие и желаемый результат</small></span>
+          </button>
         ) : (
           goals.map((goal) => {
             const isMine = goal.created_by === currentUserId;
@@ -960,11 +1042,11 @@ function PairGoalsPanel({
             const isCompleted = progress >= target;
 
             return (
-              <div key={goal.id} className="rounded-2xl bg-white/58 p-4 shadow-inner dark:bg-white/8">
+              <div key={goal.id} className="pair-goal-card rounded-xl bg-white/58 p-3 shadow-inner dark:bg-white/8">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="break-words font-black">
-                      {category ? `${category.icon} ${category.name}` : goal.title}
+                    <p className="flex items-center gap-2 break-words font-black">
+                      {category ? <><CategoryIcon category={category} size={16} /> {category.name}</> : goal.title}
                     </p>
                     <p className="mt-1 text-sm font-black text-[#ca8a04] dark:text-amber-100">
                       Условие: {goal.target_count || 1} {goalPeriods.find((item) => item.key === goal.period)?.label || "за неделю"}
@@ -1182,6 +1264,7 @@ function MonthCalendar({
           const dateKey = toDateKey(date);
           const dayEvents = eventsByDate[dateKey] || [];
           const activeCategories = categories.filter((category) => countOnly(dayEvents, category.id) > 0);
+          const dayMood = getDayMood(dayEvents);
           const isCurrentMonth = date.getMonth() === viewDate.getMonth();
           const isSelected = selectedDate === dateKey;
           const isToday = today === dateKey;
@@ -1190,14 +1273,23 @@ function MonthCalendar({
               type="button"
               key={dateKey}
               onClick={() => onSelectDate(dateKey)}
-              aria-label={`${formatDate(dateKey)}, ${sumEvents(dayEvents)} отметок`}
+              aria-label={`${formatDate(dateKey)}, ${sumEvents(dayEvents)} отметок${dayMood ? `, ${dayMood.label}` : ", эмодзи дня не выбрано"}`}
               className={`group flex h-12 min-w-0 flex-col items-center justify-between rounded-lg border px-1 py-1.5 text-center transition sm:h-16 sm:rounded-xl sm:p-2 lg:h-20 ${
                 isSelected
                   ? "border-[#ca8a04] bg-amber-100/82 shadow-[inset_0_0_0_1px_rgba(202,138,4,0.22),0_8px_20px_rgba(202,138,4,0.12)] dark:bg-amber-300/12"
                   : "border-amber-900/10 bg-white/36 hover:border-amber-600/35 hover:bg-amber-50/75 dark:border-amber-100/8 dark:bg-white/[0.035] dark:hover:bg-amber-300/8"
               } ${isCurrentMonth ? "" : "opacity-35"}`}
             >
-              <span className={`text-xs font-black sm:text-sm ${isToday ? "text-[#ca8a04]" : ""}`}>{date.getDate()}</span>
+              <span className="tracker-calendar-date-row flex w-full items-center justify-center gap-1">
+                <span className={`text-xs font-black sm:text-sm ${isToday ? "text-[#ca8a04]" : ""}`}>{date.getDate()}</span>
+                {dayMood ? (
+                  <span className="tracker-calendar-mood" title={dayMood.label}>{dayMood.icon}</span>
+                ) : (
+                  <span className="tracker-calendar-mood-empty" title="Добавить эмодзи дня">
+                    <CirclePlus aria-hidden="true" size={11} />
+                  </span>
+                )}
+              </span>
               <div className="flex h-2 items-center justify-center gap-0.5 sm:gap-1">
                 {activeCategories.slice(0, 4).map((category) => (
                   <span
@@ -1235,6 +1327,7 @@ function WeekTracker({
           const dateKey = toDateKey(date);
           const dayEvents = eventsByDate[dateKey] || [];
           const total = sumEvents(dayEvents);
+          const dayMood = getDayMood(dayEvents);
           return (
             <button
               type="button"
@@ -1245,7 +1338,10 @@ function WeekTracker({
               <p className="text-xs font-black uppercase opacity-45">
                 {new Intl.DateTimeFormat("ru-RU", { weekday: "short" }).format(date)}
               </p>
-              <p className="mt-1 text-lg font-black">{date.getDate()}</p>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <p className="text-lg font-black">{date.getDate()}</p>
+                {dayMood ? <span title={dayMood.label}>{dayMood.icon}</span> : <span className="tracker-calendar-mood-empty"><CirclePlus aria-hidden="true" size={12} /></span>}
+              </div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-white dark:bg-white/10">
                 <div className="h-full rounded-full bg-[#ca8a04]" style={{ width: `${Math.min(100, total * 18)}%` }} />
               </div>
@@ -1254,7 +1350,7 @@ function WeekTracker({
                   const value = countOnly(dayEvents, category.id);
                   return value ? (
                     <span key={category.id} className="text-sm" title={`${category.name}: ${value}`}>
-                      {category.icon}
+                      <CategoryIcon category={category} size={15} />
                     </span>
                   ) : null;
                 })}
@@ -1317,7 +1413,7 @@ function ActivityCategoryCard({
           className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl text-white shadow-sm"
           style={{ backgroundColor: getCategoryColor(category) }}
         >
-          {category.icon}
+          <CategoryIcon category={category} />
         </span>
         <div>
           <p className="font-black">{category.name}</p>
@@ -1377,7 +1473,7 @@ function DayDetailsPanel({
   onEditingNameChange,
   onSaveCategoryName,
   onAdjust,
-  onUpdate,
+  onMoodChange,
 }: {
   selectedDate: string;
   categories: TrackerCategory[];
@@ -1387,17 +1483,13 @@ function DayDetailsPanel({
   onEditingNameChange: (categoryId: string, name: string) => void;
   onSaveCategoryName: (category: TrackerCategory) => void;
   onAdjust: (category: TrackerCategory, delta: 1 | -1) => void;
-  onUpdate: (eventId: string, patch: Partial<TrackerEvent>) => Promise<void>;
+  onMoodChange: (mood: Mood) => Promise<void>;
 }) {
   const myEvents = events.filter((event) => event.created_by === currentUserId);
   const partnerEvents = events.filter((event) => event.created_by !== currentUserId);
-  const [editorCategoryId, setEditorCategoryId] = useState(
-    myEvents[0]?.category_id || categories[0]?.id || ""
-  );
-  const resolvedEditorCategoryId =
-    editorCategoryId || myEvents[0]?.category_id || categories[0]?.id || "";
-  const activeEvent =
-    myEvents.find((event) => event.category_id === resolvedEditorCategoryId) || null;
+  const activeMood = getDayMood(myEvents);
+  const visibleMyEvents = myEvents.filter((event) => event.count > 0);
+  const visiblePartnerEvents = partnerEvents.filter((event) => event.count > 0);
 
   return (
     <aside className={`${trackerPanelClass} animate-zoomIn rounded-[1.35rem] p-4 sm:p-5`}>
@@ -1407,7 +1499,7 @@ function DayDetailsPanel({
           <h2 className="mt-1 text-xl font-black sm:text-2xl">{formatDate(selectedDate)}</h2>
         </div>
         <span className="rounded-full border border-amber-900/10 bg-amber-50/72 px-3 py-1.5 text-[11px] font-black text-[#a16207] dark:border-amber-100/10 dark:bg-amber-300/8 dark:text-amber-200">
-          {myEvents.length} моих · {partnerEvents.length} партнёра
+          {visibleMyEvents.length} моих · {visiblePartnerEvents.length} партнёра
         </span>
       </div>
 
@@ -1415,31 +1507,22 @@ function DayDetailsPanel({
         {categories.map((category) => {
           const event = myEvents.find((item) => item.category_id === category.id);
           const partnerCategoryEvents = partnerEvents.filter((item) => item.category_id === category.id);
-          const isEditorActive = resolvedEditorCategoryId === category.id;
 
           return (
             <div
               key={category.id}
-              className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-xl border p-2.5 transition sm:gap-3 sm:p-3 ${
-                isEditorActive
-                  ? "border-amber-500/45 bg-amber-100/58 dark:border-amber-300/22 dark:bg-amber-300/8"
-                  : "border-amber-900/8 bg-white/34 dark:border-amber-100/8 dark:bg-white/[0.035]"
-              }`}
+              className="tracker-action-row grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-amber-900/8 bg-white/34 p-2.5 transition dark:border-amber-100/8 dark:bg-white/[0.035] sm:gap-3 sm:p-3"
             >
-              <button
-                type="button"
-                onClick={() => setEditorCategoryId(category.id)}
+              <span
                 className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-xl text-white shadow-sm transition hover:scale-105 sm:h-11 sm:w-11"
                 style={{ backgroundColor: getCategoryColor(category) }}
-                aria-label={`Редактировать ${category.name}`}
-                title={`Редактировать ${category.name}`}
+                aria-hidden="true"
               >
-                <span aria-hidden="true">{category.icon}</span>
-              </button>
+                <CategoryIcon category={category} />
+              </span>
               <div className="min-w-0">
                 <input
                   value={editingNames[category.id] || ""}
-                  onFocus={() => setEditorCategoryId(category.id)}
                   onChange={(input) => onEditingNameChange(category.id, input.target.value)}
                   onBlur={() => onSaveCategoryName(category)}
                   className="w-full truncate rounded-md bg-transparent px-1 py-1 text-sm font-black outline-none transition focus:bg-white/65 focus:px-2 focus:ring-2 focus:ring-amber-500/20 dark:focus:bg-white/[0.06] sm:text-base"
@@ -1454,10 +1537,7 @@ function DayDetailsPanel({
               <ActivityCounter
                 value={event?.count || 0}
                 onMinus={() => onAdjust(category, -1)}
-                onPlus={() => {
-                  setEditorCategoryId(category.id);
-                  onAdjust(category, 1);
-                }}
+                onPlus={() => onAdjust(category, 1)}
                 color={getCategoryColor(category)}
               />
             </div>
@@ -1465,34 +1545,27 @@ function DayDetailsPanel({
         })}
       </div>
 
-      <div className="mt-4 border-t border-amber-900/10 pt-4 dark:border-amber-100/10">
-        {activeEvent ? (
-          <DayEventEditor
-            key={activeEvent.id}
-            event={activeEvent}
-            categoryName={categories.find((category) => category.id === resolvedEditorCategoryId)?.name || "активности"}
-            onUpdate={onUpdate}
-          />
-        ) : (
-          <div className="rounded-xl border border-dashed border-amber-700/20 bg-amber-50/42 p-4 text-center text-sm font-bold text-[#713f12]/55 dark:border-amber-100/12 dark:bg-amber-300/5 dark:text-amber-100/50">
-            Добавьте отметку, чтобы выбрать настроение и оставить заметку.
-          </div>
-        )}
+      <div className="tracker-day-mood mt-4 border-t border-amber-900/10 pt-4 dark:border-amber-100/10">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <p className="text-sm font-black">Эмодзи дня</p>
+          <span className="text-xs font-bold opacity-55">{activeMood?.label || "Не выбрано"}</span>
+        </div>
+        <MoodSelector value={activeMood?.key || null} onChange={(mood) => void onMoodChange(mood)} />
       </div>
 
-      {partnerEvents.length > 0 && (
+      {visiblePartnerEvents.length > 0 && (
         <div className="mt-4 border-t border-amber-900/10 pt-4 dark:border-amber-100/10">
           <p className="text-xs font-black text-[#713f12]/55 dark:text-amber-100/50">Отметки партнёра</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {categories.map((category) => {
-              const categoryEvents = partnerEvents.filter((event) => event.category_id === category.id);
+              const categoryEvents = visiblePartnerEvents.filter((event) => event.category_id === category.id);
               if (categoryEvents.length === 0) return null;
               return (
                 <span
                   key={category.id}
                   className="inline-flex items-center gap-1.5 rounded-full border border-amber-900/10 bg-white/45 px-3 py-1.5 text-xs font-black dark:border-amber-100/10 dark:bg-white/[0.05]"
                 >
-                  <span aria-hidden="true">{category.icon}</span>
+                  <CategoryIcon category={category} size={14} />
                   {category.name}: {countOnly(categoryEvents)}
                 </span>
               );
@@ -1504,62 +1577,7 @@ function DayDetailsPanel({
   );
 }
 
-function DayEventEditor({
-  event,
-  categoryName,
-  onUpdate,
-}: {
-  event: TrackerEvent;
-  categoryName: string;
-  onUpdate: (eventId: string, patch: Partial<TrackerEvent>) => Promise<void>;
-}) {
-  const [moodDraft, setMoodDraft] = useState<Mood>(event.mood || "good");
-  const [noteDraft, setNoteDraft] = useState(event.note || "");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-
-  async function save() {
-    if (isSaving) return;
-    setIsSaving(true);
-    await onUpdate(event.id, { mood: moodDraft, note: noteDraft.trim() || null });
-    setIsSaving(false);
-    setIsSaved(true);
-    window.setTimeout(() => setIsSaved(false), 1600);
-  }
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <p className="mb-2 text-xs font-black text-[#713f12]/55 dark:text-amber-100/50">
-          Настроение для {categoryName.toLowerCase()}
-        </p>
-        <MoodSelector value={moodDraft} onChange={setMoodDraft} />
-      </div>
-      <div>
-        <label htmlFor={`tracker-day-note-${event.id}`} className="text-xs font-black text-[#713f12]/55 dark:text-amber-100/50">
-          Заметка о дне
-        </label>
-        <textarea
-          id={`tracker-day-note-${event.id}`}
-          value={noteDraft}
-          onChange={(input) => setNoteDraft(input.target.value)}
-          rows={4}
-          placeholder="Напишите пару слов о вашем дне..."
-          className="mt-2 w-full resize-none rounded-xl border border-amber-900/12 bg-white/46 p-3 text-sm font-semibold outline-none transition placeholder:text-[#713f12]/35 focus:border-amber-500/45 focus:ring-4 focus:ring-amber-500/10 dark:border-amber-100/10 dark:bg-black/10 dark:placeholder:text-amber-100/30"
-        />
-      </div>
-      <button
-        type="button"
-        onClick={save}
-        disabled={isSaving}
-        className="h-11 w-full rounded-xl bg-[#ca8a04] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(202,138,4,0.22)] transition hover:bg-[#b77905] disabled:cursor-not-allowed disabled:opacity-55"
-      >
-        {isSaving ? "Сохраняем..." : isSaved ? "Сохранено" : "Сохранить изменения"}
-      </button>
-    </div>
-  );
-}
-function MoodSelector({ value, onChange }: { value: Mood; onChange: (mood: Mood) => void }) {
+function MoodSelector({ value, onChange }: { value: Mood | null; onChange: (mood: Mood) => void }) {
   return (
     <div className="grid grid-cols-5 gap-2">
       {moods.map((mood) => (
@@ -1601,7 +1619,7 @@ function YearHeatmap({
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h2 className="text-2xl font-black">Годовая heatmap</h2>
         <div className="flex flex-wrap gap-2">
-          {[{ id: "all", name: "Все", icon: "·" }, ...categories.map((category) => ({ id: category.id, name: category.name, icon: category.icon }))].map((item) => (
+          {[{ id: "all", name: "Все" }, ...categories.map((category) => ({ id: category.id, name: category.name }))].map((item) => (
             <button
               key={item.id}
               onClick={() => onFilter(item.id)}
@@ -1609,7 +1627,7 @@ function YearHeatmap({
                 filter === item.id ? "bg-[#ca8a04] text-white" : "bg-white/60 dark:bg-white/10"
               }`}
             >
-              {item.icon} {item.name}
+              {item.id !== "all" && <CategoryIcon category={categories.find((category) => category.id === item.id)!} size={14} />} {item.name}
             </button>
           ))}
         </div>
@@ -1671,7 +1689,7 @@ function TrackerCharts({ categories, events }: { categories: TrackerCategory[]; 
             {byCategory.map(({ category, value }) => (
               <div key={category.id}>
                 <div className="mb-1 flex justify-between text-sm font-black">
-                  <span>{category.icon} {category.name}</span>
+                  <span className="flex items-center gap-2"><CategoryIcon category={category} size={14} /> {category.name}</span>
                   <span>{value}</span>
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-white dark:bg-white/10">
@@ -1745,7 +1763,7 @@ function ActivityHistory({
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
-      <div className="mt-4 space-y-3">
+      <div className="tracker-history-list mt-3 divide-y divide-amber-900/8 overflow-hidden rounded-xl bg-white/42 dark:divide-amber-100/8 dark:bg-white/[0.035]">
         {recent.length === 0 ? (
           <div className="rounded-2xl bg-white/55 p-4 text-sm font-bold opacity-60 dark:bg-white/8">
             История появится после первой отметки.
@@ -1753,23 +1771,24 @@ function ActivityHistory({
         ) : (
           recent.map((event) => {
             const category = categories.find((item) => item.id === event.category_id);
-            const mood = moods.find((item) => item.key === event.mood);
             const isMine = event.created_by === currentUserId;
+            const visibleNote = getVisibleEventNote(event);
             return (
-              <div key={event.id} className="rounded-2xl bg-white/58 p-4 shadow-inner dark:bg-white/8">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-black">
-                    {category?.icon} {category?.name || "Активность"}
-                  </p>
-                  <span className="rounded-full bg-white/70 px-2 py-1 text-xs font-black opacity-70 dark:bg-white/10">
-                    {isMine ? "моё" : "партнёр"}
-                  </span>
+              <div key={event.id} className="tracker-history-row flex items-center gap-3 px-3 py-2.5">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white" style={{ backgroundColor: category ? getCategoryColor(category) : "#ca8a04" }}>
+                  {category ? <CategoryIcon category={category} size={15} /> : <Heart aria-hidden="true" size={15} />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-black">{category?.name || "Активность"}</p>
+                    <span className="text-[10px] font-black uppercase opacity-40">{isMine ? "вы" : "партнёр"}</span>
+                  </div>
+                  {visibleNote && <p className="truncate text-xs font-semibold opacity-58">{visibleNote}</p>}
                 </div>
-                <p className="mt-1 text-xs font-black opacity-45">{formatShortDate(parseDateKey(event.date))}</p>
-                <p className="mt-1 text-sm font-semibold opacity-68">
-                  {event.count} раз · {event.duration_minutes} мин · {mood?.icon} {mood?.label}
-                </p>
-                {event.note && <p className="mt-2 text-sm font-semibold">{event.note}</p>}
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-black">×{event.count}</p>
+                  <p className="text-[10px] font-bold opacity-42">{formatShortDate(parseDateKey(event.date))}</p>
+                </div>
               </div>
             );
           })

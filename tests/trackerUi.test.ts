@@ -11,8 +11,36 @@ test("tracker follows the calendar and selected-day reference hierarchy", async 
   assert.match(source, /className="tracker-content-grid"/);
   assert.match(source, /className="tracker-view"/);
   assert.match(source, /className="tracker-day space-y-3"/);
-  assert.match(source, /<DayEventEditor/);
-  assert.match(source, /Сохранить изменения/);
+  assert.match(source, /<MoodSelector/);
+  assert.match(source, /Эмодзи дня/);
+  assert.doesNotMatch(source, /Настроение для/);
+});
+
+test("tracker uses a single persisted day mood and Lucide category icons", async () => {
+  const [source, categories] = await Promise.all([
+    readFile(new URL("../app/tracker/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/trackerCategories.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(source, /DAY_MOOD_MARKER/);
+  assert.match(source, /tracker-calendar-mood-empty/);
+  assert.match(source, /function CategoryIcon/);
+  assert.match(source, /Utensils/);
+  assert.match(source, /Gamepad2/);
+  assert.match(categories, /food.*#9a6334/);
+  assert.match(categories, /sex.*#e5484d/);
+  assert.match(categories, /sport.*#2f9e44/);
+  assert.match(categories, /games.*#3478d4/);
+  assert.match(categories, /drawings.*#db5b9a/);
+});
+
+test("tracker goals and history use compact progressive disclosure", async () => {
+  const source = await readFile(new URL("../app/tracker/page.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /isFormOpen/);
+  assert.match(source, /pair-goal-form/);
+  assert.match(source, /tracker-history-row/);
+  assert.doesNotMatch(source, /Целей пока нет/);
 });
 
 test("tracker mobile layout keeps the calendar before the day editor and charts", async () => {

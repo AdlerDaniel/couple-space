@@ -33,11 +33,11 @@ create index if not exists tracker_events_couple_category_date_idx
 
 insert into public.tracker_categories (name, slug, icon, color, sort_order, is_default)
 values
-  ('Поели', 'food', '🍽️', '#f97316', 10, true),
-  ('Секс', 'sex', '❤️', '#f59e0b', 20, true),
-  ('Спорт', 'sport', '🏃', '#ca8a04', 30, true),
-  ('Игры', 'games', '🎮', '#eab308', 40, true),
-  ('Рисунки', 'drawings', '🎨', '#84cc16', 50, true)
+  ('Поели', 'food', 'utensils', '#9a6334', 10, true),
+  ('Секс', 'sex', 'heart', '#e5484d', 20, true),
+  ('Спорт', 'sport', 'dumbbell', '#2f9e44', 30, true),
+  ('Игры', 'games', 'gamepad', '#3478d4', 40, true),
+  ('Рисунки', 'drawings', 'palette', '#db5b9a', 50, true)
 on conflict (slug) do update
 set
   name = excluded.name,

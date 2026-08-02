@@ -13,6 +13,7 @@ import type { WatchSearchResult } from "@/lib/watchSearch";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, ExternalLink, Film, Info, Sparkles, Trash2, Tv } from "lucide-react";
 
 type ContentType = "movie" | "series" | "cartoon" | "anime";
 
@@ -41,11 +42,11 @@ type WatchItem = {
   updated_at: string;
 };
 
-const contentTypes: Array<{ key: ContentType; label: string; icon: string }> = [
-  { key: "movie", label: "Фильм", icon: "◉" },
-  { key: "series", label: "Сериал", icon: "▤" },
-  { key: "cartoon", label: "Мультфильм", icon: "✿" },
-  { key: "anime", label: "Аниме", icon: "✦" },
+const contentTypes: Array<{ key: ContentType; label: string }> = [
+  { key: "movie", label: "Фильм" },
+  { key: "series", label: "Сериал" },
+  { key: "cartoon", label: "Мультфильм" },
+  { key: "anime", label: "Аниме" },
 ];
 
 function getReadableName(value?: string | null, fallback = "Партнёр") {
@@ -59,8 +60,9 @@ function getContentTypeLabel(type: ContentType) {
   return contentTypes.find((item) => item.key === type)?.label || "Фильм";
 }
 
-function getContentTypeIcon(type: ContentType) {
-  return contentTypes.find((item) => item.key === type)?.icon || "◉";
+function ContentTypeIcon({ type, size = 18 }: { type: ContentType; size?: number }) {
+  const Icon = type === "series" ? Tv : type === "anime" || type === "cartoon" ? Sparkles : Film;
+  return <Icon aria-hidden="true" size={size} strokeWidth={2.2} />;
 }
 
 export default function WatchPage() {
@@ -462,22 +464,26 @@ export default function WatchPage() {
       <article
         key={item.id}
         data-anime-draggable={!item.is_watched ? "true" : undefined}
-        className={`watch-card performance-list-item group rounded-[1.4rem] border p-4 shadow-[0_18px_45px_rgba(77,124,15,0.12)] transition duration-300 hover:-translate-y-1 dark:shadow-black/20 ${
+        className={`watch-card ${item.is_watched ? "is-watched" : "is-wish"} performance-list-item group rounded-[1.4rem] border p-4 shadow-[0_18px_45px_rgba(77,124,15,0.12)] transition duration-300 hover:-translate-y-1 dark:shadow-black/20 ${
           item.is_watched
             ? "border-lime-200/60 bg-white/58 opacity-78 dark:border-lime-100/10 dark:bg-white/7"
             : "border-white/65 bg-white/68 dark:border-white/10 dark:bg-white/8"
         } ${isSelected ? "ring-4 ring-lime-300/55" : ""}`}
       >
-        {item.poster_url && (
+        {item.poster_url ? (
           <div
             className="watch-card-poster mb-4 aspect-[16/10] rounded-[1rem] bg-lime-100 bg-cover bg-center shadow-inner dark:bg-white/8"
             style={{ backgroundImage: `url("${item.poster_url}")` }}
             aria-label={`Постер: ${item.title}`}
           />
+        ) : (
+          <div className="watch-card-poster watch-card-poster-placeholder mb-4 grid aspect-[16/10] place-items-center rounded-[1rem] bg-lime-100 text-lime-700 shadow-inner dark:bg-white/8 dark:text-lime-100">
+            <ContentTypeIcon type={item.content_type} size={34} />
+          </div>
         )}
-        <div className="flex items-start justify-between gap-3">
+        <div className="watch-card-status flex items-start justify-between gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-lime-100 text-xl text-lime-700 shadow-inner dark:bg-lime-400/12 dark:text-lime-100">
-            {getContentTypeIcon(item.content_type)}
+            <ContentTypeIcon type={item.content_type} />
           </span>
           <span
             className={`max-w-[11rem] rounded-full px-3 py-1 text-center text-xs font-black leading-tight sm:max-w-[12rem] ${
@@ -501,25 +507,34 @@ export default function WatchPage() {
         <div className="watch-card-actions mt-5 grid gap-2 sm:grid-cols-2">
           <Link
             href={`/watch/${item.id}`}
+            aria-label={`Подробнее о ${item.title}`}
+            title="Подробнее"
             className="min-w-0 rounded-full bg-white/75 px-4 py-2.5 text-center text-sm font-black leading-tight text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
           >
-            Подробнее
+            <Info aria-hidden="true" size={17} />
+            <span>Подробнее</span>
           </Link>
           {!item.is_watched && (
             <button
               type="button"
               onClick={() => markWatched(item)}
+              aria-label={`Отметить ${item.title} как просмотренное`}
+              title="Отметить как просмотренное"
               className="min-w-0 rounded-full bg-lime-600 px-4 py-2.5 text-center text-sm font-black leading-tight text-white shadow-lg transition hover:-translate-y-0.5"
             >
-              Отметить как просмотрено
+              <Check aria-hidden="true" size={17} />
+              <span>Просмотрено</span>
             </button>
           )}
           <button
             type="button"
             onClick={() => deleteItem(item)}
+            aria-label={`Удалить ${item.title}`}
+            title="Удалить"
             className="min-w-0 rounded-full bg-white/75 px-4 py-2.5 text-center text-sm font-black leading-tight text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
           >
-            Удалить
+            <Trash2 aria-hidden="true" size={17} />
+            <span>Удалить</span>
           </button>
         </div>
         {item.external_url && (
@@ -527,9 +542,12 @@ export default function WatchPage() {
             href={item.external_url}
             target="_blank"
             rel="noreferrer"
+            aria-label={`Открыть внешнюю ссылку для ${item.title}`}
+            title="Открыть ссылку"
             className="mt-3 inline-flex text-sm font-black text-lime-700 underline decoration-lime-300 underline-offset-4 dark:text-lime-100"
           >
-            Открыть ссылку
+            <ExternalLink aria-hidden="true" size={16} />
+            <span>Открыть ссылку</span>
           </a>
         )}
       </article>
@@ -710,7 +728,7 @@ export default function WatchPage() {
                           />
                         ) : (
                           <span className="grid h-16 w-11 shrink-0 place-items-center rounded-lg bg-lime-100 text-lime-700 shadow-inner dark:bg-white/8 dark:text-lime-100">
-                            {getContentTypeIcon(result.contentType)}
+                            <ContentTypeIcon type={result.contentType} />
                           </span>
                         )}
                         <span className="min-w-0">
@@ -778,7 +796,7 @@ export default function WatchPage() {
                 {wishItems.length}
               </span>
             </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <div className="watch-card-grid mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               {wishItems.length ? (
                 wishItems.map(renderCard)
               ) : (
@@ -803,7 +821,7 @@ export default function WatchPage() {
                 {watchedItems.length}
               </span>
             </div>
-            <div className="mt-4 grid gap-4">
+            <div className="watch-card-grid mt-4 grid gap-4">
               {watchedItems.length ? (
                 watchedItems.map(renderCard)
               ) : (

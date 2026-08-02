@@ -1,6 +1,7 @@
 import {
   dedupeWatchSearchResults,
   mapImdbSuggestionItem,
+  mapItunesSearchItem,
   mapTmdbSearchItem,
   type WatchSearchResult,
 } from "@/lib/watchSearch";
@@ -15,6 +16,10 @@ type SearchResponse = {
 
 type ImdbSuggestionResponse = {
   d?: unknown[];
+};
+
+type ItunesSearchResponse = {
+  results?: unknown[];
 };
 
 function getSafeQuery(request: Request) {
@@ -86,6 +91,44 @@ async function searchImdb(query: string): Promise<WatchSearchResult[]> {
     .filter((item): item is WatchSearchResult => item !== null);
 }
 
+async function searchItunesCatalog(
+  query: string,
+  media: "movie" | "tvShow",
+  entity: "movie" | "tvSeason",
+): Promise<WatchSearchResult[]> {
+  const url = new URL("https://itunes.apple.com/search");
+  url.searchParams.set("term", query);
+  url.searchParams.set("media", media);
+  url.searchParams.set("entity", entity);
+  url.searchParams.set("country", "US");
+  url.searchParams.set("limit", "8");
+
+  const response = await fetch(url, {
+    next: { revalidate: 60 * 60 * 24 },
+  });
+
+  if (!response.ok) return [];
+
+  const data = (await response.json()) as ItunesSearchResponse;
+  return (data.results || [])
+    .map((item) =>
+      mapItunesSearchItem(
+        isRecord(item) ? (item as Parameters<typeof mapItunesSearchItem>[0]) : {},
+        media === "tvShow" ? "series" : "movie",
+      ),
+    )
+    .filter((item): item is WatchSearchResult => item !== null);
+}
+
+async function searchItunes(query: string): Promise<WatchSearchResult[]> {
+  const searches = await Promise.allSettled([
+    searchItunesCatalog(query, "movie", "movie"),
+    searchItunesCatalog(query, "tvShow", "tvSeason"),
+  ]);
+
+  return searches.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+}
+
 export async function GET(request: Request) {
   const adminSupabase = getAdminClient();
   if (!adminSupabase) {
@@ -108,14 +151,16 @@ export async function GET(request: Request) {
     return Response.json({ results: [] });
   }
 
-  try {
-    const tmdbResults = await searchTmdb(query);
-    const results = tmdbResults.length ? tmdbResults : await searchImdb(query);
+  const searches = await Promise.allSettled([
+    searchTmdb(query),
+    searchImdb(query),
+    searchItunes(query),
+  ]);
+  const results = searches.flatMap((result) =>
+    result.status === "fulfilled" ? result.value : [],
+  );
 
-    return Response.json({
-      results: dedupeWatchSearchResults(results).slice(0, 8),
-    });
-  } catch {
-    return Response.json({ results: [] });
-  }
+  return Response.json({
+    results: dedupeWatchSearchResults(results).slice(0, 8),
+  });
 }

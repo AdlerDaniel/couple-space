@@ -132,3 +132,34 @@ test("watch search handles invalid dates and empty artwork", () => {
   assert.equal(getHighResolutionArtwork(), null);
   assert.equal(getTmdbPosterUrl(), null);
 });
+
+test("watch API keeps independent providers and adds an iTunes fallback", async () => {
+  const source = await import("node:fs/promises").then((fs) =>
+    fs.readFile(new URL("../app/api/watch/search/route.ts", import.meta.url), "utf8"),
+  );
+
+  assert.match(
+    source,
+    /Promise\.allSettled\(\[\s*searchTmdb\(query\),\s*searchImdb\(query\),\s*searchItunes\(query\)/,
+  );
+  assert.match(source, /itunes\.apple\.com\/search/);
+  assert.match(source, /media === "tvShow" \? "series" : "movie"/);
+});
+
+test("watch search results open upward in a bounded scroll area", async () => {
+  const [page, styles] = await Promise.all([
+    import("node:fs/promises").then((fs) =>
+      fs.readFile(new URL("../app/watch/page.tsx", import.meta.url), "utf8"),
+    ),
+    import("node:fs/promises").then((fs) =>
+      fs.readFile(new URL("../app/mobile-redesign.css", import.meta.url), "utf8"),
+    ),
+  ]);
+
+  assert.match(page, /className="watch-search-results/);
+  assert.match(
+    styles,
+    /\.watch-search-results\s*\{[^}]*bottom:\s*calc\(100% \+ 0\.5rem\)/,
+  );
+  assert.match(styles, /\.watch-search-results\s*\{[^}]*overflow-y:\s*auto/);
+});

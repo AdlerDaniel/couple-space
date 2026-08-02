@@ -10,6 +10,26 @@
   display: none;
 }
 
+/* Search suggestions open above the add sheet and stay independently scrollable. */
+.watch-search-results {
+  top: auto;
+  bottom: calc(100% + 0.5rem);
+  max-block-size: min(28rem, 55dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+@media (max-width: 767px) {
+  .watch-add-sheet.is-open {
+    overflow: visible;
+  }
+
+  .watch-search-results {
+    max-block-size: min(24rem, 48dvh);
+  }
+}
+
 /* Second mobile refinement: dense media grids, integrated discussions and compact tracker controls. */
 .watch-card-actions > *,
 .watch-card > a:last-child,
@@ -565,6 +585,14 @@ main textarea:not(.chat-composer-input) {
     min-height: 2.9rem !important;
     padding: 0.7rem 0.8rem !important;
     line-height: 1.4 !important;
+  }
+
+  .watch-add-sheet.is-open {
+    overflow: visible;
+  }
+
+  .watch-search-results {
+    max-block-size: min(24rem, 48dvh);
   }
 }
 

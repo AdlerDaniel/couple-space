@@ -695,7 +695,7 @@ export default function WatchPage() {
                 className="h-13 w-full rounded-2xl border border-lime-200/70 bg-white/82 px-4 font-semibold text-lime-950 outline-none transition placeholder:text-lime-900/35 focus:border-lime-500 dark:border-white/10 dark:bg-black/20 dark:text-white"
               />
               {(isSearchOpen || isSearching) && normalizeWatchTitle(title).length >= 2 && (
-                <div className="absolute left-0 right-0 top-15 z-30 overflow-hidden rounded-[1.25rem] border border-lime-200/70 bg-white/96 p-2 shadow-[0_24px_70px_rgba(77,124,15,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-[#101906]/96">
+                <div className="watch-search-results absolute left-0 right-0 z-30 rounded-[1.25rem] border border-lime-200/70 bg-white/96 p-2 shadow-[0_24px_70px_rgba(77,124,15,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-[#101906]/96">
                   {isSearching && (
                     <div className="rounded-2xl px-3 py-3 text-sm font-black text-lime-800/70 dark:text-white/60">
                       Ищем варианты...

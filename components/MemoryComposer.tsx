@@ -1,6 +1,7 @@
 "use client";
 
 import EmojiPicker from "@/components/EmojiPicker";
+import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
   createCompatibleAudioRecorder,
@@ -508,7 +509,7 @@ export default function MemoryComposer({
               Удалить
             </button>
           </div>
-          <audio controls preload="none" src={memoryVoice} className="w-full" />
+          <AccentAudioPlayer src={memoryVoice} accent="#2563eb" label="Новое голосовое воспоминание" />
         </div>
       )}
 

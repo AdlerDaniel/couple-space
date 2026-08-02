@@ -2111,93 +2111,6 @@ html.dark:has(.today-page-movies) {
   }
 }
 
-@keyframes achievementAppear {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.92);
-    filter: blur(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
-
-@keyframes achievementRecentPulse {
-  0%,
-  100% {
-    box-shadow:
-      0 18px 45px rgba(127, 29, 29, 0.18),
-      0 0 0 1px rgba(255, 255, 255, 0.7),
-      0 0 34px rgba(220, 38, 38, 0.22);
-  }
-
-  50% {
-    box-shadow:
-      0 24px 60px rgba(127, 29, 29, 0.26),
-      0 0 0 2px rgba(251, 113, 133, 0.45),
-      0 0 48px rgba(244, 63, 94, 0.42);
-  }
-}
-
-@keyframes achievementShine {
-  from {
-    transform: translateX(-120%) skewX(-18deg);
-  }
-
-  to {
-    transform: translateX(360%) skewX(-18deg);
-  }
-}
-
-@keyframes achievementParticle {
-  0% {
-    opacity: 0;
-    transform: translateY(8px) scale(0.6);
-  }
-
-  35% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(-22px) scale(1.1);
-  }
-}
-
-@keyframes achievementToast {
-  0% {
-    opacity: 0;
-    transform: translateY(-18px) scale(0.94);
-  }
-
-  14%,
-  86% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(-12px) scale(0.96);
-  }
-}
-
-@keyframes achievementModal {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.96);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 @keyframes authBlob {
   0%,
   100% {
@@ -2621,36 +2534,6 @@ html.dark:has(.today-page-movies) {
   animation: answeredGlow 3.8s ease-in-out infinite;
 }
 
-.achievement-card {
-  animation: achievementAppear 0.58s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-.achievement-recent {
-  animation:
-    achievementAppear 0.58s cubic-bezier(0.2, 0.8, 0.2, 1) both,
-    achievementRecentPulse 2.4s ease-in-out infinite;
-}
-
-.achievement-shine {
-  animation: achievementShine 1.35s ease-in-out infinite;
-}
-
-.achievement-particle {
-  animation: achievementParticle 1.8s ease-in-out infinite;
-}
-
-.achievement-particle-delay {
-  animation-delay: 0.45s;
-}
-
-.achievement-toast {
-  animation: achievementToast 3.6s ease-in-out both;
-}
-
-.achievement-modal {
-  animation: achievementModal 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
 .auth-grain {
   background-image:
     radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px),
@@ -2740,12 +2623,7 @@ html.dark:has(.today-page-movies) {
   .questions-reveal,
   .answer-reveal,
   .answered-glow,
-  .achievement-card,
-  .achievement-recent,
-  .achievement-shine,
-  .achievement-particle,
-  .achievement-toast,
-  .achievement-modal,
+
   .auth-blob,
   .auth-heart,
   .auth-reveal,
@@ -2870,23 +2748,96 @@ html.dark:has(.today-page-movies) {
     overflow-wrap: anywhere;
   }
 
-  .achievement-modal {
-    max-height: calc(100dvh - 2rem) !important;
-    border-radius: 1.35rem !important;
-    padding: 1rem !important;
-  }
-
-  .achievement-toast {
-    left: 1rem !important;
-    right: 1rem !important;
-    top: 1rem !important;
-    max-width: none !important;
-  }
 }
 
 .performance-list-item {
   content-visibility: auto;
   contain-intrinsic-size: auto 18rem;
+}
+
+.accent-audio-player {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--audio-accent) 26%, transparent);
+  border-radius: 1.15rem;
+  padding: 0.65rem 0.75rem;
+  background: color-mix(in srgb, var(--audio-accent) 10%, white 90%);
+  color: var(--audio-accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.dark .accent-audio-player {
+  border-color: color-mix(in srgb, var(--audio-accent) 42%, transparent);
+  background: color-mix(in srgb, var(--audio-accent) 18%, #08111f 82%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.accent-audio-play {
+  display: grid;
+  width: 2.85rem;
+  height: 2.85rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--audio-accent) 12%, white 88%);
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+
+.accent-audio-play:hover {
+  transform: scale(1.04);
+  background: color-mix(in srgb, var(--audio-accent) 20%, white 80%);
+}
+
+.accent-audio-play svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.accent-audio-content {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+}
+
+.accent-audio-wave {
+  display: flex;
+  height: 2rem;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.accent-audio-wave span {
+  width: 3px;
+  min-width: 2px;
+  flex: 1 1 auto;
+  border-radius: 999px;
+  background: var(--audio-accent);
+  opacity: 0.7;
+}
+
+.accent-audio-seek {
+  position: absolute;
+  inset: 0 0 auto;
+  width: 100%;
+  height: 2rem;
+  min-height: 0 !important;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.accent-audio-time {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.15rem;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 850;
+  opacity: 0.72;
 }
 
 html:has(.countdown-page) {
@@ -3020,9 +2971,7 @@ html.dark:has(.countdown-page) {
   .landing-heart,
   .questions-blob,
   .answered-glow,
-  .achievement-recent,
-  .achievement-shine,
-  .achievement-particle,
+
   .auth-blob,
   .auth-heart,
   .auth-float,

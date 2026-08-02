@@ -97,6 +97,22 @@ create policy "Couple members can update chat messages"
     )
   );
 
+drop policy if exists "Couple members can delete chat messages"
+  on public.couple_chat_messages;
+
+create policy "Couple members can delete chat messages"
+  on public.couple_chat_messages
+  for delete
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.couples c
+      where c.id = couple_chat_messages.couple_id
+        and (select auth.uid()) in (c.partner_one_id, c.partner_two_id)
+    )
+  );
+
 insert into storage.buckets (id, name, public)
 values ('chat-media', 'chat-media', true)
 on conflict (id) do update set public = excluded.public;

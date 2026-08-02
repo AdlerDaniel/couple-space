@@ -1,6 +1,7 @@
 "use client";
 
 import MemoryComposer, { type CreatedMemory } from "@/components/MemoryComposer";
+import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import { supabase } from "@/lib/supabaseClient";
 import { createPartnerNotification } from "@/lib/notifications";
 import { decodeMemoryMedia } from "@/lib/memoryMedia";
@@ -550,7 +551,7 @@ export default function MemoriesPage() {
                         <p className="mb-2 text-sm font-black text-[#2563eb] dark:text-blue-100">
                           Голосовое воспоминание
                         </p>
-                        <audio controls preload="none" src={media.voiceUrl} className="w-full" />
+                        <AccentAudioPlayer src={media.voiceUrl} accent="#2563eb" label="Голосовое воспоминание" />
                       </div>
                     )}
                     <div className="memory-meta mt-4 grid gap-2 text-sm font-bold text-[#172554]/58 dark:text-white/45">
@@ -698,7 +699,7 @@ export default function MemoriesPage() {
               {selectedMedia.voiceUrl && (
                 <div className="mt-4 rounded-2xl bg-white/12 p-3">
                   <p className="mb-2 text-sm font-black">Голосовое воспоминание</p>
-                  <audio controls preload="none" src={selectedMedia.voiceUrl} className="w-full" />
+                  <AccentAudioPlayer src={selectedMedia.voiceUrl} accent="#2563eb" label="Голосовое воспоминание" />
                 </div>
               )}
             </div>

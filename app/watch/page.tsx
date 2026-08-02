@@ -4,6 +4,7 @@ import {
   findDuplicateWatchTitle,
   getRandomWatchItem,
   normalizeWatchTitle,
+  shouldOpenAddWatch,
   shouldAutoSpinWatch,
 } from "@/lib/watchList";
 import { AnimatedText, CountUp } from "@/components/AnimeWidgets";
@@ -90,6 +91,7 @@ export default function WatchPage() {
   const [mobileList, setMobileList] = useState<"wish" | "watched">("wish");
   const deleteTimerRef = useRef<number | null>(null);
   const autoSpinDoneRef = useRef(false);
+  const autoAddDoneRef = useRef(false);
   const rouletteWheelRef = useRef<HTMLDivElement | null>(null);
   const rouletteResultRef = useRef<HTMLDivElement | null>(null);
 
@@ -400,6 +402,13 @@ export default function WatchPage() {
   }, [isLoading, isSpinning, searchParams, spinRoulette, wishItems.length]);
 
   useEffect(() => {
+    if (autoAddDoneRef.current || isLoading || !shouldOpenAddWatch(searchParams)) return;
+    autoAddDoneRef.current = true;
+    const timerId = window.setTimeout(() => setIsAddOpen(true), 0);
+    return () => window.clearTimeout(timerId);
+  }, [isLoading, searchParams]);
+
+  useEffect(() => {
     if (!rouletteWheelRef.current || !isSpinning) return;
 
     let ignore = false;
@@ -509,7 +518,7 @@ export default function WatchPage() {
             href={`/watch/${item.id}`}
             aria-label={`Подробнее о ${item.title}`}
             title="Подробнее"
-            className="min-w-0 rounded-full bg-white/75 px-4 py-2.5 text-center text-sm font-black leading-tight text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
+            className="watch-delete-action min-w-0 rounded-full bg-lime-100/90 px-4 py-2.5 text-center text-sm font-black leading-tight text-lime-800 shadow-inner transition hover:-translate-y-0.5 hover:bg-lime-200 dark:bg-lime-500/16 dark:text-lime-100"
           >
             <Info aria-hidden="true" size={17} />
             <span>Подробнее</span>

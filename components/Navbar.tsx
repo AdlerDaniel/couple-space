@@ -49,7 +49,6 @@ type CoupleNotification = {
 };
 
 function getNotificationIcon(type: string): NavIconName {
-  if (type === "achievement_unlocked") return "achievements";
   if (type.includes("question")) return "questions";
   if (type.includes("quiz")) return "quizzes";
   if (type.includes("chat")) return "chat";
@@ -175,6 +174,7 @@ export default function Navbar() {
         .from("couple_notifications")
         .select("id, type, title, body, href, read_at, created_at")
         .eq("recipient_id", userId)
+        .neq("type", "achievement_unlocked")
         .order("created_at", { ascending: false })
         .limit(12);
 
@@ -249,6 +249,7 @@ export default function Navbar() {
             .from("couple_notifications")
             .select("id, type, title, body, href, read_at, created_at")
             .eq("recipient_id", currentUserId)
+            .neq("type", "achievement_unlocked")
             .order("created_at", { ascending: false })
             .limit(12);
 
@@ -256,6 +257,7 @@ export default function Navbar() {
 
           if (payload.eventType === "INSERT") {
             const next = payload.new as CoupleNotification;
+            if (next.type === "achievement_unlocked") return;
             showAppToast({
               title: next.title,
               text: next.body || "Новое событие пары",

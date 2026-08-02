@@ -29,7 +29,6 @@ const filters = [
   { key: "quizzes", label: "Викторины" },
   { key: "chat", label: "Чат" },
   { key: "reactions", label: "Реакции" },
-  { key: "achievement", label: "Достижения" },
 ] as const;
 
 const defaultNotificationSettings = {
@@ -50,7 +49,6 @@ function formatTime(date: string) {
 }
 
 function getIcon(type: string): NavIconName {
-  if (type === "achievement_unlocked") return "achievements";
   if (type.includes("question")) return "questions";
   if (type.includes("quiz")) return "quizzes";
   if (type.includes("chat")) return "chat";
@@ -60,7 +58,6 @@ function getIcon(type: string): NavIconName {
 }
 
 function getTypeLabel(type: string) {
-  if (type === "achievement_unlocked") return "Достижение";
   if (type.includes("reaction")) return "Реакция";
   if (type.includes("comment")) return "Комментарий";
   if (type.includes("question")) return "Вопрос";
@@ -118,6 +115,7 @@ export default function NotificationsPage() {
         .from("couple_notifications")
         .select("id, type, title, body, href, read_at, created_at")
         .eq("recipient_id", user.id)
+        .neq("type", "achievement_unlocked")
         .order("created_at", { ascending: false })
         .limit(80);
 
@@ -147,7 +145,6 @@ export default function NotificationsPage() {
     if (filter === "reactions") {
       return categoryFiltered.filter((item) => item.type.includes("reaction") || item.type.includes("comment"));
     }
-    if (filter === "achievement") return categoryFiltered.filter((item) => item.type === "achievement_unlocked");
     return categoryFiltered;
   }, [enabledCategories, filter, items]);
 

@@ -369,10 +369,8 @@ export default function TodayPage() {
                       : "Фильм, сериал или аниме — сохраните один вариант, чтобы вечером не тратить время на поиск."}
                   </p>
                   <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                    <Link href={state.watchRemaining ? "/watch?spin=1" : "/watch"} className="today-primary-action">
-                      {state.watchRemaining ? "Запустить рулетку" : "Добавить вариант"}
-                    </Link>
-                    <Link href="/memories" className="today-secondary-action">Сохранить момент дня</Link>
+                    <Link href="/watch?add=1" className="today-primary-action">Добавить фильм</Link>
+                    <Link href="/watch?spin=1" className="today-secondary-action">Запустить рулетку</Link>
                   </div>
                 </div>
               )}

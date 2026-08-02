@@ -1,6 +1,7 @@
 "use client";
 
 import AnswerSocialControls from "@/components/AnswerSocialControls";
+import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import QuestionComments from "@/components/QuestionComments";
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { parseQuestionDate } from "@/lib/questionArchive";
@@ -9,7 +10,7 @@ import { toBrowserSupabaseUrl } from "@/lib/supabaseUrls";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LockKeyhole, Mail } from "lucide-react";
+import { Flame, LockKeyhole, Mail } from "lucide-react";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
 
@@ -22,6 +23,8 @@ type Couple = {
 type CoupleProfile = {
   partner_one: string | null;
   partner_two: string | null;
+  avatar_one?: string | null;
+  avatar_two?: string | null;
   time_zone?: string | null;
 };
 
@@ -66,6 +69,24 @@ function readCachedQuestionState() {
   }
 }
 
+function QuestionAvatar({ name, src, tone }: { name: string; src?: string | null; tone: "mine" | "partner" }) {
+  const initials = name.trim().slice(0, 1).toUpperCase() || "♡";
+  return src ? (
+    <Image
+      src={toBrowserSupabaseUrl(src) || src}
+      alt={name}
+      width={44}
+      height={44}
+      sizes="44px"
+      className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white/70 shadow-lg dark:ring-white/15"
+    />
+  ) : (
+    <span className={`question-answer-avatar question-answer-avatar-${tone}`} aria-label={name}>
+      {initials}
+    </span>
+  );
+}
+
 export default function TodayQuestionPage() {
   const router = useRouter();
   const [cachedState] = useState(readCachedQuestionState);
@@ -103,11 +124,16 @@ export default function TodayQuestionPage() {
   const myEditedAt = isPartnerOne
     ? answerRecord?.answer_one_edited_at
     : answerRecord?.answer_two_edited_at;
-  const hasMyAnswer = Boolean(myAnswer);
-  const hasPartnerAnswer = Boolean(partnerAnswer);
+  const hasMyAnswer = Boolean(myAnswer || myVoiceUrl || myPhotoUrl);
+  const hasPartnerAnswer = Boolean(partnerAnswer || partnerVoiceUrl || partnerPhotoUrl);
   const canEdit =
     hasMyAnswer &&
-    (!myEditedAt || nowMs === 0 || new Date(myEditedAt).getTime() + EDIT_WINDOW_MS > nowMs);
+    Boolean(myEditedAt) &&
+    (nowMs === 0 || new Date(myEditedAt as string).getTime() + EDIT_WINDOW_MS > nowMs);
+  const myName = (isPartnerOne ? profile?.partner_one : profile?.partner_two) || "Вы";
+  const partnerName = (isPartnerOne ? profile?.partner_two : profile?.partner_one) || "Партнёр";
+  const myAvatar = isPartnerOne ? profile?.avatar_one : profile?.avatar_two;
+  const partnerAvatar = isPartnerOne ? profile?.avatar_two : profile?.avatar_one;
 
   function calculateAnswerStreak(rows: Pick<Answer, "date" | "answer_one" | "answer_two">[], userIsPartnerOne: boolean) {
     const answeredTimes = rows
@@ -172,7 +198,7 @@ export default function TodayQuestionPage() {
 
       const { data: profileData } = await supabase
         .from("couple_profiles")
-        .select("partner_one, partner_two, time_zone")
+        .select("partner_one, partner_two, avatar_one, avatar_two, time_zone")
         .eq("couple_id", coupleData.id)
         .limit(1)
         .maybeSingle<CoupleProfile>();
@@ -284,7 +310,7 @@ export default function TodayQuestionPage() {
       <section className="questions-reveal relative mx-auto max-w-5xl">
         <div className="question-hero mb-8 text-center">
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <p className="inline-flex rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-black text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
+            <p className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-black text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
               <Mail aria-hidden="true" size={14} /> Вопрос дня
             </p>
             <button
@@ -297,25 +323,21 @@ export default function TodayQuestionPage() {
           <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-black leading-tight text-[#15803d] dark:text-white md:text-6xl">
             {questionOfTheDay}
           </h1>
-          <button
-            type="button"
-            onClick={() => router.push("/questions/answer")}
-            disabled={hasMyAnswer && !canEdit}
-            className="question-primary-mobile"
-          >
-            {hasMyAnswer ? "Редактировать ответ" : "Ответить на вопрос"}
-          </button>
           <div className="question-summary-strip mx-auto mt-5 flex max-w-3xl flex-wrap items-center justify-center gap-2">
-            <span>Серия: <strong>{answerStreak} дней</strong></span>
-            <span>{hasMyAnswer ? "Ответ сохранён" : "Ответьте сегодня"}</span>
+            <span className="question-streak-pill">
+              <Flame aria-hidden="true" className={hasMyAnswer ? "question-streak-active" : "question-streak-muted"} size={17} />
+              Серия: <strong>{answerStreak} дней</strong>
+            </span>
           </div>
         </div>
 
+        <div className="question-conversation-layout">
         <div className="question-answer-grid grid gap-6 md:grid-cols-2">
           <article className={`question-my-answer answer-reveal rounded-[2rem] border border-emerald-200/70 bg-gradient-to-br from-white/78 via-emerald-50/86 to-lime-50/75 p-6 shadow-[0_28px_90px_rgba(21,128,61,0.18)] backdrop-blur-2xl transition hover:-translate-y-1 hover:shadow-[0_34px_110px_rgba(21,128,61,0.24)] dark:border-emerald-300/10 dark:from-emerald-500/12 dark:via-white/8 dark:to-lime-500/8 ${hasMyAnswer ? "answered-glow" : ""}`}>
-            <p className="text-sm font-black uppercase text-emerald-700/72 dark:text-emerald-200/70">
-              Мой ответ
-            </p>
+            <div className="question-answer-identity">
+              <QuestionAvatar name={myName} src={myAvatar} tone="mine" />
+              <div><p>Мой ответ</p><strong>{myName}</strong></div>
+            </div>
             <div className="mt-5 min-h-48 rounded-[1.5rem] border border-emerald-200/60 bg-white/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_55px_rgba(21,128,61,0.1)] dark:border-white/10 dark:bg-black/20">
               <p className="break-words text-lg font-semibold leading-8 text-emerald-950 dark:text-white">
                 {myAnswer || "Ответ ещё не сохранён."}
@@ -323,7 +345,7 @@ export default function TodayQuestionPage() {
               {(myVoiceUrl || myPhotoUrl) && (
                 <div className="mt-5 grid gap-3">
                   {myVoiceUrl && (
-                    <audio controls src={myVoiceUrl} className="w-full" />
+                    <AccentAudioPlayer src={myVoiceUrl} accent="#16a34a" label="Ваш голосовой ответ" />
                   )}
                   {myPhotoUrl && (
                     <Image
@@ -338,24 +360,25 @@ export default function TodayQuestionPage() {
                 </div>
               )}
             </div>
-            <button
-              onClick={() => router.push("/questions/answer")}
-              disabled={hasMyAnswer && !canEdit}
-              className="mt-5 w-full rounded-full bg-gradient-to-r from-[#15803d] to-[#14b8a6] px-7 py-3 font-black text-white shadow-[0_18px_55px_rgba(21,128,61,0.26)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {hasMyAnswer ? "Редактировать ответ" : "Ответить"}
-            </button>
-            {hasMyAnswer && !canEdit && (
-              <p className="mt-3 text-center text-sm font-bold text-emerald-800/55 dark:text-white/45">
+            {!hasMyAnswer || canEdit ? (
+              <button
+                onClick={() => router.push("/questions/answer")}
+                className="mt-5 w-full rounded-full bg-gradient-to-r from-[#15803d] to-[#14b8a6] px-7 py-3 font-black text-white shadow-[0_18px_55px_rgba(21,128,61,0.26)] transition hover:-translate-y-0.5"
+              >
+                {hasMyAnswer ? "Редактировать ответ" : "Ответить"}
+              </button>
+            ) : (
+              <p className="question-edit-expired mt-4 text-center text-sm font-bold text-emerald-800/55 dark:text-white/45">
                 Время редактирования истекло.
               </p>
             )}
           </article>
 
           <article className={`question-partner-answer answer-reveal rounded-[2rem] border border-cyan-200/70 bg-gradient-to-br from-white/78 via-cyan-50/88 to-teal-50/78 p-6 shadow-[0_28px_90px_rgba(20,184,166,0.18)] backdrop-blur-2xl transition hover:-translate-y-1 hover:shadow-[0_34px_110px_rgba(20,184,166,0.24)] dark:border-cyan-300/10 dark:from-cyan-500/12 dark:via-white/8 dark:to-teal-500/8 ${hasPartnerAnswer ? "answered-glow" : ""}`}>
-            <p className="text-sm font-black uppercase text-cyan-700/72 dark:text-cyan-200/70">
-              Ответ партнёра
-            </p>
+            <div className="question-answer-identity question-answer-identity-partner">
+              <QuestionAvatar name={partnerName} src={partnerAvatar} tone="partner" />
+              <div><p>Ответ партнёра</p><strong>{partnerName}</strong></div>
+            </div>
             <div className="question-partner-answer-body relative mt-5 min-h-48 overflow-visible rounded-[1.5rem] border border-cyan-200/60 bg-white/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_55px_rgba(20,184,166,0.1)] dark:border-white/10 dark:bg-black/20">
               {hasMyAnswer ? (
                 <>
@@ -365,7 +388,7 @@ export default function TodayQuestionPage() {
                   {(partnerVoiceUrl || partnerPhotoUrl) && (
                     <div className="mt-5 grid gap-3">
                       {partnerVoiceUrl && (
-                        <audio controls src={partnerVoiceUrl} className="w-full" />
+                        <AccentAudioPlayer src={partnerVoiceUrl} accent="#14b8a6" label="Голосовой ответ партнёра" />
                       )}
                       {partnerPhotoUrl && (
                         <Image
@@ -422,6 +445,7 @@ export default function TodayQuestionPage() {
             profile={profile}
           />
         )}
+        </div>
       </section>
     </main>
   );

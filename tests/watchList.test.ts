@@ -6,6 +6,7 @@ import {
   getRandomWatchItem,
   normalizeOptionalUrl,
   normalizeWatchTitle,
+  shouldOpenAddWatch,
   shouldAutoSpinWatch,
 } from "../lib/watchList.ts";
 
@@ -51,4 +52,9 @@ test("shouldAutoSpinWatch accepts spin=1", () => {
 
 test("shouldAutoSpinWatch rejects missing spin flag", () => {
   assert.equal(shouldAutoSpinWatch(new URLSearchParams("")), false);
+});
+
+test("shouldOpenAddWatch accepts add=1", () => {
+  assert.equal(shouldOpenAddWatch(new URLSearchParams("add=1")), true);
+  assert.equal(shouldOpenAddWatch(new URLSearchParams("")), false);
 });

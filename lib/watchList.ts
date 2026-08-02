@@ -36,3 +36,7 @@ export function getRandomWatchItem<T extends WatchListItemBase>(
 export function shouldAutoSpinWatch(params: Pick<URLSearchParams, "get">) {
   return params.get("spin") === "1";
 }
+
+export function shouldOpenAddWatch(params: Pick<URLSearchParams, "get">) {
+  return params.get("add") === "1";
+}

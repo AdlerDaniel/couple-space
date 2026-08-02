@@ -867,7 +867,7 @@ export default function TrackerPage() {
           </details>
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-2">
+        <section className="tracker-support-grid grid gap-3 xl:grid-cols-2">
           <details className="mobile-disclosure">
             <summary>Цели пары</summary>
             <PairGoalsPanel
@@ -1443,7 +1443,9 @@ function ActivityCounter({
       <button
         type="button"
         onClick={onMinus}
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-amber-900/10 bg-white/58 text-[#713f12]/65 transition hover:bg-amber-100 dark:border-amber-100/10 dark:bg-white/[0.06] dark:text-amber-100/65"
+        disabled={value <= 0}
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg font-black text-white shadow-sm transition hover:brightness-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-25 disabled:grayscale-[0.35]"
+        style={{ backgroundColor: color }}
         aria-label="Уменьшить"
         title="Уменьшить"
       >
@@ -1763,7 +1765,7 @@ function ActivityHistory({
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
-      <div className="tracker-history-list mt-3 divide-y divide-amber-900/8 overflow-hidden rounded-xl bg-white/42 dark:divide-amber-100/8 dark:bg-white/[0.035]">
+      <div className="tracker-history-list mt-3 grid grid-cols-2 gap-2 rounded-xl">
         {recent.length === 0 ? (
           <div className="rounded-2xl bg-white/55 p-4 text-sm font-bold opacity-60 dark:bg-white/8">
             История появится после первой отметки.
@@ -1774,7 +1776,7 @@ function ActivityHistory({
             const isMine = event.created_by === currentUserId;
             const visibleNote = getVisibleEventNote(event);
             return (
-              <div key={event.id} className="tracker-history-row flex items-center gap-3 px-3 py-2.5">
+              <div key={event.id} className="tracker-history-row flex min-w-0 items-center gap-2 rounded-xl border border-amber-900/8 bg-white/42 px-2.5 py-2 dark:border-amber-100/8 dark:bg-white/[0.04]">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white" style={{ backgroundColor: category ? getCategoryColor(category) : "#ca8a04" }}>
                   {category ? <CategoryIcon category={category} size={15} /> : <Heart aria-hidden="true" size={15} />}
                 </span>

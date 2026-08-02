@@ -19,6 +19,9 @@ const nextConfig: NextConfig = {
     };
   },
   images: {
+    // Sites cannot optimize same-origin Supabase proxy URLs reliably.
+    // Serving stored media directly keeps avatars, memories and answers portable.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",

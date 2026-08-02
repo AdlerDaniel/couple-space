@@ -36,9 +36,12 @@ test("chat initially loads recent messages and paginates older history", async (
 
 test("memories defer offscreen cards and audio downloads", async () => {
   const source = await readSource("app/memories/page.tsx");
+  const player = await readSource("components/AccentAudioPlayer.tsx");
 
   assert.match(source, /performance-list-item group/);
-  assert.match(source, /audio controls preload="none"/);
+  assert.match(source, /AccentAudioPlayer/);
+  assert.match(player, /preload="metadata"/);
+  assert.doesNotMatch(source, /<audio controls/);
 });
 
 test("watch list defers offscreen cards", async () => {

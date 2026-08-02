@@ -284,7 +284,7 @@ export default function QuestionsArchivePage() {
                 <h2 className="mb-4 text-2xl font-black text-[#15803d] dark:text-white">
                   {group}
                 </h2>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="question-archive-grid grid grid-cols-2 gap-3 md:gap-4">
                   {groupRows.map((row) => {
                     const isPartnerOne = currentUserId === couple?.partner_one_id;
                     const myAnswer = isPartnerOne ? row.answer_one : row.answer_two;
@@ -306,7 +306,7 @@ export default function QuestionsArchivePage() {
                       <button
                         key={row.id}
                         onClick={() => router.push(`/questions/archive/${row.id}`)}
-                        className="group rounded-[2rem] border border-white/70 bg-white/58 p-5 text-left shadow-[0_22px_70px_rgba(21,128,61,0.14)] backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12"
+                        className="question-archive-card group rounded-[1.4rem] border border-white/70 bg-white/58 p-4 text-left shadow-[0_16px_45px_rgba(21,128,61,0.12)] backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-50/80 dark:border-white/10 dark:bg-white/8 dark:hover:bg-emerald-500/12 md:rounded-[2rem] md:p-5"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700 dark:bg-white/10 dark:text-emerald-100">
@@ -319,7 +319,7 @@ export default function QuestionsArchivePage() {
                         <h3 className="mt-4 text-xl font-black leading-snug text-[#14532d] transition group-hover:text-[#15803d] dark:text-white">
                           {row.question}
                         </h3>
-                        <div className="mt-5 grid gap-2 text-sm font-bold md:grid-cols-2">
+                        <div className="question-archive-statuses mt-4 grid gap-2 text-sm font-bold md:grid-cols-2">
                           <div className="rounded-2xl bg-emerald-50/80 p-3 text-emerald-800 dark:bg-white/8 dark:text-emerald-100">
                             {myAnswer
                               ? "Вы ответили"

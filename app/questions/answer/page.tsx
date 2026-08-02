@@ -1,6 +1,7 @@
 "use client";
 
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
+import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
   createCompatibleAudioRecorder,
@@ -700,7 +701,7 @@ export default function QuestionAnswerPage() {
                       <p className="mb-3 text-sm font-black text-emerald-700 dark:text-emerald-100">
                         Голосовой ответ
                       </p>
-                      <audio controls src={voiceUrl} className="w-full" />
+                      <AccentAudioPlayer src={voiceUrl} accent="#16a34a" label="Голосовой ответ" />
                     </div>
                   )}
                   {photoUrl && (

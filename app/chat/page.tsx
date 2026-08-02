@@ -301,7 +301,7 @@ function isSingleEmojiText(text?: string | null) {
 
 function isMessageVisible(message: ChatMessage, currentUserId: string | null) {
   if (!currentUserId) return false;
-  if (message.deleted_for_everyone) return true;
+  if (message.deleted_for_everyone) return false;
   return !(message.deleted_for || []).includes(currentUserId);
 }
 
@@ -1505,14 +1505,20 @@ export default function ChatPage() {
   }
 
   async function deleteForEveryone(message: ChatMessage) {
-    await updateMessage(message.id, {
-      body: null,
-      attachment_url: null,
-      attachment_type: null,
-      attachment_name: null,
-      deleted_for_everyone: true,
-    });
+    const previousMessages = messages;
+    setMessages((current) => current.filter((item) => item.id !== message.id));
     setMenuMessageId(null);
+
+    const { error } = await supabase
+      .from("couple_chat_messages")
+      .delete()
+      .eq("id", message.id)
+      .eq("couple_id", message.couple_id);
+
+    if (error) {
+      setMessages(previousMessages);
+      setErrorMessage(error.message || "Не удалось удалить сообщение");
+    }
   }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>, message: ChatMessage) {
@@ -1922,10 +1928,7 @@ export default function ChatPage() {
                             {sourceReply.body || sourceReply.attachment_name || "Вложение"}
                           </button>
                         )}
-                        {message.deleted_for_everyone ? (
-                          <p className="italic opacity-60">Сообщение удалено</p>
-                            ) : (
-                          <>
+                        <>
                             {isBigEmojiMessage && (
                               <div className={`chat-big-emoji-message ${isMine ? "ml-auto" : ""}`}>
                                 <div className="text-6xl leading-none drop-shadow-[0_12px_26px_rgba(0,0,0,0.25)] md:text-7xl">
@@ -2150,7 +2153,6 @@ export default function ChatPage() {
                               <LinkPreviewCard url={linkUrl} isMine={isMine} />
                             )}
                           </>
-                        )}
                         {isVoiceMessage && (
                           <div className="-mt-0.5 flex justify-end">{metaNode}</div>
                         )}
@@ -2586,9 +2588,7 @@ export default function ChatPage() {
                 {menuMessage.pinned_at ? "Открепить" : "Закрепить"}
               </button>
               <button onClick={() => deleteForMe(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">Удалить у себя</button>
-              {menuMessage.sender_id === currentUserId && (
-                <button onClick={() => deleteForEveryone(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-500/10">Удалить у всех</button>
-              )}
+              <button onClick={() => deleteForEveryone(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-500/10">Удалить у всех</button>
             </div>
           </div>
         )}

@@ -9,7 +9,6 @@ export type NavIconName =
   | "memories"
   | "tracker"
   | "countdown"
-  | "achievements"
   | "profile"
   | "settings"
   | "notifications"
@@ -113,7 +112,7 @@ export const routeMeta: Record<
   },
   "/dashboard": {
     label: "Кабинет",
-    description: "Аналитика, история и достижения",
+    description: "Профиль и активность пары",
     icon: "dashboard",
   },
   "/memories": {

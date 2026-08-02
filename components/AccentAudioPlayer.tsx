@@ -41,6 +41,7 @@ export default function AccentAudioPlayer({
     audio.addEventListener("ended", stop);
     audio.addEventListener("pause", stop);
     audio.addEventListener("play", start);
+    audio.load();
 
     return () => {
       audio.removeEventListener("loadedmetadata", syncDuration);

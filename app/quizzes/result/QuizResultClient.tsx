@@ -62,7 +62,7 @@ function AnswerValue({ value, isPhoto }: { value?: string; isPhoto: boolean }) {
         height={420}
         sizes="(min-width: 768px) 50vw, 100vw"
         className="max-h-64 w-full rounded-2xl object-cover shadow-lg"
-      />
+ unoptimized />
     );
   }
 

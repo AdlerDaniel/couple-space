@@ -439,7 +439,7 @@ export default function Navbar() {
                       height={34}
                       sizes="34px"
                       className="h-[2.125rem] w-[2.125rem] shrink-0 rounded-full object-cover"
-                    />
+ unoptimized />
                   ) : (
                     <span className="desktop-profile-initial">{getInitial(profile.name)}</span>
                   )}

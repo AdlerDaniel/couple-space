@@ -299,7 +299,7 @@ export default function QuizPlayClient() {
                       height={280}
                       sizes="(min-width: 768px) 50vw, 100vw"
                       className="h-44 w-full rounded-2xl object-cover shadow-lg"
-                    />
+ unoptimized />
                   ) : (
                     <div className="grid h-44 place-items-center rounded-2xl border border-dashed border-[#7c3aed]/25 bg-white/25 text-sm font-semibold text-[#6d28d9]/60 dark:border-white/10 dark:bg-white/5 dark:text-[#d8b4fe]/60">
                       Фото ещё не выбрано

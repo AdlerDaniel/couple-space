@@ -1675,7 +1675,7 @@ export default function ChatPage() {
             >
               <div className="relative flex">
                 {partnerProfile.avatar ? (
-                  <Image src={partnerProfile.avatar} alt={partnerProfile.name} width={44} height={44} sizes="44px" className="h-10 w-10 rounded-full object-cover ring-2 ring-white/80 md:h-11 md:w-11" />
+                  <Image src={partnerProfile.avatar} alt={partnerProfile.name} width={44} height={44} sizes="44px" className="h-10 w-10 rounded-full object-cover ring-2 ring-white/80 md:h-11 md:w-11" unoptimized />
                 ) : (
                   <span className="grid h-10 w-10 place-items-center rounded-full bg-sky-100 font-black shadow-inner ring-2 ring-white/80 dark:bg-white/10 md:h-11 md:w-11">{getInitial(partnerProfile.name)}</span>
                 )}
@@ -1993,7 +1993,7 @@ export default function ChatPage() {
                                         height={420}
                                         sizes="(max-width: 768px) 80vw, 520px"
                                         className="h-44 w-full object-cover blur-0 transition duration-500"
-                                      />
+ unoptimized />
                                     ) : (
                                       <video
                                         src={attachment.url}
@@ -2170,7 +2170,7 @@ export default function ChatPage() {
                                 {userIds.length > 1 ? (
                                   <span className="text-[11px]">{userIds.length}</span>
                                 ) : singleUser?.avatar ? (
-                                  <Image src={singleUser.avatar} alt={singleUser.name} width={18} height={18} sizes="18px" className="h-[18px] w-[18px] rounded-full object-cover ring-1 ring-white/80" />
+                                  <Image src={singleUser.avatar} alt={singleUser.name} width={18} height={18} sizes="18px" className="h-[18px] w-[18px] rounded-full object-cover ring-1 ring-white/80" unoptimized />
                                 ) : (
                                   <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-white/70 text-[9px] text-[#0284c7] ring-1 ring-white/80 dark:bg-black/30 dark:text-white">{singleUser?.initial || "?"}</span>
                                 )}
@@ -2631,7 +2631,7 @@ export default function ChatPage() {
                       height={112}
                       sizes="112px"
                       className="relative h-28 w-28 rounded-full object-cover ring-4 ring-white/70"
-                    />
+ unoptimized />
                   ) : (
                     <div className="relative grid h-28 w-28 place-items-center rounded-full bg-white/70 text-5xl font-black shadow-2xl ring-4 ring-white/70 dark:bg-white/10">
                       {getInitial(partnerProfile.name)}
@@ -2706,7 +2706,7 @@ export default function ChatPage() {
                             {attachment.type === "video" ? (
                               <video src={attachment.url} preload="none" playsInline className="h-full w-full object-cover" muted />
                             ) : (
-                              <Image src={attachment.url} alt={attachment.name} width={180} height={180} sizes="25vw" className="h-full w-full object-cover transition group-hover:scale-105" />
+                              <Image src={attachment.url} alt={attachment.name} width={180} height={180} sizes="25vw" className="h-full w-full object-cover transition group-hover:scale-105" unoptimized />
                             )}
                             {attachment.type === "video" && (
                               <span className="absolute inset-0 grid place-items-center bg-black/20 text-white"><Play aria-hidden="true" size={24} fill="currentColor" /></span>
@@ -2825,7 +2825,7 @@ export default function ChatPage() {
             </>
           )}
           {viewerMessage.attachment_type === "image" && (
-            <Image src={viewerMessage.attachment_url} alt={viewerMessage.attachment_name || "Фото"} width={1400} height={1000} sizes="100vw" className="max-h-[86vh] w-auto rounded-3xl object-contain shadow-2xl" />
+            <Image src={viewerMessage.attachment_url} alt={viewerMessage.attachment_name || "Фото"} width={1400} height={1000} sizes="100vw" className="max-h-[86vh] w-auto rounded-3xl object-contain shadow-2xl" unoptimized />
           )}
         </div>
       )}

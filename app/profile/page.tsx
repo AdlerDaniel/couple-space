@@ -429,7 +429,7 @@ export default function ProfilePage() {
                     height={128}
                     sizes="128px"
                     className="h-32 w-32 rounded-full object-cover shadow-2xl ring-4 ring-white/70"
-                  />
+ unoptimized />
                 ) : (
                   <div className="flex h-32 w-32 items-center justify-center rounded-full bg-white/65 text-5xl font-black shadow-2xl ring-4 ring-white/60 dark:bg-white/10">
                     {displayName.slice(0, 1).toUpperCase() || "♡"}

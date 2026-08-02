@@ -507,7 +507,7 @@ export default function MemoriesPage() {
                           className={`memory-photo h-auto min-h-72 w-full cursor-zoom-in object-cover transition duration-500 group-hover:scale-105 ${
                             isLoaded ? "blur-0" : "blur-md"
                           }`}
-                        />
+ unoptimized />
                       </>
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-4 text-white opacity-0 transition group-hover:opacity-100">
                         <p className="font-black">{memory.title || "Без названия"}</p>
@@ -591,7 +591,7 @@ export default function MemoriesPage() {
                             {userIds.length > 1 ? (
                               <span className="text-xs font-black text-[#2563eb] dark:text-blue-100">{userIds.length}</span>
                             ) : singleUser?.avatar ? (
-                              <Image src={singleUser.avatar} alt={singleUser.name} width={18} height={18} sizes="18px" className="h-[18px] w-[18px] rounded-full object-cover ring-1 ring-white/80" />
+                              <Image src={singleUser.avatar} alt={singleUser.name} width={18} height={18} sizes="18px" className="h-[18px] w-[18px] rounded-full object-cover ring-1 ring-white/80" unoptimized />
                             ) : singleUser ? (
                               <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-white text-[9px] font-black text-[#2563eb] ring-1 ring-white/80 dark:bg-black/25 dark:text-white">{singleUser.initial}</span>
                             ) : null}
@@ -691,7 +691,7 @@ export default function MemoriesPage() {
                 height={1000}
                 sizes="(min-width: 1024px) 1024px, 100vw"
                 className="max-h-[70vh] w-full rounded-[1.5rem] object-contain"
-              />
+ unoptimized />
             )}
             <div className="p-4">
               <h2 className="text-3xl font-black">{selectedMemory.title || "Без названия"}</h2>

@@ -79,7 +79,7 @@ function QuestionAvatar({ name, src, tone }: { name: string; src?: string | null
       height={44}
       sizes="44px"
       className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white/70 shadow-lg dark:ring-white/15"
-    />
+ unoptimized />
   ) : (
     <span className={`question-answer-avatar question-answer-avatar-${tone}`} aria-label={name}>
       {initials}
@@ -355,7 +355,7 @@ export default function TodayQuestionPage() {
                       height={420}
                       sizes="(min-width: 768px) 50vw, 100vw"
                       className="max-h-72 w-full rounded-[1rem] object-cover shadow-lg"
-                    />
+ unoptimized />
                   )}
                 </div>
               )}
@@ -398,7 +398,7 @@ export default function TodayQuestionPage() {
                           height={420}
                           sizes="(min-width: 768px) 50vw, 100vw"
                           className="max-h-72 w-full rounded-[1rem] object-cover shadow-lg"
-                        />
+ unoptimized />
                       )}
                     </div>
                   )}

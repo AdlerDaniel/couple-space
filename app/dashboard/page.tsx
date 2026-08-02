@@ -129,7 +129,7 @@ function AvatarBubble({
           height={size === "large" ? 96 : 56}
           sizes={size === "large" ? "96px" : "56px"}
           className={`${sizeClass} mx-auto rounded-full object-cover shadow-xl ring-4 ring-white/60`}
-        />
+ unoptimized />
       ) : (
         <div
           className={`${sizeClass} mx-auto flex items-center justify-center rounded-full bg-white/55 font-bold shadow-xl ring-4 ring-white/50 backdrop-blur dark:bg-white/10`}
@@ -690,7 +690,7 @@ export default function DashboardPage() {
                       fill
                       sizes="(min-width: 1024px) 560px, 50vw"
                       className="object-cover"
-                    />
+ unoptimized />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-gradient-to-br from-rose-300 via-red-300 to-orange-200 text-[clamp(5rem,18vw,13rem)] font-black text-white/75 dark:from-rose-950 dark:via-red-950 dark:to-orange-950">
                       {initials(partner.name)}

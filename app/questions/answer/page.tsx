@@ -713,7 +713,7 @@ export default function QuestionAnswerPage() {
                         height={420}
                         sizes="(min-width: 768px) 50vw, 100vw"
                         className="max-h-64 w-full rounded-[0.9rem] object-cover"
-                      />
+ unoptimized />
                     </div>
                   )}
                   {isUploadingMedia && (

@@ -237,7 +237,7 @@ export default function MemoryComposer({
         .from("memories")
         .insert([
           {
-            title: title.trim() || "Без названия",
+            title: title.trim(),
             caption: caption.trim() || null,
             text: caption.trim() || null,
             image: encodeMemoryMedia({ photoUrl, voiceUrl }),
@@ -382,7 +382,7 @@ export default function MemoryComposer({
           <textarea
             value={caption}
             onChange={(event) => setCaption(event.target.value)}
-            placeholder="Описание воспоминания..."
+            placeholder="Описание"
             rows={2}
             className="max-h-40 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 font-semibold leading-6 outline-none placeholder:text-blue-400/65 dark:placeholder:text-white/38"
           />

@@ -13,16 +13,18 @@ import ThemeToggle from "./ThemeToggle";
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/logout");
+  const isFullScreenChat = pathname === "/chat" || pathname.startsWith("/questions/discussion");
+  const hideAppChrome = isAuthPage || isFullScreenChat;
 
   return (
     <>
-      <ThemeToggle />
-      {!isAuthPage && <Navbar />}
-      {!isAuthPage && <AppBreadcrumbs />}
-      <div className={isAuthPage ? "min-w-0 flex-1" : "app-desktop-content min-w-0 flex-1"}>
+      {!isFullScreenChat && <ThemeToggle />}
+      {!hideAppChrome && <Navbar />}
+      {!hideAppChrome && <AppBreadcrumbs />}
+      <div className={hideAppChrome ? "min-w-0 flex-1" : "app-desktop-content min-w-0 flex-1"}>
         {children}
       </div>
-      {!isAuthPage && <MobileNav />}
+      {!hideAppChrome && <MobileNav />}
       <AppToast />
       <AnimeRuntime />
       <ClientRouteRecovery />

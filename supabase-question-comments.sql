@@ -3,7 +3,15 @@ create table if not exists public.question_comments (
   question_answer_id uuid not null references public.question_answers(id) on delete cascade,
   couple_id uuid not null references public.couples(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
-  text text not null,
+  text text default '',
+  attachment_url text,
+  attachment_type text check (attachment_type is null or attachment_type in ('image', 'video', 'audio')),
+  attachment_name text,
+  attachment_mime_type text,
+  constraint question_comments_content_check check (
+    nullif(btrim(coalesce(text, '')), '') is not null
+    or attachment_url is not null
+  ),
   created_at timestamptz not null default now()
 );
 
@@ -60,4 +68,19 @@ create policy "Comment authors can delete question comments"
   to authenticated
   using (user_id = (select auth.uid()));
 
+drop policy if exists "Comment authors can update question comments" on public.question_comments;
+create policy "Comment authors can update question comments"
+  on public.question_comments
+  for update
+  to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
 grant select, insert, update, delete on public.question_comments to authenticated;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.question_comments;
+exception
+  when duplicate_object then null;
+end $$;

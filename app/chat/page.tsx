@@ -33,6 +33,7 @@ import {
   ChevronRight,
   Clock3,
   ExternalLink,
+  EllipsisVertical,
   FileText,
   ImageIcon,
   List,
@@ -1653,7 +1654,7 @@ export default function ChatPage() {
         <div className="chat-blob chat-blob-delay absolute right-[-9rem] top-48 h-96 w-96 rounded-full bg-cyan-300/30 blur-3xl dark:bg-cyan-500/12" />
       </div>
 
-      <section className="relative mx-auto flex h-[100dvh] min-h-0 max-w-5xl flex-col overflow-hidden border-y border-white/60 bg-white/44 shadow-[0_32px_110px_rgba(2,132,199,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:h-[calc(100vh-9rem)] md:rounded-[2rem] md:border">
+      <section className="chat-shell relative mx-auto flex h-[100dvh] min-h-0 max-w-5xl flex-col overflow-hidden border-y border-white/60 bg-white/44 shadow-[0_32px_110px_rgba(2,132,199,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:h-[calc(100vh-9rem)] md:rounded-[2rem] md:border">
         {isDraggingFile && (
           <div className="pointer-events-none absolute inset-3 z-50 grid place-items-center rounded-[1.5rem] border-2 border-dashed border-[#0284c7]/55 bg-white/55 text-center text-xl font-black text-[#0284c7] shadow-inner backdrop-blur-xl dark:bg-black/45 dark:text-white">
             Отпустите файл, чтобы добавить вложение
@@ -1671,7 +1672,7 @@ export default function ChatPage() {
             <button
               type="button"
               onClick={() => setIsProfilePanelOpen(true)}
-              className="flex min-w-0 max-w-full items-center gap-2 rounded-full bg-white/68 px-3 py-1.5 text-left shadow-inner transition hover:bg-sky-50 dark:bg-white/10 dark:hover:bg-white/14 md:gap-3 md:rounded-2xl md:bg-transparent md:px-0 md:py-0 md:shadow-none"
+              className="chat-partner-pill flex min-w-0 max-w-full items-center gap-2 rounded-full bg-white/68 px-3 py-1.5 text-left shadow-inner transition hover:bg-sky-50 dark:bg-white/10 dark:hover:bg-white/14 md:gap-3 md:rounded-2xl md:bg-transparent md:px-0 md:py-0 md:shadow-none"
             >
               <div className="relative flex">
                 {partnerProfile.avatar ? (
@@ -1693,11 +1694,19 @@ export default function ChatPage() {
                       <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-sky-500/70" />
                     </span>
                   ) : partnerLastSeen
-                      ? `последний раз в сети ${formatMessageTime(partnerLastSeen)}`
+                      ? `был(а) в ${formatMessageTime(partnerLastSeen)}`
                       : "личный чат пары"}
                   {unreadCount > 0 ? ` · новых: ${unreadCount}` : ""}
                 </p>
               </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsProfilePanelOpen(true)}
+              className="chat-mobile-more hidden h-12 w-12 shrink-0 place-items-center rounded-full border border-slate-100 bg-white text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/8 dark:text-white md:hidden"
+              aria-label="Открыть меню чата"
+            >
+              <EllipsisVertical aria-hidden="true" size={23} />
             </button>
             <input
               value={search}
@@ -1794,7 +1803,7 @@ export default function ChatPage() {
 
         <div ref={scrollRef} onScroll={handleScroll} className="relative min-h-0 flex-1 overflow-y-auto px-2 py-3 pb-28 md:px-6 md:py-4 md:pb-4">
           {visibleMessages.length === 0 ? (
-            <div className="grid h-full place-items-center text-center">
+            <div className="chat-empty-state grid h-full place-items-center text-center">
               <div className="max-w-sm rounded-[2rem] bg-white/55 p-7 shadow-inner backdrop-blur dark:bg-white/8">
                 <MessageCircle aria-hidden="true" className="mx-auto h-12 w-12" />
                 <h2 className="mt-4 text-2xl font-black">Начните ваш чат</h2>
@@ -1889,7 +1898,7 @@ export default function ChatPage() {
                           event.preventDefault();
                           setMenuMessageId(message.id);
                         }}
-                        className={`relative w-fit max-w-[84%] break-words rounded-[14px] shadow-[0_4px_14px_rgba(0,0,0,0.1)] transition hover:-translate-y-0.5 sm:max-w-[78%] md:max-w-[62%] ${
+                        className={`chat-message-bubble ${isMine ? "chat-message-bubble-mine" : "chat-message-bubble-partner"} relative w-fit max-w-[84%] break-words rounded-[14px] shadow-[0_4px_14px_rgba(0,0,0,0.1)] transition hover:-translate-y-0.5 sm:max-w-[78%] md:max-w-[62%] ${
                           isStickerMessage || isBigEmojiMessage ? "px-0 py-0 shadow-none" : isVoiceMessage ? "px-3 py-2" : "px-3 py-1.5"
                         } ${
                           isStickerMessage || isBigEmojiMessage
@@ -1909,7 +1918,7 @@ export default function ChatPage() {
                       >
                         {isLastInGroup && !isStickerMessage && !isBigEmojiMessage && (
                           <span
-                            className={`pointer-events-none absolute bottom-0 h-3 w-3 ${
+                            className={`chat-message-tail pointer-events-none absolute bottom-0 h-3 w-3 ${
                               isMine
                                 ? "-right-1 bg-[#0369a1] [clip-path:polygon(0_0,100%_100%,0_100%)]"
                                 : `-left-1 ${isVoiceMessage ? "bg-[#0284c7]" : "bg-[#0f2638]"} [clip-path:polygon(100%_0,100%_100%,0_100%)]`
@@ -2204,7 +2213,7 @@ export default function ChatPage() {
           </button>
         )}
 
-        <form onSubmit={sendMessage} className="fixed inset-x-0 bottom-0 z-40 shrink-0 border-t border-white/50 bg-white/86 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-2xl dark:border-white/10 dark:bg-black/72 md:relative md:inset-auto md:bottom-auto md:z-20 md:bg-white/72 md:p-4 md:pb-4 md:dark:bg-black/35">
+        <form onSubmit={sendMessage} className="chat-composer fixed inset-x-0 bottom-0 z-40 shrink-0 border-t border-white/50 bg-white/86 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-2xl dark:border-white/10 dark:bg-black/72 md:relative md:inset-auto md:bottom-auto md:z-20 md:bg-white/72 md:p-4 md:pb-4 md:dark:bg-black/35">
           {(replyMessage || editingMessage) && (
             <div className="chat-reply-preview mb-3 flex items-center justify-between gap-3 rounded-2xl bg-sky-100/80 px-4 py-3 text-sm font-black text-sky-700 shadow-inner dark:bg-white/10 dark:text-sky-100">
               <div className="min-w-0">
@@ -2498,8 +2507,8 @@ export default function ChatPage() {
             >
               <Sticker aria-hidden="true" size={20} />
             </button>
-            <div className="relative order-4">
-              <button type="button" onClick={() => setIsAttachMenuOpen((current) => !current)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-white/85 text-lg shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl" aria-label="Прикрепить файл">
+            <div className="chat-attach-wrap relative order-4">
+              <button type="button" onClick={() => setIsAttachMenuOpen((current) => !current)} className="chat-attach-button grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-white/85 text-lg shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl" aria-label="Прикрепить файл">
               <Paperclip aria-hidden="true" size={20} />
               </button>
               {isAttachMenuOpen && (
@@ -2542,17 +2551,17 @@ export default function ChatPage() {
                 })
               }
               onKeyDown={handleDraftKeyDown}
-              placeholder="Напишите сообщение..."
+              placeholder="Сообщение"
               rows={1}
               maxLength={1000}
               className="chat-composer-input order-3 max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-[1rem] border border-sky-200/70 bg-white/86 px-3 py-2.5 text-sm font-semibold text-[#075985] outline-none shadow-inner transition placeholder:text-sky-400/70 focus:border-[#0ea5e9] focus:shadow-[0_0_0_5px_rgba(14,165,233,0.14)] dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/38 md:max-h-36 md:min-h-12 md:rounded-[1.25rem] md:px-4 md:py-3 md:text-base"
             />
             {draft.trim() || editingId || pendingAttachments.length > 0 ? (
-              <button type="submit" disabled={isSending} aria-label="Отправить сообщение" className={`order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-xl font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.34)] transition hover:-translate-y-0.5 disabled:opacity-45 md:h-12 md:w-12 md:rounded-[1rem] md:text-2xl ${isSending ? "chat-send-pulse" : ""}`}>
+              <button type="submit" disabled={isSending} aria-label="Отправить сообщение" className={`chat-primary-action order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-xl font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.34)] transition hover:-translate-y-0.5 disabled:opacity-45 md:h-12 md:w-12 md:rounded-[1rem] md:text-2xl ${isSending ? "chat-send-pulse" : ""}`}>
                 <Send aria-hidden="true" size={20} />
               </button>
             ) : (
-              <button type="button" onClick={isRecording ? stopRecording : startRecording} aria-label={isRecording ? "Остановить запись" : "Записать голосовое"} className={`order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.28)] transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${isRecording ? "bg-sky-600 animate-pulse" : "bg-[#0284c7]"}`}>
+              <button type="button" onClick={isRecording ? stopRecording : startRecording} aria-label={isRecording ? "Остановить запись" : "Записать голосовое"} className={`chat-primary-action order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.28)] transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${isRecording ? "bg-sky-600 animate-pulse" : "bg-[#0284c7]"}`}>
                 {isRecording ? <Square aria-hidden="true" size={18} fill="currentColor" /> : <Mic aria-hidden="true" size={20} />}
               </button>
             )}

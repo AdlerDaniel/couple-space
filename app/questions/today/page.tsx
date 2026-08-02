@@ -2,7 +2,6 @@
 
 import AnswerSocialControls from "@/components/AnswerSocialControls";
 import AccentAudioPlayer from "@/components/AccentAudioPlayer";
-import QuestionComments from "@/components/QuestionComments";
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { parseQuestionDate } from "@/lib/questionArchive";
 import { supabase } from "@/lib/supabaseClient";
@@ -10,7 +9,7 @@ import { toBrowserSupabaseUrl } from "@/lib/supabaseUrls";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Flame, LockKeyhole, Mail } from "lucide-react";
+import { Flame, LockKeyhole, Mail, MessageCircle } from "lucide-react";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
 
@@ -328,6 +327,15 @@ export default function TodayQuestionPage() {
               <Flame aria-hidden="true" className={hasMyAnswer ? "question-streak-active" : "question-streak-muted"} size={17} />
               Серия: <strong>{answerStreak} дней</strong>
             </span>
+            <button
+              type="button"
+              disabled={!answerRecord}
+              onClick={() => answerRecord && router.push(`/questions/discussion?answerId=${answerRecord.id}`)}
+              className="question-discussion-link"
+            >
+              <MessageCircle aria-hidden="true" size={17} />
+              Обсудить
+            </button>
           </div>
         </div>
 
@@ -437,14 +445,6 @@ export default function TodayQuestionPage() {
           </article>
         </div>
 
-        {answerRecord && (
-          <QuestionComments
-            answerId={answerRecord.id}
-            couple={couple}
-            currentUserId={currentUserId}
-            profile={profile}
-          />
-        )}
         </div>
       </section>
     </main>

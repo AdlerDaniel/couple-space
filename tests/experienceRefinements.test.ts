@@ -17,14 +17,47 @@ test("Sites loads database images directly and voice notes use the themed player
   assert.match(player, /type="range"/);
 });
 
-test("question results use avatars, compact discussion, and an expiring inline editor", async () => {
+test("question results use avatars, a dedicated discussion chat, and an expiring inline editor", async () => {
   const source = await readSource("app/questions/today/page.tsx");
+  const discussion = await readSource("app/questions/discussion/page.tsx");
 
   assert.match(source, /question-conversation-layout/);
   assert.match(source, /QuestionAvatar/);
   assert.match(source, /Время редактирования истекло/);
   assert.match(source, /<Flame/);
+  assert.match(source, /questions\/discussion\?answerId=/);
+  assert.doesNotMatch(source, /<QuestionComments/);
+  assert.match(discussion, /question-discussion-chat-bg/);
+  assert.match(discussion, /accept="image\/\*,video\/\*,audio\/\*/);
+  assert.match(discussion, /createCompatibleAudioRecorder/);
   assert.doesNotMatch(source, />Ответ сохранён</);
+});
+
+test("memory cards omit empty fallback copy and keep the composer compact", async () => {
+  const memories = await readSource("app/memories/page.tsx");
+  const composer = await readSource("components/MemoryComposer.tsx");
+  const mobileCss = await readSource("app/mobile-redesign.css");
+
+  assert.match(composer, /placeholder="Описание"/);
+  assert.doesNotMatch(composer, /title\.trim\(\) \|\| "Без названия"/);
+  assert.match(memories, /getMemoryTitle/);
+  assert.match(memories, /getMemoryDescription/);
+  assert.match(memories, /displayTitle &&/);
+  assert.match(mobileCss, /columns:\s*2 !important/);
+  assert.match(mobileCss, /break-inside:\s*avoid/);
+  assert.match(mobileCss, /memory-reaction-option\.is-active/);
+});
+
+test("chat uses a compact mobile profile header and integrated composer", async () => {
+  const chat = await readSource("app/chat/page.tsx");
+  const shell = await readSource("components/AppShell.tsx");
+
+  assert.match(chat, /chat-partner-pill/);
+  assert.match(chat, /chat-mobile-more/);
+  assert.match(chat, /chat-composer/);
+  assert.match(chat, /placeholder="Сообщение"/);
+  assert.match(shell, /pathname === "\/chat"/);
+  assert.match(shell, /questions\/discussion/);
 });
 
 test("archive and tracker keep dense two-column mobile lists", async () => {

@@ -58,6 +58,16 @@ function formatTime(date: string) {
   });
 }
 
+function getMemoryTitle(value?: string | null) {
+  const title = value?.trim() || "";
+  return /^(без|нет) названия$/i.test(title) ? "" : title;
+}
+
+function getMemoryDescription(memory?: Pick<Memory, "caption" | "text"> | null) {
+  const description = memory?.caption?.trim() || memory?.text?.trim() || "";
+  return /^без описания$/i.test(description) ? "" : description;
+}
+
 function getMemoryStoragePath(mediaUrl?: string | null) {
   if (!mediaUrl) return null;
 
@@ -178,6 +188,8 @@ export default function MemoriesPage() {
   const selectedMemory =
     selectedIndex === null ? null : visibleMemories[selectedIndex] || null;
   const selectedMedia = decodeMemoryMedia(selectedMemory?.image);
+  const selectedTitle = getMemoryTitle(selectedMemory?.title);
+  const selectedDescription = getMemoryDescription(selectedMemory);
 
   function getMemoryUserMeta(userId: string) {
     if (!couple) return { name: "?", avatar: null as string | null, initial: "?" };
@@ -482,6 +494,8 @@ export default function MemoriesPage() {
               const media = decodeMemoryMedia(memory.image);
               const isLoaded = !media.photoUrl || loadedImages[memory.id];
               const author = memory.user_id === currentUserId ? "Вы" : "Партнёр";
+              const displayTitle = getMemoryTitle(memory.title);
+              const displayDescription = getMemoryDescription(memory);
 
               return (
                 <article
@@ -509,9 +523,11 @@ export default function MemoriesPage() {
                           }`}
  unoptimized />
                       </>
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-4 text-white opacity-0 transition group-hover:opacity-100">
-                        <p className="font-black">{memory.title || "Без названия"}</p>
-                      </div>
+                      {displayTitle && (
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-4 text-white opacity-0 transition group-hover:opacity-100">
+                          <p className="font-black">{displayTitle}</p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -540,12 +556,16 @@ export default function MemoriesPage() {
                         </div>
                       </details>
                     </div>
-                    <h2 className="text-2xl font-black text-[#172554] dark:text-white">
-                      {memory.title || "Без названия"}
-                    </h2>
-                    <p className="mt-2 font-semibold leading-7 text-[#172554]/70 dark:text-white/62">
-                      {memory.caption || memory.text || "Без описания"}
-                    </p>
+                    {displayTitle && (
+                      <h2 className="text-2xl font-black text-[#172554] dark:text-white">
+                        {displayTitle}
+                      </h2>
+                    )}
+                    {displayDescription && (
+                      <p className="mt-2 font-semibold leading-7 text-[#172554]/70 dark:text-white/62">
+                        {displayDescription}
+                      </p>
+                    )}
                     {media.voiceUrl && (
                       <div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/75 p-3 shadow-inner dark:border-white/10 dark:bg-white/8">
                         <p className="mb-2 text-sm font-black text-[#2563eb] dark:text-blue-100">
@@ -574,9 +594,9 @@ export default function MemoriesPage() {
                           <button
                             key={reaction}
                             onClick={() => toggleReaction(memory, reaction)}
-                            className={`inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full border px-2 text-lg shadow-sm transition hover:-translate-y-0.5 ${
+                            className={`memory-reaction-option inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full border px-2 text-lg shadow-sm transition hover:-translate-y-0.5 ${
                               isMyReaction
-                                ? "border-blue-300 bg-blue-100"
+                                ? "is-active border-blue-300 bg-blue-100"
                                 : "border-white/70 bg-white/65 dark:border-white/10 dark:bg-white/8"
                             }`}
                             title={
@@ -694,8 +714,8 @@ export default function MemoriesPage() {
  unoptimized />
             )}
             <div className="p-4">
-              <h2 className="text-3xl font-black">{selectedMemory.title || "Без названия"}</h2>
-              <p className="mt-2 text-white/70">{selectedMemory.caption || selectedMemory.text}</p>
+              {selectedTitle && <h2 className="text-3xl font-black">{selectedTitle}</h2>}
+              {selectedDescription && <p className="mt-2 text-white/70">{selectedDescription}</p>}
               {selectedMedia.voiceUrl && (
                 <div className="mt-4 rounded-2xl bg-white/12 p-3">
                   <p className="mb-2 text-sm font-black">Голосовое воспоминание</p>

@@ -3,6 +3,7 @@
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import { trackerCategoryColors, trackerDefaultCategories } from "@/lib/trackerCategories";
+import { FluentEmoji } from "@/components/FluentEmoji";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -1283,7 +1284,7 @@ function MonthCalendar({
               <span className="tracker-calendar-date-row flex w-full items-center justify-center gap-1">
                 <span className={`text-xs font-black sm:text-sm ${isToday ? "text-[#ca8a04]" : ""}`}>{date.getDate()}</span>
                 {dayMood ? (
-                  <span className="tracker-calendar-mood" title={dayMood.label}>{dayMood.icon}</span>
+                  <span className="tracker-calendar-mood" title={dayMood.label}><FluentEmoji emoji={dayMood.icon} size={18} decorative /></span>
                 ) : (
                   <span className="tracker-calendar-mood-empty" title="Добавить эмодзи дня">
                     <CirclePlus aria-hidden="true" size={11} />
@@ -1340,7 +1341,7 @@ function WeekTracker({
               </p>
               <div className="mt-1 flex items-center justify-between gap-2">
                 <p className="text-lg font-black">{date.getDate()}</p>
-                {dayMood ? <span title={dayMood.label}>{dayMood.icon}</span> : <span className="tracker-calendar-mood-empty"><CirclePlus aria-hidden="true" size={12} /></span>}
+                {dayMood ? <span title={dayMood.label}><FluentEmoji emoji={dayMood.icon} size={18} decorative /></span> : <span className="tracker-calendar-mood-empty"><CirclePlus aria-hidden="true" size={12} /></span>}
               </div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-white dark:bg-white/10">
                 <div className="h-full rounded-full bg-[#ca8a04]" style={{ width: `${Math.min(100, total * 18)}%` }} />
@@ -1596,7 +1597,7 @@ function MoodSelector({ value, onChange }: { value: Mood | null; onChange: (mood
           aria-pressed={value === mood.key}
           title={mood.label}
         >
-          <span aria-hidden="true">{mood.icon}</span>
+          <FluentEmoji emoji={mood.icon} size={26} decorative />
         </button>
       ))}
     </div>

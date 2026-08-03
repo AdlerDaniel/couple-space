@@ -2,17 +2,17 @@
 
 import MemoryComposer, { type CreatedMemory } from "@/components/MemoryComposer";
 import AccentAudioPlayer from "@/components/AccentAudioPlayer";
+import { FluentEmoji, FluentEmojiText } from "@/components/FluentEmoji";
+import EmojiPicker from "@/components/EmojiPicker";
 import { supabase } from "@/lib/supabaseClient";
 import { createPartnerNotification } from "@/lib/notifications";
 import { decodeMemoryMedia } from "@/lib/memoryMedia";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, MessageCircle, MoreHorizontal, Pin, Send, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, MoreHorizontal, Pin, Send, SmilePlus, Trash2 } from "lucide-react";
 
 const PAGE_SIZE = 12;
-const reactions = ["❤️", "😂", "🥺", "👍", "😮"];
-
 type Couple = {
   id: string;
   partner_one_id: string;
@@ -102,6 +102,7 @@ export default function MemoriesPage() {
   const [message, setMessage] = useState("");
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [reactionPickerMemoryId, setReactionPickerMemoryId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadMemories() {
@@ -525,7 +526,7 @@ export default function MemoriesPage() {
                       </>
                       {displayTitle && (
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent p-4 text-white opacity-0 transition group-hover:opacity-100">
-                          <p className="font-black">{displayTitle}</p>
+                          <p className="font-black"><FluentEmojiText>{displayTitle}</FluentEmojiText></p>
                         </div>
                       )}
                     </div>
@@ -558,12 +559,12 @@ export default function MemoriesPage() {
                     </div>
                     {displayTitle && (
                       <h2 className="text-2xl font-black text-[#172554] dark:text-white">
-                        {displayTitle}
+                        <FluentEmojiText>{displayTitle}</FluentEmojiText>
                       </h2>
                     )}
                     {displayDescription && (
                       <p className="mt-2 font-semibold leading-7 text-[#172554]/70 dark:text-white/62">
-                        {displayDescription}
+                        <FluentEmojiText>{displayDescription}</FluentEmojiText>
                       </p>
                     )}
                     {media.voiceUrl && (
@@ -586,7 +587,7 @@ export default function MemoriesPage() {
                         <span>{Object.keys(memory.reactions || {}).length + (comments[memory.id] || []).length}</span>
                       </summary>
                       <div className="memory-reactions mt-3 flex flex-wrap gap-2">
-                        {reactions.map((reaction) => {
+                        {Array.from(new Set(Object.values(memory.reactions || {}).filter((reaction): reaction is string => Boolean(reaction)))).map((reaction) => {
                         const userIds = getReactionUsers(memory, reaction);
                         const singleUser = userIds.length === 1 ? getMemoryUserMeta(userIds[0]) : null;
                         const isMyReaction = memory.reactions?.[currentUserId || ""] === reaction;
@@ -607,7 +608,7 @@ export default function MemoriesPage() {
                                   : "Поставить реакцию"
                             }
                           >
-                            <span>{reaction}</span>
+                            <FluentEmoji emoji={reaction} size={24} decorative />
                             {userIds.length > 1 ? (
                               <span className="text-xs font-black text-[#2563eb] dark:text-blue-100">{userIds.length}</span>
                             ) : singleUser?.avatar ? (
@@ -618,7 +619,30 @@ export default function MemoriesPage() {
                           </button>
                         );
                         })}
+                        <button
+                          type="button"
+                          onClick={() => setReactionPickerMemoryId((current) => current === memory.id ? null : memory.id)}
+                          className="memory-reaction-option inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-white/70 bg-white/65 px-2 text-[#2563eb] shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/8 dark:text-blue-100"
+                          aria-label="Выбрать реакцию"
+                          aria-expanded={reactionPickerMemoryId === memory.id}
+                        >
+                          <SmilePlus aria-hidden="true" size={18} />
+                        </button>
                       </div>
+
+                      {reactionPickerMemoryId === memory.id && (
+                        <EmojiPicker
+                          selectedEmoji={memory.reactions?.[currentUserId || ""] || undefined}
+                          onSelect={(reaction) => {
+                            void toggleReaction(memory, reaction);
+                            setReactionPickerMemoryId(null);
+                          }}
+                          tone="blue"
+                          className="mt-3"
+                          compact
+                          autoFocus
+                        />
+                      )}
 
                       <div className="memory-comments mt-3 rounded-2xl bg-blue-50/70 p-3 dark:bg-white/8">
                       <p className="mb-2 text-sm font-black text-[#2563eb] dark:text-blue-100">
@@ -630,7 +654,7 @@ export default function MemoriesPage() {
                             <span className="font-black">
                               {comment.user_id === currentUserId ? "Вы" : "Партнёр"}:
                             </span>{" "}
-                            {comment.text}
+                            <FluentEmojiText>{comment.text}</FluentEmojiText>
                           </div>
                         ))}
                       </div>

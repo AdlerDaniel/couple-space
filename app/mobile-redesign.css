@@ -984,6 +984,34 @@ main textarea:not(.chat-composer-input) {
   backdrop-filter: blur(14px);
 }
 
+.question-summary-strip .question-summary-pill {
+  min-height: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  padding: 0.45rem 0.8rem;
+  background: rgba(255, 255, 255, 0.48);
+  color: #047857;
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.09);
+}
+
+.dark .question-summary-strip .question-summary-pill {
+  border-color: rgba(110, 231, 183, 0.18);
+  background: rgba(16, 185, 129, 0.11);
+  color: #d1fae5;
+}
+
+.chat-read-receipt {
+  display: inline-grid;
+  place-items: center;
+  color: currentColor;
+  opacity: 0.68;
+}
+
+.chat-read-receipt-read {
+  color: #7dd3fc;
+  opacity: 1;
+}
+
 .question-discussion-link:disabled {
   cursor: not-allowed;
   opacity: 0.42;
@@ -1229,6 +1257,60 @@ main textarea:not(.chat-composer-input) {
     border-radius: 999px !important;
     background: #2298e9 !important;
     box-shadow: none !important;
+  }
+
+  .chat-page .chat-mobile-header > div > .chat-mobile-more {
+    position: absolute !important;
+    top: 0.55rem !important;
+    right: 0.55rem !important;
+    left: auto !important;
+    display: grid !important;
+    width: 3.15rem !important;
+    min-width: 3.15rem !important;
+    max-width: 3.15rem !important;
+    height: 3.15rem !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+  }
+
+  .chat-composer-row {
+    gap: 0.45rem !important;
+    border: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .dark .chat-composer-row {
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .chat-input-pill {
+    min-height: 3.2rem;
+    border: 1px solid #eef1f3;
+    border-radius: 999px;
+    padding: 0.2rem;
+    background: #fff;
+    box-shadow: 0 3px 14px rgba(15, 23, 42, 0.05);
+  }
+
+  .dark .chat-input-pill {
+    border-color: rgba(255, 255, 255, 0.08);
+    background: #202c33;
+  }
+
+  .chat-primary-action {
+    flex: 0 0 2.85rem !important;
+    width: 2.85rem !important;
+    min-width: 2.85rem !important;
+    max-width: 2.85rem !important;
+    height: 2.85rem !important;
+    min-height: 2.85rem !important;
+    max-height: 2.85rem !important;
+    aspect-ratio: 1 / 1 !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
   }
 }
 

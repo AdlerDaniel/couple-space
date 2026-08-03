@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FluentEmoji } from "@/components/FluentEmoji";
 import { Activity, Bell, CalendarDays, Circle, Heart, MessageCircle, Play } from "lucide-react";
 
 const legacyIcons = {
@@ -44,7 +45,7 @@ export default function EmptyState({
         className="app-empty-scene mx-auto grid h-20 w-20 place-items-center rounded-[1.35rem] text-3xl text-white shadow-lg"
         style={{ backgroundColor: accent }}
       >
-        {Icon ? <Icon aria-hidden="true" size={32} strokeWidth={2} /> : icon}
+        {Icon ? <Icon aria-hidden="true" size={32} strokeWidth={2} /> : <FluentEmoji emoji={icon} size={42} decorative />}
       </div>
       <p className="app-empty-title mt-4 text-lg font-black text-current">{title}</p>
       <p className="mx-auto mt-2 max-w-sm text-sm font-semibold leading-6 text-[#1f2937]/70 dark:text-white/62">

@@ -1,5 +1,7 @@
 "use client";
 
+import { FluentEmojiText } from "@/components/FluentEmoji";
+
 import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
@@ -404,7 +406,7 @@ export default function QuestionDiscussionPage() {
                         {mediaUrl && message.attachment_type === "image" && <Image src={mediaUrl} alt={message.attachment_name || "Фото"} width={720} height={520} sizes="(max-width: 768px) 76vw, 520px" className="mb-2 max-h-80 w-full rounded-2xl object-cover" unoptimized />}
                         {mediaUrl && message.attachment_type === "video" && <video src={mediaUrl} controls playsInline preload="metadata" className="mb-2 max-h-80 w-full rounded-2xl bg-black" />}
                         {mediaUrl && message.attachment_type === "audio" && <div className="mb-1 min-w-[min(17rem,68vw)]"><AccentAudioPlayer src={mediaUrl} accent={isMine ? "#ffffff" : "#10b981"} label="Голосовое сообщение" /></div>}
-                        {message.text && <p className="whitespace-pre-wrap break-words text-sm font-semibold leading-5">{message.text}</p>}
+                        {message.text && <p className="whitespace-pre-wrap break-words text-sm font-semibold leading-5"><FluentEmojiText>{message.text}</FluentEmojiText></p>}
                         <p className={`mt-1 text-right text-[10px] font-bold ${isMine ? "text-white/65" : "text-emerald-800/40 dark:text-white/38"}`}>{formatTime(message.created_at)}</p>
                       </article>
                     </div>

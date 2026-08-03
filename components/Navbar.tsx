@@ -18,6 +18,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 import NavIcon from "./NavIcon";
 import { showAppToast } from "./AppToast";
+import { FluentEmojiText } from "./FluentEmoji";
 
 type UserProfile = {
   name: string;
@@ -405,7 +406,7 @@ export default function Navbar() {
                               </span>
                               {notification.body && (
                                 <span className="mt-1 line-clamp-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                                  {notification.body}
+                                  <FluentEmojiText>{notification.body}</FluentEmojiText>
                                 </span>
                               )}
                               <span className="mt-2 block text-xs font-bold text-slate-400">

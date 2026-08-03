@@ -2,6 +2,7 @@
 
 import AnswerSocialControls from "@/components/AnswerSocialControls";
 import AccentAudioPlayer from "@/components/AccentAudioPlayer";
+import { FluentEmojiText } from "@/components/FluentEmoji";
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { parseQuestionDate } from "@/lib/questionArchive";
 import { supabase } from "@/lib/supabaseClient";
@@ -323,7 +324,7 @@ export default function TodayQuestionPage() {
             {questionOfTheDay}
           </h1>
           <div className="question-summary-strip mx-auto mt-5 flex max-w-3xl flex-wrap items-center justify-center gap-2">
-            <span className="question-streak-pill">
+            <span className="question-summary-pill question-streak-pill">
               <Flame aria-hidden="true" className={hasMyAnswer ? "question-streak-active" : "question-streak-muted"} size={17} />
               Серия: <strong>{answerStreak} дней</strong>
             </span>
@@ -331,7 +332,7 @@ export default function TodayQuestionPage() {
               type="button"
               disabled={!answerRecord}
               onClick={() => answerRecord && router.push(`/questions/discussion?answerId=${answerRecord.id}`)}
-              className="question-discussion-link"
+              className="question-summary-pill question-discussion-link"
             >
               <MessageCircle aria-hidden="true" size={17} />
               Обсудить
@@ -348,7 +349,7 @@ export default function TodayQuestionPage() {
             </div>
             <div className="mt-5 min-h-48 rounded-[1.5rem] border border-emerald-200/60 bg-white/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_55px_rgba(21,128,61,0.1)] dark:border-white/10 dark:bg-black/20">
               <p className="break-words text-lg font-semibold leading-8 text-emerald-950 dark:text-white">
-                {myAnswer || "Ответ ещё не сохранён."}
+                <FluentEmojiText>{myAnswer || "Ответ ещё не сохранён."}</FluentEmojiText>
               </p>
               {(myVoiceUrl || myPhotoUrl) && (
                 <div className="mt-5 grid gap-3">
@@ -391,7 +392,7 @@ export default function TodayQuestionPage() {
               {hasMyAnswer ? (
                 <>
                   <p className="break-words text-lg font-semibold leading-8 text-emerald-950 dark:text-white">
-                    {partnerAnswer || "Партнёр ещё отвечает. Ответ откроется автоматически."}
+                    <FluentEmojiText>{partnerAnswer || "Партнёр ещё отвечает. Ответ откроется автоматически."}</FluentEmojiText>
                   </p>
                   {(partnerVoiceUrl || partnerPhotoUrl) && (
                     <div className="mt-5 grid gap-3">

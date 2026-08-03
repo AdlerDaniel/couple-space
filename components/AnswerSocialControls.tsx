@@ -2,7 +2,7 @@
 
 import { PulseBurst } from "@/components/AnimeWidgets";
 import EmojiPicker from "@/components/EmojiPicker";
-import { quickReactionEmojis } from "@/lib/emojis";
+import { FluentEmoji } from "@/components/FluentEmoji";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import { SmilePlus } from "lucide-react";
@@ -118,8 +118,8 @@ export default function AnswerSocialControls<TRecord extends object>({
       <div className="answer-reactions-visible" aria-label="Реакции на ответ">
         {visibleReactions.map((reaction) => (
           <span key={reaction} className={userReaction === reaction ? "is-mine" : ""}>
-            <PulseBurst trigger={reactionBurst?.emoji === reaction ? reactionBurst.key : 0} glyph={reaction} />
-            <span>{reaction}</span>
+            <PulseBurst trigger={reactionBurst?.emoji === reaction ? reactionBurst.key : 0} glyph="✦" />
+            <FluentEmoji emoji={reaction} size={22} decorative />
             {getReactionCount(reaction) > 1 && <small>{getReactionCount(reaction)}</small>}
           </span>
         ))}
@@ -136,19 +136,6 @@ export default function AnswerSocialControls<TRecord extends object>({
       </button>
       {isReactionPickerOpen && (
         <div className="answer-reaction-popover">
-          <div className="answer-reaction-quick-list">
-            {quickReactionEmojis.map((reaction) => (
-              <button
-                type="button"
-                key={reaction}
-                onClick={() => void toggleReaction(reaction)}
-                aria-label={`Реакция ${reaction}`}
-                aria-pressed={userReaction === reaction}
-              >
-                {reaction}
-              </button>
-            ))}
-          </div>
           <EmojiPicker
             selectedEmoji={userReaction}
             onSelect={(reaction) => void toggleReaction(reaction)}

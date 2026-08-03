@@ -13,6 +13,7 @@ import {
 } from "@/lib/questionArchive";
 import { getDailyQuestionHistory } from "@/lib/dailyQuestions";
 import { supabase } from "@/lib/supabaseClient";
+import { FluentEmojiText } from "@/components/FluentEmoji";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -333,7 +334,7 @@ export default function QuestionsArchivePage() {
                                     key={badge}
                                     className="rounded-full bg-white/78 px-2 py-1 text-xs shadow-sm dark:bg-white/10"
                                   >
-                                    {badge}
+                                    <FluentEmojiText>{badge}</FluentEmojiText>
                                   </span>
                                 ))}
                               </div>
@@ -348,7 +349,7 @@ export default function QuestionsArchivePage() {
                                     key={badge}
                                     className="rounded-full bg-white/78 px-2 py-1 text-xs shadow-sm dark:bg-white/10"
                                   >
-                                    {badge}
+                                    <FluentEmojiText>{badge}</FluentEmojiText>
                                   </span>
                                 ))}
                               </div>

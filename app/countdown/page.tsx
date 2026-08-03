@@ -2,6 +2,7 @@
 
 import EmptyState from "@/components/EmptyState";
 import EmojiPicker from "@/components/EmojiPicker";
+import { FluentEmoji } from "@/components/FluentEmoji";
 import { getCountdownTimeParts, sortCountdowns, toLocalDateTimeValue } from "@/lib/countdowns";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
@@ -636,7 +637,7 @@ function CountdownCard({
       <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-pink-200/35 blur-2xl transition group-hover:scale-125 dark:bg-pink-500/8" />
       <div className="relative flex items-start gap-3">
         <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[1.15rem] bg-gradient-to-br from-pink-100 to-rose-100 text-2xl shadow-inner dark:from-pink-400/15 dark:to-rose-400/8">
-          {countdown.icon}
+          <FluentEmoji emoji={countdown.icon} size={34} decorative />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -729,10 +730,10 @@ function CountdownEditor({
             <fieldset>
               <legend className="text-sm font-black">Значок</legend>
               <div className="mt-2 flex items-center gap-3 rounded-2xl bg-pink-50/72 p-3 dark:bg-pink-400/7">
-                <span className="native-emoji grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-2xl shadow-inner dark:bg-white/10" aria-label={`Выбранный значок ${draft.icon}`}>
-                  {draft.icon}
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-2xl shadow-inner dark:bg-white/10" aria-label={`Выбранный значок ${draft.icon}`}>
+                  <FluentEmoji emoji={draft.icon} size={32} decorative />
                 </span>
-                <p className="text-xs font-bold leading-5 opacity-55">Выберите любой Unicode-эмодзи из полного набора.</p>
+                <p className="text-xs font-bold leading-5 opacity-55">Выберите значок из полного набора Microsoft Fluent Emoji.</p>
               </div>
               <EmojiPicker
                 selectedEmoji={draft.icon}
@@ -772,7 +773,7 @@ function DeleteDialog({ countdown, isDeleting, onCancel, onConfirm }: { countdow
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-5">
       <button type="button" className="absolute inset-0 bg-[#3b071e]/58 backdrop-blur-sm" onClick={onCancel} aria-label="Отменить удаление" />
       <section role="alertdialog" aria-modal="true" aria-labelledby="delete-countdown-title" className="countdown-dialog-in relative w-full max-w-md rounded-[2rem] border border-pink-200/60 bg-[#fff9fc] p-6 text-center text-[#831843] shadow-[0_30px_120px_rgba(80,7,36,0.38)] dark:border-pink-100/10 dark:bg-[#21101b] dark:text-pink-50 sm:p-8">
-        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-rose-100 text-3xl shadow-inner dark:bg-rose-400/10">{countdown.icon}</span>
+        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-rose-100 text-3xl shadow-inner dark:bg-rose-400/10"><FluentEmoji emoji={countdown.icon} size={42} decorative /></span>
         <h2 id="delete-countdown-title" className="mt-5 text-2xl font-black text-[#831843] dark:text-white">Удалить «{countdown.title}»?</h2>
         <p className="mt-3 font-semibold leading-6 opacity-60">Отсчёт исчезнет у обоих партнёров. Это действие нельзя отменить.</p>
         <div className="mt-6 grid gap-2 sm:grid-cols-2">

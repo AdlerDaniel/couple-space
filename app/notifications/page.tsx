@@ -2,6 +2,7 @@
 
 import EmptyState from "@/components/EmptyState";
 import NavIcon from "@/components/NavIcon";
+import { FluentEmojiText } from "@/components/FluentEmoji";
 import type { NavIconName } from "@/lib/navigation";
 import { getPageTheme } from "@/lib/pageThemes";
 import { supabase } from "@/lib/supabaseClient";
@@ -282,7 +283,7 @@ export default function NotificationsPage() {
                               {getTypeLabel(item.type)}
                             </span>
                           </div>
-                          {item.body && <p className="mt-1 line-clamp-2 text-sm font-bold opacity-65">{item.body}</p>}
+                          {item.body && <p className="mt-1 line-clamp-2 text-sm font-bold opacity-65"><FluentEmojiText>{item.body}</FluentEmojiText></p>}
                           <p className="mt-2 text-xs font-black uppercase tracking-wide opacity-45">
                             {formatTime(item.created_at)}
                           </p>

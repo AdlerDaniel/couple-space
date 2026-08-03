@@ -10,6 +10,7 @@ import {
   dashboardThemeAccents,
 } from "@/lib/dashboardTheme";
 import EmojiPicker from "@/components/EmojiPicker";
+import { FluentEmoji } from "@/components/FluentEmoji";
 import NextImage from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -141,7 +142,7 @@ function AvatarBubble({
       {status?.text && (
         <>
           <div className="absolute -top-3 left-1/2 grid h-8 w-8 -translate-x-1/2 place-items-center rounded-full bg-white/90 text-base shadow-xl ring-2 ring-white/75 backdrop-blur dark:bg-black/55 dark:ring-white/10">
-            {status.emoji}
+            <FluentEmoji emoji={status.emoji} size={23} decorative />
           </div>
           <div className="absolute -bottom-5 left-1/2 w-max max-w-full -translate-x-1/2 rounded-2xl bg-white/88 px-2.5 py-1.5 text-center text-xs font-black leading-tight text-[#dc2626] shadow-xl ring-1 ring-white/70 backdrop-blur dark:bg-black/50 dark:text-white dark:ring-white/10">
             <span className="line-clamp-2 whitespace-normal break-words">
@@ -763,7 +764,7 @@ export default function DashboardPage() {
                 {coupleName}
               </h1>
               <p className="mt-4 text-3xl font-bold text-white">
-                {daysTogether} дней вместе ❤️
+                {daysTogether} дней вместе <FluentEmoji emoji="❤️" size={30} decorative />
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 <span className="rounded-full bg-white/60 px-4 py-2 text-sm font-black text-[#dc2626] shadow-lg backdrop-blur dark:bg-black/25 dark:text-white">
@@ -792,8 +793,8 @@ export default function DashboardPage() {
 
             <div className="mt-5 rounded-2xl bg-white/35 p-5 shadow-inner dark:bg-white/5">
               <div className="mb-3 flex items-center gap-3">
-                <span className="native-emoji grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/80 text-2xl shadow-inner dark:bg-white/10" aria-label={`Выбранный эмодзи ${statusEmoji}`}>
-                  {statusEmoji}
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/80 text-2xl shadow-inner dark:bg-white/10" aria-label={`Выбранный эмодзи ${statusEmoji}`}>
+                  <FluentEmoji emoji={statusEmoji} size={32} decorative />
                 </span>
                 <p className={`text-xs font-bold ${theme.muted} dark:text-white/55`}>
                   Выберите любой эмодзи для своего статуса.
@@ -919,7 +920,7 @@ export default function DashboardPage() {
                   >
                     <div className="flex gap-4">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/60 text-xl shadow-inner dark:bg-white/10">
-                        {item.icon}
+                        <FluentEmoji emoji={item.icon} size={24} decorative />
                       </div>
                       <div>
                         <p className="font-black">{item.text}</p>

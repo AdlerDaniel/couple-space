@@ -1,6 +1,7 @@
 "use client";
 
 import EmojiPicker from "@/components/EmojiPicker";
+import { FluentEmoji, FluentEmojiText, fluentEmojiUrl } from "@/components/FluentEmoji";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
   createCompatibleAudioRecorder,
@@ -10,7 +11,6 @@ import {
   MAX_AUDIO_SIZE,
 } from "@/lib/mediaFiles";
 import { createPartnerNotification } from "@/lib/notifications";
-import { quickReactionEmojis } from "@/lib/emojis";
 import { supabase } from "@/lib/supabaseClient";
 import { authorizedFetch } from "@/lib/authorizedFetch";
 import { toBrowserSupabaseUrl, toPortableSupabaseUrl } from "@/lib/supabaseUrls";
@@ -31,6 +31,8 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  Check,
+  CheckCheck,
   Clock3,
   ExternalLink,
   EllipsisVertical,
@@ -145,14 +147,9 @@ const draftStoragePrefix = "couple-space:chat-draft:";
 const recentStickerStorageKey = "couple-space:chat-recent-stickers";
 const favoriteStickerStorageKey = "couple-space:chat-favorite-stickers";
 const externalChatDraftKey = "couple-space:chat-draft";
-const reactions = quickReactionEmojis;
 const CHAT_PAGE_SIZE = 80;
 const maxMediaSize = 25 * 1024 * 1024;
 const maxFileSize = 50 * 1024 * 1024;
-
-function notoStickerUrl(code: string) {
-  return `https://fonts.gstatic.com/s/e/notoemoji/latest/${code}/512.webp`;
-}
 
 const stickerPacks: StickerPack[] = [
   {
@@ -160,12 +157,12 @@ const stickerPacks: StickerPack[] = [
     name: "Love",
     icon: "💘",
     stickers: [
-      { id: "love-1", name: "Влюбленность", emoji: "🥰", url: notoStickerUrl("1f970") },
-      { id: "love-2", name: "Сердца в глазах", emoji: "😍", url: notoStickerUrl("1f60d") },
-      { id: "love-3", name: "Поцелуй", emoji: "😘", url: notoStickerUrl("1f618") },
-      { id: "love-4", name: "Сердце", emoji: "💖", url: notoStickerUrl("1f496") },
-      { id: "love-5", name: "Письмо", emoji: "💌", url: notoStickerUrl("1f48c") },
-      { id: "love-6", name: "Два сердца", emoji: "💕", url: notoStickerUrl("1f495") },
+      { id: "love-1", name: "Влюбленность", emoji: "🥰", url: fluentEmojiUrl("🥰") },
+      { id: "love-2", name: "Сердца в глазах", emoji: "😍", url: fluentEmojiUrl("😍") },
+      { id: "love-3", name: "Поцелуй", emoji: "😘", url: fluentEmojiUrl("😘") },
+      { id: "love-4", name: "Сердце", emoji: "💖", url: fluentEmojiUrl("💖") },
+      { id: "love-5", name: "Письмо", emoji: "💌", url: fluentEmojiUrl("💌") },
+      { id: "love-6", name: "Два сердца", emoji: "💕", url: fluentEmojiUrl("💕") },
     ],
   },
   {
@@ -173,12 +170,12 @@ const stickerPacks: StickerPack[] = [
     name: "Mood",
     icon: "🥳",
     stickers: [
-      { id: "mood-1", name: "Смех", emoji: "😂", url: notoStickerUrl("1f602") },
-      { id: "mood-2", name: "Вечеринка", emoji: "🥳", url: notoStickerUrl("1f973") },
-      { id: "mood-3", name: "Круто", emoji: "😎", url: notoStickerUrl("1f60e") },
-      { id: "mood-4", name: "Ого", emoji: "😮", url: notoStickerUrl("1f62e") },
-      { id: "mood-5", name: "Сон", emoji: "😴", url: notoStickerUrl("1f634") },
-      { id: "mood-6", name: "Плач", emoji: "😭", url: notoStickerUrl("1f62d") },
+      { id: "mood-1", name: "Смех", emoji: "😂", url: fluentEmojiUrl("😂") },
+      { id: "mood-2", name: "Вечеринка", emoji: "🥳", url: fluentEmojiUrl("🥳") },
+      { id: "mood-3", name: "Круто", emoji: "😎", url: fluentEmojiUrl("😎") },
+      { id: "mood-4", name: "Ого", emoji: "😮", url: fluentEmojiUrl("😮") },
+      { id: "mood-5", name: "Сон", emoji: "😴", url: fluentEmojiUrl("😴") },
+      { id: "mood-6", name: "Плач", emoji: "😭", url: fluentEmojiUrl("😭") },
     ],
   },
   {
@@ -186,12 +183,12 @@ const stickerPacks: StickerPack[] = [
     name: "Cute",
     icon: "🧸",
     stickers: [
-      { id: "cute-1", name: "Просьба", emoji: "🥺", url: notoStickerUrl("1f97a") },
-      { id: "cute-2", name: "Обнимашки", emoji: "🤗", url: notoStickerUrl("1f917") },
-      { id: "cute-3", name: "Кот", emoji: "🐱", url: notoStickerUrl("1f431") },
-      { id: "cute-4", name: "Пёс", emoji: "🐶", url: notoStickerUrl("1f436") },
-      { id: "cute-5", name: "Единорог", emoji: "🦄", url: notoStickerUrl("1f984") },
-      { id: "cute-6", name: "Подарок", emoji: "🎁", url: notoStickerUrl("1f381") },
+      { id: "cute-1", name: "Просьба", emoji: "🥺", url: fluentEmojiUrl("🥺") },
+      { id: "cute-2", name: "Обнимашки", emoji: "🤗", url: fluentEmojiUrl("🤗") },
+      { id: "cute-3", name: "Кот", emoji: "🐱", url: fluentEmojiUrl("🐱") },
+      { id: "cute-4", name: "Пёс", emoji: "🐶", url: fluentEmojiUrl("🐶") },
+      { id: "cute-5", name: "Единорог", emoji: "🦄", url: fluentEmojiUrl("🦄") },
+      { id: "cute-6", name: "Подарок", emoji: "🎁", url: fluentEmojiUrl("🎁") },
     ],
   },
 ];
@@ -1872,7 +1869,15 @@ export default function ChatPage() {
                   >
                     {message.edited_at && <span>изм.</span>}
                     <span>{formatMessageTime(message.created_at)}</span>
-                    {isMine && <span>{message.read_at ? "✓✓" : "✓"}</span>}
+                    {isMine && (
+                      <span
+                        className={message.read_at ? "chat-read-receipt chat-read-receipt-read" : "chat-read-receipt"}
+                        aria-label={message.read_at ? "Прочитано" : "Доставлено"}
+                        title={message.read_at ? "Прочитано" : "Доставлено"}
+                      >
+                        {message.read_at ? <CheckCheck aria-hidden="true" size={15} strokeWidth={2.5} /> : <Check aria-hidden="true" size={15} strokeWidth={2.5} />}
+                      </span>
+                    )}
                   </span>
                 );
                 const groupedReactions = (message.reactions || []).reduce<Record<string, string[]>>(
@@ -1940,9 +1945,7 @@ export default function ChatPage() {
                         <>
                             {isBigEmojiMessage && (
                               <div className={`chat-big-emoji-message ${isMine ? "ml-auto" : ""}`}>
-                                <div className="text-6xl leading-none drop-shadow-[0_12px_26px_rgba(0,0,0,0.25)] md:text-7xl">
-                                  {message.body}
-                                </div>
+                                <FluentEmoji emoji={message.body || ""} size="4.5rem" decorative className="drop-shadow-[0_12px_26px_rgba(0,0,0,0.25)]" />
                                 <div className={`mt-1 flex ${isMine ? "justify-end" : "justify-start"}`}>
                                   <span className="rounded-full bg-black/34 px-2 py-0.5 backdrop-blur">
                                     {metaNode}
@@ -2153,7 +2156,7 @@ export default function ChatPage() {
                             )}
                             {message.body && !isVoiceMessage && !isStickerMessage && !isBigEmojiMessage && (
                               <p className="whitespace-pre-wrap break-words text-[15px] font-medium leading-5">
-                                {message.body}
+                                <FluentEmojiText>{message.body}</FluentEmojiText>
                                 <span className="inline-block w-2" />
                                 {metaNode}
                               </p>
@@ -2175,7 +2178,7 @@ export default function ChatPage() {
                               const singleUser = userIds.length === 1 ? getChatUserMeta(userIds[0]) : null;
                               return (
                               <button key={emoji} data-anime-burst={emoji} onClick={() => toggleReaction(message, emoji)} className={`chat-reaction-pill inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-black shadow-inner ${isMyReaction ? "bg-sky-100 text-sky-700 ring-2 ring-white/70 dark:bg-sky-500/30 dark:text-white" : "bg-white/72 text-sky-700 dark:bg-black/25 dark:text-white"}`}>
-                                <span>{emoji}</span>
+                                <FluentEmoji emoji={emoji} size={20} decorative />
                                 {userIds.length > 1 ? (
                                   <span className="text-[11px]">{userIds.length}</span>
                                 ) : singleUser?.avatar ? (
@@ -2438,7 +2441,7 @@ export default function ChatPage() {
                     <button type="button" onClick={() => setActiveStickerPack("favorites")} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${activeStickerPack === "favorites" ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title="Избранные" aria-label="Избранные стикеры"><Star aria-hidden="true" size={18} /></button>
                     {stickerPacks.map((pack) => (
                       <button key={pack.id} type="button" onClick={() => setActiveStickerPack(pack.id)} className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg transition ${activeStickerPack === pack.id ? "bg-white text-[#0284c7] shadow dark:bg-white/12 dark:text-white" : "opacity-60"}`} title={pack.name}>
-                        {pack.icon}
+                        <FluentEmoji emoji={pack.icon} size={24} decorative />
                       </button>
                     ))}
                   </div>
@@ -2479,6 +2482,7 @@ export default function ChatPage() {
                 event.target.value = "";
               }}
             />
+            <div className="chat-input-pill flex min-w-0 flex-1 items-end gap-1.5">
             <button
               type="button"
               onPointerDown={(event) => event.stopPropagation()}
@@ -2486,33 +2490,19 @@ export default function ChatPage() {
                 setReactionTargetId(null);
                 setPickerMode((current) => (current === "emoji" ? null : "emoji"));
               }}
-              className={`chat-quick-emoji order-1 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg shadow-inner transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${
+              className={`chat-quick-emoji grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${
                 pickerMode === "emoji" ? "bg-[#0284c7] text-white" : "bg-white/85 dark:bg-white/10"
               }`}
               aria-label="Emoji"
             >
               <Smile aria-hidden="true" size={20} />
             </button>
-            <button
-              type="button"
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={() => {
-                setReactionTargetId(null);
-                setPickerMode((current) => (current === "stickers" ? null : "stickers"));
-              }}
-              className={`chat-quick-stickers order-2 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg shadow-inner transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${
-                pickerMode === "stickers" ? "bg-[#0284c7] text-white" : "bg-white/85 dark:bg-white/10"
-              }`}
-              aria-label="Стикеры"
-            >
-              <Sticker aria-hidden="true" size={20} />
-            </button>
-            <div className="chat-attach-wrap relative order-4">
-              <button type="button" onClick={() => setIsAttachMenuOpen((current) => !current)} className="chat-attach-button grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-white/85 text-lg shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl" aria-label="Прикрепить файл">
+            <div className="chat-attach-wrap relative ml-auto">
+              <button type="button" onClick={() => setIsAttachMenuOpen((current) => !current)} className="chat-attach-button grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl" aria-label="Прикрепить файл">
               <Paperclip aria-hidden="true" size={20} />
               </button>
               {isAttachMenuOpen && (
-                <div className="chat-menu-in absolute bottom-14 left-0 z-30 w-52 overflow-hidden rounded-2xl bg-white/95 p-2 text-[#075985] shadow-[0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl dark:bg-black/90 dark:text-white">
+                <div className="chat-menu-in absolute bottom-14 right-0 z-30 w-52 overflow-hidden rounded-2xl bg-white/95 p-2 text-[#075985] shadow-[0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl dark:bg-black/90 dark:text-white">
                   <button type="button" onClick={() => { setReactionTargetId(null); setPickerMode("emoji"); setIsAttachMenuOpen(false); }} className="chat-mobile-attach-option flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
                     <Smile aria-hidden="true" size={18} /> Эмодзи
                   </button>
@@ -2554,14 +2544,15 @@ export default function ChatPage() {
               placeholder="Сообщение"
               rows={1}
               maxLength={1000}
-              className="chat-composer-input order-3 max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-[1rem] border border-sky-200/70 bg-white/86 px-3 py-2.5 text-sm font-semibold text-[#075985] outline-none shadow-inner transition placeholder:text-sky-400/70 focus:border-[#0ea5e9] focus:shadow-[0_0_0_5px_rgba(14,165,233,0.14)] dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/38 md:max-h-36 md:min-h-12 md:rounded-[1.25rem] md:px-4 md:py-3 md:text-base"
+              className="chat-composer-input max-h-32 min-h-10 min-w-0 flex-1 resize-none bg-transparent px-1 py-2.5 text-sm font-semibold text-[#075985] outline-none placeholder:text-sky-400/70 dark:text-white dark:placeholder:text-white/38 md:max-h-36 md:min-h-12 md:px-2 md:py-3 md:text-base"
             />
+            </div>
             {draft.trim() || editingId || pendingAttachments.length > 0 ? (
-              <button type="submit" disabled={isSending} aria-label="Отправить сообщение" className={`chat-primary-action order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-xl font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.34)] transition hover:-translate-y-0.5 disabled:opacity-45 md:h-12 md:w-12 md:rounded-[1rem] md:text-2xl ${isSending ? "chat-send-pulse" : ""}`}>
+              <button type="submit" disabled={isSending} aria-label="Отправить сообщение" className={`chat-primary-action grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#0284c7] to-[#0369a1] p-0 text-xl font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.34)] transition hover:-translate-y-0.5 disabled:opacity-45 md:h-12 md:w-12 md:text-2xl ${isSending ? "chat-send-pulse" : ""}`}>
                 <Send aria-hidden="true" size={20} />
               </button>
             ) : (
-              <button type="button" onClick={isRecording ? stopRecording : startRecording} aria-label={isRecording ? "Остановить запись" : "Записать голосовое"} className={`chat-primary-action order-5 grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem] text-lg font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.28)] transition hover:-translate-y-0.5 md:h-12 md:w-12 md:rounded-[1rem] md:text-xl ${isRecording ? "bg-sky-600 animate-pulse" : "bg-[#0284c7]"}`}>
+              <button type="button" onClick={isRecording ? stopRecording : startRecording} aria-label={isRecording ? "Остановить запись" : "Записать голосовое"} className={`chat-primary-action grid h-10 w-10 shrink-0 place-items-center rounded-full p-0 text-lg font-black text-white shadow-[0_16px_42px_rgba(2,132,199,0.28)] transition hover:-translate-y-0.5 md:h-12 md:w-12 md:text-xl ${isRecording ? "bg-sky-600 animate-pulse" : "bg-[#0284c7]"}`}>
                 {isRecording ? <Square aria-hidden="true" size={18} fill="currentColor" /> : <Mic aria-hidden="true" size={20} />}
               </button>
             )}
@@ -2571,12 +2562,7 @@ export default function ChatPage() {
         {menuMessage && (
           <div className="absolute inset-0 z-40 bg-black/12 backdrop-blur-[2px]" onClick={() => setMenuMessageId(null)}>
             <div className="chat-menu-in absolute bottom-24 left-4 right-4 mx-auto max-w-md overflow-hidden rounded-[1.5rem] bg-white/94 p-2 text-[#075985] shadow-[0_24px_80px_rgba(0,0,0,0.22)] dark:bg-black/88 dark:text-white" onClick={(event) => event.stopPropagation()}>
-              <div className="grid grid-cols-4 gap-1 border-b border-sky-100 p-2 dark:border-white/10">
-                {reactions.map((emoji) => (
-                  <button key={emoji} onClick={() => toggleReaction(menuMessage, emoji)} className="rounded-2xl p-2 text-2xl transition hover:bg-sky-50 dark:hover:bg-white/10">
-                    {emoji}
-                  </button>
-                ))}
+              <div className="border-b border-sky-100 p-2 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => {
@@ -2584,9 +2570,9 @@ export default function ChatPage() {
                     setPickerMode("emoji");
                     setMenuMessageId(null);
                   }}
-                  className="rounded-2xl p-2 text-2xl font-black transition hover:bg-sky-50 dark:hover:bg-white/10"
+                  className="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left font-black transition hover:bg-sky-50 dark:hover:bg-white/10"
                 >
-                  +
+                  <Smile aria-hidden="true" size={18} /> Выбрать реакцию
                 </button>
               </div>
               <button onClick={() => startReply(menuMessage)} className="w-full rounded-2xl px-4 py-3 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">Ответить</button>

@@ -1,32 +1,54 @@
 "use client";
 
-import { Check, Keyboard, SmilePlus } from "lucide-react";
-import { useRef, useState } from "react";
+import {
+  Clock3,
+  Coffee,
+  Flag,
+  Lightbulb,
+  LoaderCircle,
+  MapPinned,
+  Search,
+  Shapes,
+  Smile,
+  Trees,
+  UserRound,
+  Volleyball,
+} from "lucide-react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { FluentEmoji } from "@/components/FluentEmoji";
 
 type EmojiTone = "pink" | "red" | "blue" | "emerald" | "sky" | "amber";
-
-const toneClasses: Record<EmojiTone, { button: string; focus: string; soft: string; text: string }> = {
-  pink: { button: "from-pink-600 to-rose-500", focus: "focus-visible:ring-pink-400", soft: "bg-pink-50 dark:bg-pink-400/10", text: "text-pink-700 dark:text-pink-200" },
-  red: { button: "from-red-600 to-rose-500", focus: "focus-visible:ring-red-400", soft: "bg-red-50 dark:bg-red-400/10", text: "text-red-700 dark:text-red-200" },
-  blue: { button: "from-blue-600 to-cyan-500", focus: "focus-visible:ring-blue-400", soft: "bg-blue-50 dark:bg-blue-400/10", text: "text-blue-700 dark:text-blue-200" },
-  emerald: { button: "from-emerald-600 to-teal-500", focus: "focus-visible:ring-emerald-400", soft: "bg-emerald-50 dark:bg-emerald-400/10", text: "text-emerald-700 dark:text-emerald-200" },
-  sky: { button: "from-sky-600 to-cyan-500", focus: "focus-visible:ring-sky-400", soft: "bg-sky-50 dark:bg-sky-400/10", text: "text-sky-700 dark:text-sky-200" },
-  amber: { button: "from-amber-600 to-yellow-500", focus: "focus-visible:ring-amber-400", soft: "bg-amber-50 dark:bg-amber-400/10", text: "text-amber-700 dark:text-amber-200" },
+type EmojiSkin = { emoji: string; label: string; asset: string; tone: number };
+type EmojiItem = {
+  emoji: string;
+  label: string;
+  tags: string[];
+  group: number;
+  order: number;
+  asset: string;
+  skins: EmojiSkin[];
+};
+type EmojiCatalog = {
+  version: string;
+  groups: { id: number; label: string }[];
+  emojis: EmojiItem[];
 };
 
-function lastGrapheme(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
+const toneClasses: Record<EmojiTone, { active: string; focus: string; soft: string; text: string }> = {
+  pink: { active: "bg-pink-600 text-white", focus: "focus-visible:ring-pink-400", soft: "bg-pink-50 dark:bg-pink-400/10", text: "text-pink-700 dark:text-pink-200" },
+  red: { active: "bg-red-600 text-white", focus: "focus-visible:ring-red-400", soft: "bg-red-50 dark:bg-red-400/10", text: "text-red-700 dark:text-red-200" },
+  blue: { active: "bg-blue-600 text-white", focus: "focus-visible:ring-blue-400", soft: "bg-blue-50 dark:bg-blue-400/10", text: "text-blue-700 dark:text-blue-200" },
+  emerald: { active: "bg-emerald-600 text-white", focus: "focus-visible:ring-emerald-400", soft: "bg-emerald-50 dark:bg-emerald-400/10", text: "text-emerald-700 dark:text-emerald-200" },
+  sky: { active: "bg-sky-600 text-white", focus: "focus-visible:ring-sky-400", soft: "bg-sky-50 dark:bg-sky-400/10", text: "text-sky-700 dark:text-sky-200" },
+  amber: { active: "bg-amber-500 text-white", focus: "focus-visible:ring-amber-400", soft: "bg-amber-50 dark:bg-amber-400/10", text: "text-amber-700 dark:text-amber-200" },
+};
 
-  if (typeof Intl.Segmenter === "function") {
-    const segments = Array.from(
-      new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(trimmed),
-      (part) => part.segment,
-    );
-    return segments.at(-1) || "";
-  }
+const groupIcons = [Smile, UserRound, Trees, Coffee, MapPinned, Volleyball, Lightbulb, Shapes, Flag];
+const RECENT_KEY = "couple-space:fluent-emoji-recent:v1";
 
-  return Array.from(trimmed).at(-1) || "";
+function resolveEmoji(item: EmojiItem, skinTone: number) {
+  if (!skinTone) return { emoji: item.emoji, label: item.label };
+  return item.skins.find((skin) => skin.tone === skinTone) || { emoji: item.emoji, label: item.label };
 }
 
 export default function EmojiPicker({
@@ -46,84 +68,129 @@ export default function EmojiPicker({
   multiple?: boolean;
   autoFocus?: boolean;
 }) {
-  const [draft, setDraft] = useState(selectedEmoji || "");
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [catalog, setCatalog] = useState<EmojiCatalog | null>(null);
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase("ru"));
+  const [activeGroup, setActiveGroup] = useState<number | "recent">("recent");
+  const [skinTone, setSkinTone] = useState(0);
+  const [recent, setRecent] = useState<string[]>([]);
+  const searchRef = useRef<HTMLInputElement | null>(null);
   const styles = toneClasses[tone];
 
-  function updateDraft(value: string) {
-    setDraft(multiple ? value.slice(0, 64) : lastGrapheme(value));
-  }
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/fluent-emoji/index.json")
+      .then((response) => {
+        if (!response.ok) throw new Error("Emoji catalog is unavailable");
+        return response.json() as Promise<EmojiCatalog>;
+      })
+      .then((data) => {
+        if (!cancelled) setCatalog(data);
+      })
+      .catch(() => {
+        if (!cancelled) setCatalog({ version: "fallback", groups: [], emojis: [] });
+      });
+    const recentFrame = window.requestAnimationFrame(() => {
+      try {
+        setRecent(JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"));
+      } catch {
+        setRecent([]);
+      }
+    });
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(recentFrame);
+    };
+  }, []);
 
-  function openSystemKeyboard() {
-    inputRef.current?.focus();
-    inputRef.current?.select();
+  useEffect(() => {
+    if (autoFocus) searchRef.current?.focus();
+  }, [autoFocus]);
 
-    const virtualKeyboard = (
-      navigator as Navigator & { virtualKeyboard?: { show?: () => void } }
-    ).virtualKeyboard;
-    virtualKeyboard?.show?.();
-  }
+  const visible = useMemo(() => {
+    if (!catalog) return [];
+    if (deferredQuery) {
+      return catalog.emojis.filter((item) =>
+        `${item.label} ${item.tags.join(" ")} ${item.emoji}`.toLocaleLowerCase("ru").includes(deferredQuery),
+      );
+    }
+    if (activeGroup === "recent") {
+      return recent
+        .map((emoji) => catalog.emojis.find((item) => item.emoji === emoji || item.skins.some((skin) => skin.emoji === emoji)))
+        .filter((item): item is EmojiItem => Boolean(item));
+    }
+    return catalog.emojis.filter((item) => item.group === activeGroup);
+  }, [activeGroup, catalog, deferredQuery, recent]);
 
-  function confirm() {
-    const value = draft.trim();
-    if (!value) return;
-    onSelect(multiple ? value : lastGrapheme(value));
-    if (multiple) setDraft("");
+  function choose(item: EmojiItem) {
+    const choice = resolveEmoji(item, skinTone);
+    onSelect(choice.emoji);
+    const next = [choice.emoji, ...recent.filter((emoji) => emoji !== choice.emoji)].slice(0, 36);
+    setRecent(next);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    if (!multiple) setQuery("");
   }
 
   return (
-    <div className={`native-emoji overflow-hidden rounded-2xl border border-black/8 bg-white/92 text-slate-900 shadow-inner backdrop-blur-xl dark:border-white/10 dark:bg-[#0d1117]/94 dark:text-white ${className}`}>
-      <div className={`${compact ? "p-3" : "p-4"}`}>
-        <div className="flex items-start gap-3">
-          <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-2xl ${styles.soft}`} aria-hidden="true">
-            {draft || selectedEmoji || "😊"}
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-black">Системные эмодзи</p>
-            <p className="mt-1 text-xs font-semibold leading-5 opacity-55">
-              Используйте клавиатуру своего устройства — список ничем не ограничен.
-            </p>
+    <div className={`emoji-picker overflow-hidden rounded-2xl border border-black/8 bg-white/96 text-slate-900 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-[#0d1117]/96 dark:text-white ${className}`}>
+      <div className={compact ? "p-2.5" : "p-3"}>
+        <label className="relative block">
+          <span className="sr-only">Поиск эмодзи</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-45" aria-hidden="true" />
+          <input
+            ref={searchRef}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Найти эмодзи"
+            className={`h-11 w-full rounded-xl border border-black/8 bg-black/[0.035] pl-9 pr-3 text-sm font-bold outline-none focus-visible:ring-2 ${styles.focus} dark:border-white/10 dark:bg-white/7`}
+          />
+        </label>
+
+        <div className="emoji-picker-categories mt-2 flex gap-1 overflow-x-auto pb-1">
+          <button type="button" onClick={() => { setActiveGroup("recent"); setQuery(""); }} className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition ${activeGroup === "recent" && !query ? styles.active : styles.soft}`} title="Недавние" aria-label="Недавние" aria-pressed={activeGroup === "recent" && !query}>
+            <Clock3 className="h-4 w-4" aria-hidden="true" />
+          </button>
+          {catalog?.groups.filter((group) => group.id !== 2).map((group, index) => {
+            const Icon = groupIcons[index] || Flag;
+            return (
+              <button key={group.id} type="button" onClick={() => { setActiveGroup(group.id); setQuery(""); }} className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition ${activeGroup === group.id && !query ? styles.active : styles.soft}`} title={group.label} aria-label={group.label} aria-pressed={activeGroup === group.id && !query}>
+                <Icon className="h-4 w-4" aria-hidden="true" />
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-2 flex items-center justify-between gap-2 border-t border-black/6 pt-2 text-[11px] font-black dark:border-white/8">
+          <span className="truncate opacity-55">Тон кожи</span>
+          <div className="flex gap-1" aria-label="Выбор тона кожи">
+            {["✋", "✋🏻", "✋🏼", "✋🏽", "✋🏾", "✋🏿"].map((emoji, index) => (
+              <button key={emoji} type="button" onClick={() => setSkinTone(index)} className={`grid h-7 w-7 place-items-center rounded-lg transition ${skinTone === index ? styles.soft : "hover:bg-black/5 dark:hover:bg-white/8"}`} aria-label={index === 0 ? "Без выбранного тона" : `Тон кожи ${index}`} aria-pressed={skinTone === index}>
+                <FluentEmoji emoji={emoji} size={20} decorative />
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="mt-3 flex gap-2">
-          <label className="min-w-0 flex-1">
-            <span className="sr-only">Введите или вставьте эмодзи</span>
-            <input
-              ref={inputRef}
-              autoFocus={autoFocus}
-              value={draft}
-              onFocus={(event) => event.currentTarget.select()}
-              onChange={(event) => updateDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  confirm();
-                }
-              }}
-              inputMode="text"
-              enterKeyHint="done"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder={multiple ? "Вставьте один или несколько эмодзи" : "Вставьте эмодзи"}
-              className={`native-emoji h-12 w-full rounded-xl border border-black/10 bg-white px-3 text-center text-2xl outline-none focus-visible:ring-2 ${styles.focus} dark:border-white/10 dark:bg-white/8`}
-            />
-          </label>
-          <button type="button" onClick={confirm} disabled={!draft.trim()} className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${styles.button} text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40`} aria-label="Использовать эмодзи" title="Использовать">
-            <Check className="h-5 w-5" aria-hidden="true" />
-          </button>
+        <div className="emoji-picker-grid mt-2 grid max-h-[min(22rem,48vh)] grid-cols-7 gap-1 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-8" role="listbox" aria-label="Microsoft Fluent Emojis">
+          {!catalog ? (
+            <div className="col-span-full grid h-40 place-items-center">
+              <LoaderCircle className={`h-7 w-7 animate-spin ${styles.text}`} aria-label="Загружаем эмодзи" />
+            </div>
+          ) : visible.length ? (
+            visible.map((item) => {
+              const choice = resolveEmoji(item, skinTone);
+              return (
+                <button key={`${item.emoji}-${choice.emoji}`} type="button" onClick={() => choose(item)} className={`grid aspect-square min-h-10 place-items-center rounded-xl transition hover:scale-110 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 ${styles.focus} dark:hover:bg-white/8 ${selectedEmoji === choice.emoji ? styles.soft : ""}`} title={choice.label} aria-label={choice.label} role="option" aria-selected={selectedEmoji === choice.emoji}>
+                  <FluentEmoji emoji={choice.emoji} label={choice.label} size={compact ? 28 : 32} />
+                </button>
+              );
+            })
+          ) : (
+            <div className="col-span-full grid h-40 place-items-center px-6 text-center text-sm font-bold opacity-55">
+              {deferredQuery ? "Ничего не найдено" : "Выбранные эмодзи появятся здесь"}
+            </div>
+          )}
         </div>
-
-        <button type="button" onClick={openSystemKeyboard} className={`mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-black/8 bg-white/65 px-3 text-xs font-black transition hover:bg-white ${styles.text} ${styles.focus} focus-visible:outline-none focus-visible:ring-2 dark:border-white/10 dark:bg-white/7 dark:hover:bg-white/12`}>
-          <SmilePlus className="h-4 w-4" aria-hidden="true" />
-          Открыть клавиатуру устройства
-        </button>
-      </div>
-
-      <div className={`border-t border-black/6 px-3 py-2 text-[10px] font-bold leading-4 opacity-50 dark:border-white/8 ${compact ? "text-center" : "flex flex-wrap items-center justify-center gap-x-3"}`}>
-        <span className="inline-flex items-center gap-1"><Keyboard className="h-3 w-3" aria-hidden="true" /> Windows: Win + .</span>
-        <span>Mac: Control + Command + Space</span>
-        <span>Телефон: кнопка 😊 на клавиатуре</span>
       </div>
     </div>
   );

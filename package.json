@@ -6,10 +6,15 @@
     "node": ">=22.0.0"
   },
   "scripts": {
+    "prepare:emoji": "node scripts/prepare-fluent-emojis.mjs",
+    "predev": "npm run prepare:emoji",
     "dev": "next dev",
+    "prebuild": "npm run prepare:emoji",
     "build": "next build",
+    "predev:sites": "npm run prepare:emoji",
     "start": "next start",
     "dev:sites": "vinext dev",
+    "prebuild:sites": "npm run prepare:emoji",
     "build:sites": "vinext build",
     "start:sites": "vinext start",
     "lint": "eslint app components lib tests --max-warnings=0",
@@ -20,11 +25,14 @@
     "screenshots:mobile": "playwright test tests/mobile-screenshots.spec.ts"
   },
   "dependencies": {
+    "@lobehub/fluent-emoji-3d": "1.1.0",
     "@radix-ui/react-slot": "^1.2.5",
     "@supabase/ssr": "0.12.3",
     "@supabase/supabase-js": "2.110.8",
     "animejs": "^4.4.1",
     "class-variance-authority": "^0.7.1",
+    "emoji-regex": "10.4.0",
+    "emojibase-data": "17.0.0",
     "lucide-react": "^0.468.0",
     "next": "16.2.11",
     "react": "19.2.8",

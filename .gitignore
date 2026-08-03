@@ -15,11 +15,13 @@
 /playwright-report/
 /.playwright-results/
 /test-results/.last-run.json
+/test-results/.playwright-artifacts-*/
 
 # next.js
 /.next/
 /.vinext/
 /out/
+/public/fluent-emoji/
 
 .env.local
 

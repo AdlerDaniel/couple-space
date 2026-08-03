@@ -2989,3 +2989,32 @@ html.dark:has(.countdown-page) {
     }
   }
 }
+/* Microsoft Fluent Emoji are rendered as local WebP assets. */
+.fluent-emoji,
+.fluent-emoji-fallback {
+  display: inline-block;
+  width: var(--fluent-emoji-size, 1em);
+  height: var(--fluent-emoji-size, 1em);
+  min-width: var(--fluent-emoji-size, 1em);
+  vertical-align: -0.16em;
+  object-fit: contain;
+  line-height: 1;
+  user-select: none;
+}
+
+.fluent-emoji-fallback {
+  font-family: var(--emoji-font);
+}
+
+.emoji-picker-grid {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, currentColor 28%, transparent) transparent;
+}
+
+.emoji-picker-categories {
+  scrollbar-width: none;
+}
+
+.emoji-picker-categories::-webkit-scrollbar {
+  display: none;
+}

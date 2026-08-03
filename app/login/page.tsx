@@ -2,6 +2,7 @@
 
 import { setAuthPersistencePreference, supabase } from "@/lib/supabaseClient";
 import { loginToEmail, validateLoginCredentials } from "@/lib/loginAuth";
+import { FluentEmoji } from "@/components/FluentEmoji";
 import { useRouter } from "next/navigation";
 import type { RefObject, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -288,13 +289,13 @@ export default function LoginPage() {
                   ["💌", "Вопрос дня", "Что тебе запомнилось?"],
                   ["📸", "Воспоминания", "Фото и истории пары"],
                   ["💬", "Чат пары", "Сообщения и голосовые"],
-                  ["♡", "Трекер", "Привычки и настроение"],
+                  ["💞", "Трекер", "Привычки и настроение"],
                 ].map(([icon, title, text]) => (
                   <div
                     key={title}
                     className="rounded-[1.35rem] bg-white/50 p-4 shadow-[0_18px_42px_rgba(127,29,29,0.12)] transition hover:-translate-y-1 hover:scale-[1.02] dark:bg-white/10"
                   >
-                    <p className="text-2xl">{icon}</p>
+                    <p className="text-2xl"><FluentEmoji emoji={icon} size={34} decorative /></p>
                     <p className="mt-3 font-black">{title}</p>
                     <p className="mt-1 text-sm font-semibold text-[#be123c]/60 dark:text-white/55">
                       {text}

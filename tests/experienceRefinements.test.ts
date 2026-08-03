@@ -28,7 +28,10 @@ test("question results use avatars, a dedicated discussion chat, and an expiring
   assert.match(source, /questions\/discussion\?answerId=/);
   assert.doesNotMatch(source, /<QuestionComments/);
   assert.match(discussion, /question-discussion-chat-bg/);
-  assert.match(discussion, /accept="image\/\*,video\/\*,audio\/\*/);
+  assert.match(discussion, /accept="image\/\*,video\/\*"/);
+  assert.match(discussion, /accept="audio\/\*/);
+  assert.match(discussion, /Аудиофайл/);
+  assert.match(discussion, /EmojiPicker/);
   assert.match(discussion, /createCompatibleAudioRecorder/);
   assert.doesNotMatch(source, />Ответ сохранён</);
 });

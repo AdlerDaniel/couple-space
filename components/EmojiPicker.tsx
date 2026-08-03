@@ -18,7 +18,6 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { FluentEmoji } from "@/components/FluentEmoji";
 
 type EmojiTone = "pink" | "red" | "blue" | "emerald" | "sky" | "amber";
-type EmojiSkin = { emoji: string; label: string; asset: string; tone: number };
 type EmojiItem = {
   emoji: string;
   label: string;
@@ -26,7 +25,7 @@ type EmojiItem = {
   group: number;
   order: number;
   asset: string;
-  skins: EmojiSkin[];
+  skins?: unknown[];
 };
 type EmojiCatalog = {
   version: string;
@@ -45,11 +44,6 @@ const toneClasses: Record<EmojiTone, { active: string; focus: string; soft: stri
 
 const groupIcons = [Smile, UserRound, Trees, Coffee, MapPinned, Volleyball, Lightbulb, Shapes, Flag];
 const RECENT_KEY = "couple-space:fluent-emoji-recent:v1";
-
-function resolveEmoji(item: EmojiItem, skinTone: number) {
-  if (!skinTone) return { emoji: item.emoji, label: item.label };
-  return item.skins.find((skin) => skin.tone === skinTone) || { emoji: item.emoji, label: item.label };
-}
 
 export default function EmojiPicker({
   onSelect,
@@ -72,7 +66,6 @@ export default function EmojiPicker({
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase("ru"));
   const [activeGroup, setActiveGroup] = useState<number | "recent">("recent");
-  const [skinTone, setSkinTone] = useState(0);
   const [recent, setRecent] = useState<string[]>([]);
   const searchRef = useRef<HTMLInputElement | null>(null);
   const styles = toneClasses[tone];
@@ -116,16 +109,15 @@ export default function EmojiPicker({
     }
     if (activeGroup === "recent") {
       return recent
-        .map((emoji) => catalog.emojis.find((item) => item.emoji === emoji || item.skins.some((skin) => skin.emoji === emoji)))
+        .map((emoji) => catalog.emojis.find((item) => item.emoji === emoji))
         .filter((item): item is EmojiItem => Boolean(item));
     }
     return catalog.emojis.filter((item) => item.group === activeGroup);
   }, [activeGroup, catalog, deferredQuery, recent]);
 
   function choose(item: EmojiItem) {
-    const choice = resolveEmoji(item, skinTone);
-    onSelect(choice.emoji);
-    const next = [choice.emoji, ...recent.filter((emoji) => emoji !== choice.emoji)].slice(0, 36);
+    onSelect(item.emoji);
+    const next = [item.emoji, ...recent.filter((emoji) => emoji !== item.emoji)].slice(0, 36);
     setRecent(next);
     localStorage.setItem(RECENT_KEY, JSON.stringify(next));
     if (!multiple) setQuery("");
@@ -160,31 +152,17 @@ export default function EmojiPicker({
           })}
         </div>
 
-        <div className="mt-2 flex items-center justify-between gap-2 border-t border-black/6 pt-2 text-[11px] font-black dark:border-white/8">
-          <span className="truncate opacity-55">Тон кожи</span>
-          <div className="flex gap-1" aria-label="Выбор тона кожи">
-            {["✋", "✋🏻", "✋🏼", "✋🏽", "✋🏾", "✋🏿"].map((emoji, index) => (
-              <button key={emoji} type="button" onClick={() => setSkinTone(index)} className={`grid h-7 w-7 place-items-center rounded-lg transition ${skinTone === index ? styles.soft : "hover:bg-black/5 dark:hover:bg-white/8"}`} aria-label={index === 0 ? "Без выбранного тона" : `Тон кожи ${index}`} aria-pressed={skinTone === index}>
-                <FluentEmoji emoji={emoji} size={20} decorative />
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="emoji-picker-grid mt-2 grid max-h-[min(22rem,48vh)] grid-cols-7 gap-1 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-8" role="listbox" aria-label="Microsoft Fluent Emojis">
           {!catalog ? (
             <div className="col-span-full grid h-40 place-items-center">
               <LoaderCircle className={`h-7 w-7 animate-spin ${styles.text}`} aria-label="Загружаем эмодзи" />
             </div>
           ) : visible.length ? (
-            visible.map((item) => {
-              const choice = resolveEmoji(item, skinTone);
-              return (
-                <button key={`${item.emoji}-${choice.emoji}`} type="button" onClick={() => choose(item)} className={`grid aspect-square min-h-10 place-items-center rounded-xl transition hover:scale-110 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 ${styles.focus} dark:hover:bg-white/8 ${selectedEmoji === choice.emoji ? styles.soft : ""}`} title={choice.label} aria-label={choice.label} role="option" aria-selected={selectedEmoji === choice.emoji}>
-                  <FluentEmoji emoji={choice.emoji} label={choice.label} size={compact ? 28 : 32} />
-                </button>
-              );
-            })
+            visible.map((item) => (
+              <button key={item.emoji} type="button" onClick={() => choose(item)} className={`grid aspect-square min-h-10 place-items-center rounded-xl transition hover:scale-110 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 ${styles.focus} dark:hover:bg-white/8 ${selectedEmoji === item.emoji ? styles.soft : ""}`} title={item.label} aria-label={item.label} role="option" aria-selected={selectedEmoji === item.emoji}>
+                <FluentEmoji emoji={item.emoji} label={item.label} size={compact ? 28 : 32} />
+              </button>
+            ))
           ) : (
             <div className="col-span-full grid h-40 place-items-center px-6 text-center text-sm font-bold opacity-55">
               {deferredQuery ? "Ничего не найдено" : "Выбранные эмодзи появятся здесь"}

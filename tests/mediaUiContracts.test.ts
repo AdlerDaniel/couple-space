@@ -23,10 +23,11 @@ test("chat exposes separate media and audio pickers and does not use storage ups
   assert.doesNotMatch(source, /Р—Р°|РРґ|\?\?\?\?/);
 });
 
-test("memories support photo, uploaded audio and recorded voice", async () => {
+test("memories support photo, video, files, uploaded audio and recorded voice", async () => {
   const source = await readSource("components/MemoryComposer.tsx");
-  assert.match(source, /accept="image\/\*"/);
+  assert.match(source, /accept="image\/\*,video\/\*"/);
   assert.match(source, /accept="audio\/\*/);
+  assert.match(source, />Файл</);
   assert.match(source, /Голосовое воспоминание/);
   assert.match(source, /createCompatibleAudioRecorder/);
   assert.match(source, /<Paperclip/);
@@ -44,12 +45,14 @@ test("memories use their upload timestamp instead of a custom event date", async
   assert.match(memoriesSource, /Дата: \{formatTime\(memory\.created_at\)\}/);
 });
 
-test("today and memories share the full memory composer", async () => {
-  const [todaySource, memoriesSource] = await Promise.all([
+test("today keeps its compact composer and memories open a dedicated creation page", async () => {
+  const [todaySource, memoriesSource, newMemorySource] = await Promise.all([
     readSource("app/today/page.tsx"),
     readSource("app/memories/page.tsx"),
+    readSource("app/memories/new/page.tsx"),
   ]);
   assert.match(todaySource, /<MemoryComposer/);
   assert.match(todaySource, /embedded/);
-  assert.match(memoriesSource, /<MemoryComposer/);
+  assert.match(memoriesSource, /router\.push\("\/memories\/new"\)/);
+  assert.match(newMemorySource, /<MemoryComposer/);
 });

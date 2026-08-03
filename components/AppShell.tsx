@@ -6,6 +6,7 @@ import AnimeRuntime from "./AnimeRuntime";
 import AppBreadcrumbs from "./AppBreadcrumbs";
 import AppToast from "./AppToast";
 import ClientRouteRecovery from "./ClientRouteRecovery";
+import CouplePresenceTracker from "./CouplePresenceTracker";
 import MobileNav from "./MobileNav";
 import Navbar from "./Navbar";
 import ThemeToggle from "./ThemeToggle";
@@ -19,9 +20,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
       {!isFullScreenChat && <ThemeToggle />}
-      {!hideAppChrome && <Navbar />}
+      {!isAuthPage && <CouplePresenceTracker />}
+      {!isAuthPage && (!isFullScreenChat || pathname === "/chat") && <div className="hidden lg:block"><Navbar /></div>}
       {!hideAppChrome && <AppBreadcrumbs />}
-      <div className={hideAppChrome ? "min-w-0 flex-1" : "app-desktop-content min-w-0 flex-1"}>
+      <div className={isAuthPage || isFullScreenChat ? `min-w-0 flex-1 ${pathname === "/chat" ? "lg:pl-[5.25rem] 2xl:pl-[14.25rem]" : ""}` : "app-desktop-content min-w-0 flex-1"}>
         {children}
       </div>
       {!hideAppChrome && <MobileNav />}

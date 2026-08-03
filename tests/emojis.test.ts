@@ -11,7 +11,7 @@ test("emoji picker uses the complete local Microsoft Fluent Emoji catalog", asyn
 
   assert.match(source, /\/fluent-emoji\/index\.json/);
   assert.match(source, /Найти эмодзи/);
-  assert.match(source, /Тон кожи/);
+  assert.doesNotMatch(source, /Тон кожи|setSkinTone|Выбор тона кожи/);
   assert.doesNotMatch(source, /virtualKeyboard|клавиатур/i);
   assert.match(prepareScript, /fluent-emoji-3d/);
   assert.match(prepareScript, /emojibase-data/);

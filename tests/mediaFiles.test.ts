@@ -42,6 +42,7 @@ test("memory media keeps old photo URLs and stores photo plus voice without a sc
   assert.deepEqual(decodeMemoryMedia("https://example.com/photo.jpg"), {
     photoUrl: "https://example.com/photo.jpg",
     voiceUrl: null,
+    attachments: [],
   });
 
   const encoded = encodeMemoryMedia({
@@ -51,5 +52,15 @@ test("memory media keeps old photo URLs and stores photo plus voice without a sc
   assert.deepEqual(decodeMemoryMedia(encoded), {
     photoUrl: "https://example.com/photo.jpg",
     voiceUrl: "https://example.com/voice.m4a",
+    attachments: [],
   });
+});
+
+test("memory media stores extra video, audio and file attachments", () => {
+  const attachments = [
+    { url: "https://example.com/video.mp4", type: "video" as const, name: "video.mp4", mimeType: "video/mp4", size: 120 },
+    { url: "https://example.com/note.pdf", type: "file" as const, name: "note.pdf", mimeType: "application/pdf", size: 42 },
+  ];
+  const encoded = encodeMemoryMedia({ photoUrl: null, voiceUrl: null, attachments });
+  assert.deepEqual(decodeMemoryMedia(encoded), { photoUrl: null, voiceUrl: null, attachments });
 });

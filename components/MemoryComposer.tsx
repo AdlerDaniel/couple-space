@@ -6,16 +6,17 @@ import { compressImageFile } from "@/lib/imageCompression";
 import {
   createCompatibleAudioRecorder,
   createRecordedAudioFile,
+  getMediaKind,
   getSafeStoragePath,
   MAX_AUDIO_SIZE,
   MAX_IMAGE_SIZE,
   validateMediaFile,
 } from "@/lib/mediaFiles";
-import { encodeMemoryMedia } from "@/lib/memoryMedia";
+import { encodeMemoryMedia, type MemoryAttachment } from "@/lib/memoryMedia";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
-import { ImageIcon, Mic, Music2, Paperclip, Smile, Square } from "lucide-react";
+import { FileText, ImageIcon, Mic, Music2, Paperclip, Smile, Square, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
@@ -45,6 +46,15 @@ type MemoryComposerProps = {
   onCreated?: (memory: CreatedMemory) => void;
 };
 
+type PendingAttachment = {
+  file: File;
+  type: MemoryAttachment["type"];
+  previewUrl: string;
+};
+
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
 function formatRecordingTime(seconds: number) {
   const minutes = Math.floor(seconds / 60);
   const rest = Math.floor(seconds % 60).toString().padStart(2, "0");
@@ -62,6 +72,7 @@ export default function MemoryComposer({
   const discardRecordingRef = useRef(false);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
   const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
@@ -69,6 +80,7 @@ export default function MemoryComposer({
   const [memoryImageFile, setMemoryImageFile] = useState<File | null>(null);
   const [memoryVoice, setMemoryVoice] = useState<string | null>(null);
   const [memoryVoiceFile, setMemoryVoiceFile] = useState<File | null>(null);
+  const [memoryAttachments, setMemoryAttachments] = useState<PendingAttachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
@@ -101,6 +113,30 @@ export default function MemoryComposer({
     setMemoryVoiceFile(file);
     setMemoryVoice(URL.createObjectURL(file));
     setMessage("");
+  }
+
+  function addMemoryAttachments(files: File[]) {
+    const next: PendingAttachment[] = [];
+    let primaryImageReserved = Boolean(memoryImageFile);
+    for (const file of files) {
+      const type = getMediaKind(file);
+      if (type === "image" && !primaryImageReserved) {
+        selectMemoryPhoto(file);
+        primaryImageReserved = true;
+        continue;
+      }
+      const maximumSize = type === "audio" ? MAX_AUDIO_SIZE : type === "image" ? MAX_IMAGE_SIZE : type === "video" ? MAX_VIDEO_SIZE : MAX_FILE_SIZE;
+      const validation = validateMediaFile(file, ["image", "video", "audio", "file"], maximumSize);
+      if (validation.error) {
+        setMessage(validation.error);
+        continue;
+      }
+      next.push({ file, type, previewUrl: URL.createObjectURL(file) });
+    }
+    if (next.length) {
+      setMemoryAttachments((current) => [...current, ...next].slice(0, 8));
+      setMessage("");
+    }
   }
 
   async function toggleVoiceRecording() {
@@ -202,11 +238,11 @@ export default function MemoryComposer({
       .upload(filePath, file, { upsert: false });
     if (error) throw error;
     const { data } = supabase.storage.from("memory-images").getPublicUrl(filePath);
-    return { filePath, publicUrl: toPortableSupabaseUrl(data.publicUrl) };
+    return { filePath, publicUrl: toPortableSupabaseUrl(data.publicUrl) || data.publicUrl };
   }
 
   async function addMemory() {
-    if (!title.trim() && !caption.trim() && !memoryImageFile && !memoryVoiceFile) return;
+    if (!title.trim() && !caption.trim() && !memoryImageFile && !memoryVoiceFile && memoryAttachments.length === 0) return;
 
     setIsSubmitting(true);
     setMessage("");
@@ -215,6 +251,7 @@ export default function MemoryComposer({
     try {
       let photoUrl: string | null = null;
       let voiceUrl: string | null = null;
+      const attachments: MemoryAttachment[] = [];
 
       if (memoryImageFile) {
         const compressedImage = await compressImageFile(memoryImageFile, {
@@ -233,6 +270,13 @@ export default function MemoryComposer({
         voiceUrl = upload.publicUrl;
       }
 
+      for (const pending of memoryAttachments) {
+        const file = pending.type === "image" ? await compressImageFile(pending.file) : pending.file;
+        const upload = await uploadMemoryFile(file);
+        uploadedPaths.push(upload.filePath);
+        attachments.push({ url: upload.publicUrl, type: pending.type, name: pending.file.name, mimeType: pending.file.type || null, size: pending.file.size });
+      }
+
       const { data, error } = await supabase
         .from("memories")
         .insert([
@@ -240,7 +284,7 @@ export default function MemoryComposer({
             title: title.trim(),
             caption: caption.trim() || null,
             text: caption.trim() || null,
-            image: encodeMemoryMedia({ photoUrl, voiceUrl }),
+            image: encodeMemoryMedia({ photoUrl, voiceUrl, attachments }),
             user_id: currentUserId,
             couple_id: couple.id,
           },
@@ -259,6 +303,8 @@ export default function MemoryComposer({
       setMemoryImageFile(null);
       setMemoryVoice(null);
       setMemoryVoiceFile(null);
+      memoryAttachments.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      setMemoryAttachments([]);
       setMessage("Воспоминание добавлено");
 
       await createPartnerNotification(couple, currentUserId, {
@@ -306,15 +352,16 @@ export default function MemoryComposer({
         <input
           ref={photoInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/*"
+          multiple
           disabled={isSubmitting}
           className="hidden"
           onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) selectMemoryPhoto(file);
+            addMemoryAttachments(Array.from(event.target.files || []));
             event.target.value = "";
           }}
         />
+        <input ref={fileInputRef} type="file" multiple disabled={isSubmitting} className="hidden" onChange={(event) => { addMemoryAttachments(Array.from(event.target.files || [])); event.target.value = ""; }} />
         <input
           ref={audioInputRef}
           type="file"
@@ -338,7 +385,7 @@ export default function MemoryComposer({
               }}
               disabled={isSubmitting}
               className={`relative grid h-11 w-11 place-items-center rounded-xl transition hover:bg-blue-100 disabled:opacity-50 dark:hover:bg-white/10 ${
-                isAttachMenuOpen || memoryImageFile || memoryVoiceFile
+                isAttachMenuOpen || memoryImageFile || memoryVoiceFile || memoryAttachments.length
                   ? "bg-blue-100 text-[#2563eb] dark:bg-blue-500/18 dark:text-blue-100"
                   : "text-blue-500/75 dark:text-white/60"
               }`}
@@ -346,7 +393,7 @@ export default function MemoryComposer({
               title="Прикрепить"
             >
               <Paperclip aria-hidden="true" size={22} />
-              {(memoryImageFile || memoryVoiceFile) && (
+              {(memoryImageFile || memoryVoiceFile || memoryAttachments.length > 0) && (
                 <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#2563eb] ring-2 ring-white dark:ring-[#132238]" />
               )}
             </button>
@@ -362,8 +409,9 @@ export default function MemoryComposer({
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-blue-50 dark:hover:bg-white/10"
                 >
                   <ImageIcon aria-hidden="true" size={19} />
-                  {memoryImageFile ? "Заменить фото" : "Добавить фото"}
+                  Фото/Видео
                 </button>
+                <button type="button" onClick={() => { fileInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-blue-50 dark:hover:bg-white/10"><FileText aria-hidden="true" size={19} />Файл</button>
                 <button
                   type="button"
                   onClick={() => {
@@ -448,7 +496,7 @@ export default function MemoryComposer({
           type="button"
           onClick={addMemory}
           disabled={
-            isSubmitting || (!title.trim() && !caption.trim() && !memoryImageFile && !memoryVoiceFile)
+            isSubmitting || (!title.trim() && !caption.trim() && !memoryImageFile && !memoryVoiceFile && memoryAttachments.length === 0)
           }
           className="rounded-2xl bg-[#2563eb] px-7 py-3.5 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -512,6 +560,8 @@ export default function MemoryComposer({
           <AccentAudioPlayer src={memoryVoice} accent="#2563eb" label="Новое голосовое воспоминание" />
         </div>
       )}
+
+      {memoryAttachments.length > 0 && <div className="mt-4 grid gap-2 sm:grid-cols-2">{memoryAttachments.map((item, index) => <div key={`${item.file.name}-${index}`} className="flex min-w-0 items-center gap-3 rounded-2xl border border-blue-200/70 bg-white/70 p-3 shadow-inner dark:border-white/10 dark:bg-white/8">{item.type === "image" ? <Image src={item.previewUrl} alt="Предпросмотр" width={48} height={48} className="h-12 w-12 rounded-xl object-cover" unoptimized /> : item.type === "video" ? <video src={item.previewUrl} className="h-12 w-12 rounded-xl object-cover" muted /> : <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-blue-100 text-[#2563eb] dark:bg-white/10 dark:text-blue-100"><FileText size={20} /></span>}<span className="min-w-0 flex-1 truncate text-sm font-black">{item.file.name}</span><button type="button" onClick={() => { URL.revokeObjectURL(item.previewUrl); setMemoryAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index)); }} aria-label="Убрать файл" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-rose-50 text-rose-600 dark:bg-rose-500/12 dark:text-rose-100"><X size={15} /></button></div>)}</div>}
 
       {message && (
         <p className="mt-4 rounded-2xl bg-white/70 px-5 py-3 font-black text-[#2563eb] shadow-inner dark:bg-white/10 dark:text-blue-100">

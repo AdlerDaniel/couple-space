@@ -46,14 +46,6 @@ type CropPixels = {
   height: number;
 };
 
-type ActivityItem = {
-  id: string;
-  text: string;
-  time: string;
-  createdAt: string;
-  icon: string;
-};
-
 const theme = {
   page: "from-[#ffe7ef] via-[#fff1f4] to-[#fff7f8]",
   text: "text-[#dc2626]",
@@ -82,20 +74,6 @@ function formatDate(date: string) {
     month: "long",
     year: "numeric",
   });
-}
-
-function getActivityTime(date?: string | null) {
-  return date || new Date(0).toISOString();
-}
-
-function shouldUseNotificationForActivity(type: string) {
-  return [
-    "status_updated",
-    "memory_deleted",
-    "memory_reaction",
-    "question_voice",
-    "question_photo",
-  ].includes(type);
 }
 
 function getStatus(profile: CoupleProfile, slot: "one" | "two") {
@@ -230,10 +208,9 @@ export default function DashboardPage() {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] =
     useState<CropPixels | null>(null);
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [statusText, setStatusText] = useState("");
   const [statusEmoji, setStatusEmoji] = useState("❤️");
-  const [isActivityOpen, setIsActivityOpen] = useState(false);
+  const [isStatusEmojiPickerOpen, setIsStatusEmojiPickerOpen] = useState(false);
 
   useEffect(() => {
     const accent = dashboardThemeAccents.rose;
@@ -329,129 +306,6 @@ export default function DashboardPage() {
 
       setDaysTogether(diff);
 
-      const [
-        { data: memoriesData },
-        { data: commentRows },
-        { data: answerRows },
-        { data: quizRows },
-        { data: notificationRows },
-      ] = await Promise.all([
-          supabase
-            .from("memories")
-            .select("id, title, text, caption, created_at, user_id")
-            .eq("couple_id", coupleData.id)
-            .order("created_at", { ascending: false }),
-          supabase
-            .from("memory_comments")
-            .select("id, memory_id, user_id, text, created_at")
-            .eq("couple_id", coupleData.id)
-            .order("created_at", { ascending: false })
-            .limit(12),
-          supabase
-            .from("question_answers")
-            .select("id, date, answer_one, answer_two, answer_one_edited_at, answer_two_edited_at")
-            .eq("couple_id", coupleData.id)
-            .order("date", { ascending: false }),
-          supabase
-            .from("quiz_answers")
-            .select("quiz_id, user_id, updated_at")
-            .eq("couple_id", coupleData.id)
-            .order("updated_at", { ascending: false }),
-          supabase
-            .from("couple_notifications")
-            .select("id, type, title, body, actor_id, created_at")
-            .eq("recipient_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(20),
-        ]);
-
-      const recentActivity: ActivityItem[] = [];
-      const getAuthorName = (authorId?: string | null) => {
-        if (!authorId) return "Партнёр";
-        if (authorId === user.id) return "Вы";
-        return authorId === coupleData.partner_one_id
-          ? activeProfile?.partner_one || "Партнёр"
-          : activeProfile?.partner_two || "Партнёр";
-      };
-
-      memoriesData?.slice(0, 8).forEach((memory) => {
-        recentActivity.push({
-          id: `memory-${memory.id}`,
-          text: `${getAuthorName(memory.user_id)} добавил(а) воспоминание`,
-          time: formatDate(memory.created_at),
-          createdAt: getActivityTime(memory.created_at),
-          icon: "📸",
-        });
-      });
-
-      commentRows?.slice(0, 8).forEach((comment) => {
-        recentActivity.push({
-          id: `memory-comment-${comment.id}`,
-          text: `${getAuthorName(comment.user_id)} оставил(а) комментарий к воспоминанию`,
-          time: formatDate(comment.created_at),
-          createdAt: getActivityTime(comment.created_at),
-          icon: "💬",
-        });
-      });
-
-      answerRows?.slice(0, 10).forEach((answer) => {
-        [
-          {
-            userId: coupleData.partner_one_id,
-            value: answer.answer_one,
-            editedAt: answer.answer_one_edited_at,
-            slot: "one",
-          },
-          {
-            userId: coupleData.partner_two_id,
-            value: answer.answer_two,
-            editedAt: answer.answer_two_edited_at,
-            slot: "two",
-          },
-        ].forEach((event) => {
-          if (!event.value) return;
-          const createdAt = getActivityTime(event.editedAt || answer.date);
-          recentActivity.push({
-            id: `question-${answer.id}-${event.slot}`,
-            text: `${getAuthorName(event.userId)} ответил(а) на вопрос дня`,
-            time: formatDate(createdAt),
-            createdAt,
-            icon: "💌",
-          });
-        });
-      });
-
-      quizRows?.slice(0, 10).forEach((quiz) => {
-        const createdAt = getActivityTime(quiz.updated_at);
-        recentActivity.push({
-          id: `quiz-${quiz.quiz_id}-${quiz.user_id}`,
-          text: `${getAuthorName(quiz.user_id)} прошёл(а) викторину`,
-          time: formatDate(createdAt),
-          createdAt,
-          icon: "✨",
-        });
-      });
-
-      notificationRows
-        ?.filter((notification) => shouldUseNotificationForActivity(notification.type))
-        .forEach((notification) => {
-          recentActivity.push({
-            id: `notification-${notification.id}`,
-            text: `${getAuthorName(notification.actor_id)}: ${notification.body || notification.title}`,
-            time: formatDate(notification.created_at),
-            createdAt: getActivityTime(notification.created_at),
-            icon: "✦",
-          });
-        });
-
-      setActivity(
-        recentActivity
-          .sort(
-            (first, second) =>
-              new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
-          )
-          .slice(0, 12)
-      );
     }
 
     loadData();
@@ -793,19 +647,19 @@ export default function DashboardPage() {
 
             <div className="mt-5 rounded-2xl bg-white/35 p-5 shadow-inner dark:bg-white/5">
               <div className="mb-3 flex items-center gap-3">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/80 text-2xl shadow-inner dark:bg-white/10" aria-label={`Выбранный эмодзи ${statusEmoji}`}>
+                <button type="button" onClick={() => setIsStatusEmojiPickerOpen((current) => !current)} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/80 text-2xl shadow-inner transition hover:scale-105 dark:bg-white/10" aria-label="Выбрать эмодзи статуса" aria-expanded={isStatusEmojiPickerOpen}>
                   <FluentEmoji emoji={statusEmoji} size={32} decorative />
-                </span>
+                </button>
                 <p className={`text-xs font-bold ${theme.muted} dark:text-white/55`}>
                   Выберите любой эмодзи для своего статуса.
                 </p>
               </div>
-              <EmojiPicker
+              {isStatusEmojiPickerOpen && <EmojiPicker
                 selectedEmoji={statusEmoji}
-                onSelect={setStatusEmoji}
+                onSelect={(emoji) => { setStatusEmoji(emoji); setIsStatusEmojiPickerOpen(false); }}
                 tone="red"
                 compact
-              />
+              />}
 
               <div className="mt-4 flex gap-3">
                 <input
@@ -856,86 +710,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section
-          className={`relative overflow-hidden rounded-[1.75rem] border border-white/45 bg-gradient-to-r ${theme.panel} ${theme.darkPanel} p-3 shadow-[0_22px_70px_rgba(127,29,29,0.14)] backdrop-blur-xl dark:border-white/10`}
-        >
-          <div className="pointer-events-none absolute -right-10 -top-16 h-28 w-28 rounded-full bg-white/25 blur-3xl" />
-          <div className="relative grid gap-3">
-            <button
-              onClick={() => setIsActivityOpen(true)}
-              className="group flex items-center gap-3 rounded-2xl border border-white/45 bg-white/35 px-4 py-3 text-left shadow-inner transition hover:-translate-y-0.5 hover:bg-red-50/70 dark:border-white/10 dark:bg-white/5 dark:hover:bg-red-500/12"
-            >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/55 text-2xl shadow-inner transition group-hover:scale-105 dark:bg-white/10">
-                🕊️
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-black">Последняя активность</span>
-                <span className={`block truncate text-xs font-bold ${theme.muted} dark:text-white/55`}>
-                  {activity.length > 0 ? `${activity.length} событий` : "Пока пусто"}
-                </span>
-              </span>
-            </button>
-
-          </div>
-        </section>
-
       </div>
-
-      {isActivityOpen && (
-        <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-3 backdrop-blur-md sm:p-4"
-          onClick={() => setIsActivityOpen(false)}
-        >
-          <div
-            className={`activity-modal relative max-h-[82vh] w-full max-w-3xl overflow-hidden rounded-[2rem] bg-gradient-to-b ${theme.panel} ${theme.darkPanel} p-6 text-[#dc2626] shadow-[0_40px_120px_rgba(0,0,0,0.42)] dark:text-white`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-white/25 blur-3xl" />
-            <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-              <div>
-                <h2 className="text-3xl font-black">Последняя активность</h2>
-                <p className={`mt-1 text-sm font-semibold ${theme.muted} dark:text-white/65`}>
-                  Всё новое в вашей паре.
-                </p>
-              </div>
-              <button
-                onClick={() => setIsActivityOpen(false)}
-                className="rounded-full bg-white/70 px-5 py-2 text-sm font-black text-[#dc2626] shadow-lg transition hover:bg-red-50 dark:bg-white/10 dark:text-white dark:hover:bg-red-500/15"
-              >
-                Закрыть
-              </button>
-            </div>
-
-            <div className="relative mt-6 max-h-[58vh] space-y-3 overflow-y-auto pr-1">
-              {activity.length === 0 ? (
-                <div className="rounded-3xl bg-white/35 p-8 text-center font-bold shadow-inner dark:bg-white/5">
-                  Активности пока нет.
-                </div>
-              ) : (
-                activity.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="activity-card rounded-3xl border border-white/35 bg-white/45 p-5 shadow-[0_16px_42px_rgba(127,29,29,0.14)] dark:border-white/10 dark:bg-white/5"
-                    style={{ animationDelay: `${index * 45}ms` }}
-                  >
-                    <div className="flex gap-4">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/60 text-xl shadow-inner dark:bg-white/10">
-                        <FluentEmoji emoji={item.icon} size={24} decorative />
-                      </div>
-                      <div>
-                        <p className="font-black">{item.text}</p>
-                        <p className={`mt-1 text-sm font-semibold ${theme.muted} dark:text-white/65`}>
-                          {item.time}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
 
       {croppingImage && (

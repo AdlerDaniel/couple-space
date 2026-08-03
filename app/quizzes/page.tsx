@@ -110,25 +110,25 @@ export default function QuizzesPage() {
 
   return (
     <main
-      className="min-h-screen bg-gradient-to-b from-[#f1e7ff] to-[#fbf7ff] px-6 pb-28 pt-28 text-[#7c3aed] transition-colors dark:from-[#170525] dark:to-[#09020f] dark:text-[#c084fc]"
+      className="quizzes-page min-h-screen bg-gradient-to-b from-[#f1e7ff] to-[#fbf7ff] px-3 pb-28 pt-20 text-[#7c3aed] transition-colors dark:from-[#170525] dark:to-[#09020f] dark:text-[#c084fc] sm:px-5 md:px-6 md:pt-28"
       style={{ ["--scroll-accent" as string]: "#7c3aed" }}
     >
       <section className="mx-auto max-w-6xl">
-        <div className="mb-10 text-center">
-          <p className="ui-chip mx-auto mb-4">
+        <div className="mb-5 text-center md:mb-10">
+          <p className="ui-chip mx-auto mb-2 md:mb-4">
             6 категорий · 60 карточек · 600 вопросов
           </p>
 
-          <h1 className="text-5xl font-bold tracking-tight text-[#6d28d9] dark:text-[#c084fc] md:text-6xl">
+          <h1 className="text-3xl font-bold tracking-tight text-[#6d28d9] dark:text-[#c084fc] sm:text-4xl md:text-6xl">
             Викторины
           </h1>
 
-          <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-[#6d28d9]/75 dark:text-[#d8b4fe]/75">
+          <p className="mx-auto mt-2 max-w-3xl text-sm leading-relaxed text-[#6d28d9]/75 dark:text-[#d8b4fe]/75 md:mt-5 md:text-lg">
             Каждая категория разделена на 10 карточек. В каждой карточке по 10 вопросов, чтобы проходить тесты короткими блоками и потом сравнивать ответы.
           </p>
         </div>
 
-        <div className="grid gap-2 rounded-[1.25rem] bg-white/45 p-2 shadow-inner dark:bg-white/5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="quiz-category-grid grid grid-cols-2 gap-2 rounded-[1.25rem] bg-white/45 p-2 shadow-inner dark:bg-white/5 lg:grid-cols-3">
           {quizCategories.map((category) => {
             const items = quizzes.filter((quiz) => quiz.category === category);
             const completed = items.filter((quiz) => progress.mine.has(quiz.id)).length;
@@ -139,17 +139,17 @@ export default function QuizzesPage() {
                 key={category}
                 type="button"
                 onClick={() => setActiveCategory(category)}
-                className={`ui-lift rounded-[1rem] border p-4 text-left ${
+                className={`ui-lift min-w-0 rounded-[1rem] border p-2.5 text-left sm:p-4 ${
                   isActive
                     ? "border-[#7c3aed]/35 bg-[#7c3aed] text-white shadow-[0_16px_42px_rgba(124,58,237,0.24)]"
                     : "border-white/55 bg-white/72 text-[#6d28d9] shadow-inner hover:bg-violet-50 dark:border-white/10 dark:bg-white/8 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
                 }`}
               >
-                <span className="block text-xl font-black">{category}</span>
-                <span className={isActive ? "mt-2 block text-sm font-bold text-white/75" : "mt-2 block text-sm font-bold text-[#6d28d9]/60 dark:text-[#d8b4fe]/60"}>
+                <span className="block truncate text-sm font-black sm:text-xl">{category}</span>
+                <span className={isActive ? "mt-1 block text-[11px] font-bold text-white/75 sm:mt-2 sm:text-sm" : "mt-1 block text-[11px] font-bold text-[#6d28d9]/60 dark:text-[#d8b4fe]/60 sm:mt-2 sm:text-sm"}>
                   {items.length} карточек · {items.length * 10} вопросов
                 </span>
-                <span className={isActive ? "mt-1 block text-sm font-bold text-white/65" : "mt-1 block text-sm font-bold text-[#6d28d9]/50 dark:text-[#d8b4fe]/50"}>
+                <span className={isActive ? "mt-1 block text-[10px] font-bold text-white/65 sm:text-sm" : "mt-1 block text-[10px] font-bold text-[#6d28d9]/50 dark:text-[#d8b4fe]/50 sm:text-sm"}>
                   Пройдено вами: {completed}
                 </span>
               </button>
@@ -157,13 +157,13 @@ export default function QuizzesPage() {
           })}
         </div>
 
-        <section className="ui-card mt-8 p-6">
-          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <section className="ui-card mt-4 p-3 sm:p-5 md:mt-8 md:p-6">
+          <div className="mb-3 flex flex-col gap-3 md:mb-6 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="ui-eyebrow">
                 Выбранная категория
               </p>
-              <h2 className="ui-section-title mt-2 text-4xl">
+              <h2 className="ui-section-title mt-1 text-2xl md:mt-2 md:text-4xl">
                 {activeCategory}
               </h2>
             </div>
@@ -189,7 +189,7 @@ export default function QuizzesPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="quiz-card-grid grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-3">
             {categoryQuizzes.map((quiz, index) => {
               const isMineCompleted = progress.mine.has(quiz.id);
               const isPartnerCompleted = progress.partner.has(quiz.id);
@@ -198,29 +198,29 @@ export default function QuizzesPage() {
               return (
                 <article
                   key={quiz.id}
-                  className={`ui-card-compact ui-lift flex min-h-72 flex-col p-6 ${
+                  className={`quiz-card ui-card-compact ui-lift flex min-h-0 min-w-0 flex-col p-2.5 sm:p-4 md:min-h-72 md:p-6 ${
                     isMineCompleted
                       ? "bg-slate-200/85 text-slate-700 hover:bg-slate-200 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-700/80"
                       : "bg-white/72 text-[#6d28d9] hover:bg-violet-50/70 dark:bg-white/8 dark:text-[#d8b4fe] dark:hover:bg-violet-500/15"
                   }`}
                 >
-                  <div className="mb-5 flex items-start justify-between gap-3">
+                  <div className="mb-2 flex items-start justify-between gap-1.5 md:mb-5 md:gap-3">
                     <div>
-                      <p className="text-sm font-black uppercase tracking-wide opacity-70">
+                      <p className="text-[9px] font-black uppercase tracking-wide opacity-70 sm:text-xs md:text-sm">
                         Карточка {index + 1}
                       </p>
-                      <h3 className="mt-2 text-2xl font-black">{quiz.title}</h3>
+                      <h3 className="mt-1 line-clamp-2 text-sm font-black leading-tight sm:text-base md:mt-2 md:text-2xl">{quiz.title}</h3>
                     </div>
                     <span className="ui-chip shrink-0 bg-[#7c3aed] text-white">
                       10
                     </span>
                   </div>
 
-                  <p className="line-clamp-3 flex-1 text-sm font-semibold leading-6 opacity-75">
+                  <p className="line-clamp-2 flex-1 text-[10px] font-semibold leading-4 opacity-75 sm:text-xs md:line-clamp-3 md:text-sm md:leading-6">
                     {firstQuestion}
                   </p>
 
-                  <div className="mt-5 flex flex-wrap gap-2">
+                  <div className="mt-2 flex flex-wrap gap-1 md:mt-5 md:gap-2">
                       <span className="ui-chip">
                       {quiz.duration}
                     </span>
@@ -242,7 +242,7 @@ export default function QuizzesPage() {
                         ? `/quizzes/result?quiz=${quiz.id}`
                         : `/quizzes/play?quiz=${quiz.id}`
                     }
-                    className={`ui-button mt-6 text-center ${
+                    className={`ui-button mt-2 px-2 py-2 text-center text-[10px] sm:text-xs md:mt-6 md:text-sm ${
                       isMineCompleted
                         ? "bg-slate-700 text-white hover:bg-slate-800 dark:bg-slate-200 dark:text-slate-950 dark:hover:bg-white"
                         : "bg-[#7c3aed] text-white hover:bg-[#8b5cf6]"

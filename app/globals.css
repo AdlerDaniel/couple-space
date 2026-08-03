@@ -2817,7 +2817,12 @@ html.dark:has(.today-page-movies) {
   flex: 1 1 auto;
   border-radius: 999px;
   background: var(--audio-accent);
-  opacity: 0.7;
+  opacity: 0.26;
+  transition: height 220ms ease, opacity 120ms ease;
+}
+
+.accent-audio-wave span.is-played {
+  opacity: 1;
 }
 
 .accent-audio-seek {

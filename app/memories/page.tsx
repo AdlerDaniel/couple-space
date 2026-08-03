@@ -1,6 +1,5 @@
 "use client";
 
-import MemoryComposer, { type CreatedMemory } from "@/components/MemoryComposer";
 import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import { FluentEmoji, FluentEmojiText } from "@/components/FluentEmoji";
 import EmojiPicker from "@/components/EmojiPicker";
@@ -101,7 +100,6 @@ export default function MemoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
-  const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [reactionPickerMemoryId, setReactionPickerMemoryId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -271,7 +269,7 @@ export default function MemoriesPage() {
     }
 
     const media = decodeMemoryMedia(memory.image);
-    const mediaPaths = [media.photoUrl, media.voiceUrl]
+    const mediaPaths = [media.photoUrl, media.voiceUrl, ...(media.attachments || []).map((item) => item.url)]
       .map(getMemoryStoragePath)
       .filter((path): path is string => Boolean(path));
     if (mediaPaths.length > 0) {
@@ -409,47 +407,10 @@ export default function MemoriesPage() {
           >
             Случайное воспоминание
           </button>
+          {couple && currentUserId && <button type="button" onClick={() => router.push("/memories/new")} className="hidden rounded-full bg-white/75 px-6 py-3 font-black text-[#2563eb] shadow-lg transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-blue-100 md:inline-flex">Добавить момент</button>}
         </div>
 
-        {couple && currentUserId && (
-          <>
-            <button
-              type="button"
-              onClick={() => setIsComposerOpen(true)}
-              className="memories-add-mobile"
-              aria-label="Добавить воспоминание"
-            >
-              <span aria-hidden="true">+</span>
-              Добавить момент
-            </button>
-            {isComposerOpen && (
-              <button
-                type="button"
-                className="memories-composer-backdrop"
-                onClick={() => setIsComposerOpen(false)}
-                aria-label="Закрыть добавление воспоминания"
-              />
-            )}
-            <div className={`memories-composer-sheet ${isComposerOpen ? "is-open" : ""}`}>
-              <div className="memories-composer-mobile-head">
-                <div>
-                  <p>Новый момент</p>
-                  <strong>Добавить воспоминание</strong>
-                </div>
-                <button type="button" onClick={() => setIsComposerOpen(false)} aria-label="Закрыть">×</button>
-              </div>
-              <MemoryComposer
-                couple={couple}
-                currentUserId={currentUserId}
-                onCreated={(memory: CreatedMemory) => {
-                  setMemories((current) => [memory, ...current]);
-                  setMessage("");
-                  setIsComposerOpen(false);
-                }}
-              />
-            </div>
-          </>
-        )}
+        {couple && currentUserId && <button type="button" onClick={() => router.push("/memories/new")} className="memories-add-mobile" aria-label="Добавить воспоминание"><span aria-hidden="true">+</span>Добавить момент</button>}
 
         {message && (
           <p className="mb-6 rounded-2xl bg-white/70 px-5 py-3 font-black text-[#2563eb] shadow-inner dark:bg-white/10 dark:text-blue-100">
@@ -501,7 +462,7 @@ export default function MemoriesPage() {
               return (
                 <article
                   key={memory.id}
-                  className="memory-card performance-list-item group mb-5 break-inside-avoid overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] dark:border-white/10 dark:bg-white/8"
+                  className="memory-card performance-list-item group relative mb-5 break-inside-avoid overflow-visible rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] dark:border-white/10 dark:bg-white/8"
                 >
                   {media.photoUrl && (
                     <div className="relative overflow-hidden rounded-[1.35rem] bg-blue-100 dark:bg-white/8">
@@ -532,16 +493,9 @@ export default function MemoriesPage() {
                     </div>
                   )}
 
-                  <div className="memory-card-body p-3">
-                    <div className="memory-card-toolbar mb-3 flex items-center justify-between gap-3">
-                      {memory.is_pinned ? (
-                        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-[#2563eb] dark:bg-white/10 dark:text-blue-100">
-                          Закреплено
-                        </span>
-                      ) : (
-                        <span />
-                      )}
-                      <details className="memory-actions-menu relative">
+                  <div className="memory-card-body p-3 pb-12">
+                    {memory.is_pinned && <span className="mb-2 inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-[#2563eb] dark:bg-white/10 dark:text-blue-100">Закреплено</span>}
+                      <details className="memory-actions-menu absolute bottom-3 right-3 z-20">
                         <summary aria-label="Действия с воспоминанием" title="Действия">
                           <MoreHorizontal aria-hidden="true" size={18} />
                         </summary>
@@ -556,7 +510,6 @@ export default function MemoriesPage() {
                           </button>
                         </div>
                       </details>
-                    </div>
                     {displayTitle && (
                       <h2 className="text-2xl font-black text-[#172554] dark:text-white">
                         <FluentEmojiText>{displayTitle}</FluentEmojiText>
@@ -575,6 +528,7 @@ export default function MemoriesPage() {
                         <AccentAudioPlayer src={media.voiceUrl} accent="#2563eb" label="Голосовое воспоминание" />
                       </div>
                     )}
+                    {(media.attachments || []).length > 0 && <div className="mt-3 grid gap-2">{(media.attachments || []).map((attachment, attachmentIndex) => attachment.type === "image" ? <Image key={`${attachment.url}-${attachmentIndex}`} src={attachment.url} alt={attachment.name} width={720} height={520} sizes="(max-width: 768px) 45vw, 420px" className="max-h-72 w-full rounded-2xl object-cover" unoptimized /> : attachment.type === "video" ? <video key={`${attachment.url}-${attachmentIndex}`} src={attachment.url} controls playsInline preload="metadata" className="max-h-72 w-full rounded-2xl bg-black" /> : attachment.type === "audio" ? <AccentAudioPlayer key={`${attachment.url}-${attachmentIndex}`} src={attachment.url} accent="#2563eb" label={attachment.name} /> : <a key={`${attachment.url}-${attachmentIndex}`} href={attachment.url} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-2 rounded-2xl bg-blue-50 px-3 py-2 text-xs font-black text-[#2563eb] dark:bg-white/8 dark:text-blue-100"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#2563eb] text-white">↗</span><span className="truncate">{attachment.name}</span></a>)}</div>}
                     <div className="memory-meta mt-4 grid gap-2 text-sm font-bold text-[#172554]/58 dark:text-white/45">
                       <span>Загрузил: {author}</span>
                       <span>Дата: {formatTime(memory.created_at)}</span>

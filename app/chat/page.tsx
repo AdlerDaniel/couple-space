@@ -1,6 +1,7 @@
 "use client";
 
 import EmojiPicker from "@/components/EmojiPicker";
+import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import { FluentEmoji, FluentEmojiText, fluentEmojiUrl } from "@/components/FluentEmoji";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
@@ -45,7 +46,6 @@ import {
   MoreHorizontal,
   Music2,
   Paperclip,
-  Pause,
   Pin,
   Play,
   Send,
@@ -303,6 +303,20 @@ function isMessageVisible(message: ChatMessage, currentUserId: string | null) {
   return !(message.deleted_for || []).includes(currentUserId);
 }
 
+function formatPartnerLastSeen(value?: string | null) {
+  if (!value) return "время посещения неизвестно";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "время посещения неизвестно";
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const time = formatMessageTime(value);
+  if (date.toDateString() === today.toDateString()) return `был(а) в ${time}`;
+  if (date.toDateString() === yesterday.toDateString()) return `был(а) вчера в ${time}`;
+  const day = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(date);
+  return `был(а) ${day} в ${time}`;
+}
+
 function LinkPreviewCard({
   url,
   isMine,
@@ -401,7 +415,6 @@ export default function ChatPage() {
   const audioInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
   const audioChunksRef = useRef<Blob[]>([]);
   const discardRecordingRef = useRef(false);
   const recordingTimerRef = useRef<number | null>(null);
@@ -441,9 +454,6 @@ export default function ChatPage() {
   const [viewerMessage, setViewerMessage] = useState<ChatMessage | null>(null);
   const [activePinnedIndex, setActivePinnedIndex] = useState(0);
   const [isPinnedListOpen, setIsPinnedListOpen] = useState(false);
-  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
-  const [audioProgress, setAudioProgress] = useState<Record<string, number>>({});
-  const [audioDurations, setAudioDurations] = useState<Record<string, number>>({});
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [needsLogin, setNeedsLogin] = useState(false);
@@ -758,6 +768,11 @@ export default function ChatPage() {
   useEffect(() => {
     if (!couple?.id || !currentUserId) return;
 
+    const lastSeenKey = partnerId ? `couple-space:last-seen:${couple.id}:${partnerId}` : null;
+    const cachedSeenFrame = lastSeenKey
+      ? window.requestAnimationFrame(() => setPartnerLastSeen(localStorage.getItem(lastSeenKey)))
+      : null;
+
     const channel = supabase
       .channel(`couple-chat:${couple.id}`)
       .on(
@@ -801,14 +816,22 @@ export default function ChatPage() {
         }
       })
       .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState<{ user_id: string; online_at: string }>();
+        const state = channel.presenceState<{ user_id: string; online_at: string; active_at?: string }>();
         const partnerPresence = Object.values(state)
           .flat()
           .find((presence) => presence.user_id === partnerId);
 
-        if (partnerPresence?.online_at) {
-          setPartnerLastSeen(partnerPresence.online_at);
+        const seenAt = partnerPresence?.active_at || partnerPresence?.online_at;
+        if (seenAt) {
+          setPartnerLastSeen(seenAt);
+          if (lastSeenKey) localStorage.setItem(lastSeenKey, seenAt);
         }
+      })
+      .on("presence", { event: "leave" }, ({ leftPresences }) => {
+        if (!leftPresences.some((presence) => (presence as { user_id?: string }).user_id === partnerId)) return;
+        const seenAt = new Date().toISOString();
+        setPartnerLastSeen(seenAt);
+        if (lastSeenKey) localStorage.setItem(lastSeenKey, seenAt);
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
@@ -816,11 +839,13 @@ export default function ChatPage() {
           await channel.track({
             user_id: currentUserId,
             online_at: new Date().toISOString(),
+            active_at: new Date().toISOString(),
           });
         }
       });
 
     return () => {
+      if (cachedSeenFrame) window.cancelAnimationFrame(cachedSeenFrame);
       chatChannelRef.current = null;
       supabase.removeChannel(channel);
     };
@@ -1548,24 +1573,6 @@ export default function ChatPage() {
     window.setTimeout(() => jumpToMessage(messageId), 80);
   }
 
-  function toggleAudio(messageId: string) {
-    const activeAudio = audioRefs.current[messageId];
-    if (!activeAudio) return;
-
-    Object.entries(audioRefs.current).forEach(([id, audio]) => {
-      if (id !== messageId) audio?.pause();
-    });
-
-    if (playingAudioId === messageId && !activeAudio.paused) {
-      activeAudio.pause();
-      setPlayingAudioId(null);
-      return;
-    }
-
-    activeAudio.play();
-    setPlayingAudioId(messageId);
-  }
-
   if (isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] px-6 pt-28 text-[#0284c7] dark:from-[#031b2e] dark:via-[#021526] dark:to-black dark:text-white">
@@ -1690,9 +1697,7 @@ export default function ChatPage() {
                       <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-sky-500/70" />
                       <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-sky-500/70" />
                     </span>
-                  ) : partnerLastSeen
-                      ? `был(а) в ${formatMessageTime(partnerLastSeen)}`
-                      : "личный чат пары"}
+                  ) : formatPartnerLastSeen(partnerLastSeen)}
                   {unreadCount > 0 ? ` · новых: ${unreadCount}` : ""}
                 </p>
               </div>
@@ -2046,113 +2051,7 @@ export default function ChatPage() {
                               </div>
                             )}
                             {voiceAttachment && (
-                              <div className="flex w-[min(20.5rem,76vw)] items-center gap-2.5">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleAudio(message.id)}
-                                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-[13px] font-black shadow-lg transition hover:scale-105 ${
-                                    isMine
-                                      ? "bg-white text-[#0284c7]"
-                                      : "bg-white text-[#0284c7]"
-                                  }`}
-                                  aria-label={
-                                    playingAudioId === message.id
-                                      ? "Пауза"
-                                      : "Воспроизвести"
-                                  }
-                                >
-                                  {playingAudioId === message.id ? <Pause aria-hidden="true" size={15} fill="currentColor" /> : <Play aria-hidden="true" size={15} fill="currentColor" />}
-                                </button>
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex h-7 items-center gap-[1.5px]">
-                                    {Array.from({ length: 46 }).map((_, barIndex) => {
-                                      const progress = audioProgress[message.id] || 0;
-                                      const isFilled = barIndex / 45 <= progress;
-                                      const wave =
-                                        Math.sin(barIndex * 0.72) * 9 +
-                                        Math.sin(barIndex * 1.9) * 4 +
-                                        Math.cos(barIndex * 0.33) * 5;
-                                      const height = Math.max(5, Math.min(30, 16 + wave));
-                                      const width = barIndex % 5 === 0 ? 3 : barIndex % 2 === 0 ? 2 : 1;
-
-                                      return (
-                                        <span
-                                          key={barIndex}
-                                          className={`w-1 rounded-full transition-all ${
-                                            playingAudioId === message.id
-                                              ? "chat-voice-wave"
-                                              : ""
-                                          } ${
-                                            isFilled
-                                              ? isMine
-                                                ? "bg-white"
-                                                : "bg-white"
-                                              : isMine
-                                                ? "bg-white/35"
-                                                : "bg-white/25"
-                                          }`}
-                                          style={{
-                                            height,
-                                            width,
-                                            animationDelay: `${barIndex * 0.035}s`,
-                                          }}
-                                        />
-                                      );
-                                    })}
-                                  </div>
-                                  <div
-                                    className={`mt-0 flex items-center justify-between text-[10px] font-semibold ${
-                                      isMine
-                                        ? "text-white/68"
-                                        : "text-white/45"
-                                    }`}
-                                  >
-                                    <span>
-                                      {formatAudioTime(
-                                        (audioProgress[message.id] || 0) *
-                                          (audioDurations[message.id] || 0)
-                                      )}{" "}
-                                      / {formatAudioTime(audioDurations[message.id] || 0)}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <audio
-                                  ref={(node) => {
-                                    audioRefs.current[message.id] = node;
-                                  }}
-                                  src={voiceAttachment.url}
-                                  preload="none"
-                                  onLoadedMetadata={(event) => {
-                                    const duration = event.currentTarget.duration;
-                                    setAudioDurations((current) => ({
-                                      ...current,
-                                      [message.id]: Number.isFinite(duration)
-                                        ? duration
-                                        : 0,
-                                    }));
-                                  }}
-                                  onTimeUpdate={(event) => {
-                                    const audio = event.currentTarget;
-                                    setAudioProgress((current) => ({
-                                      ...current,
-                                      [message.id]:
-                                        audio.duration > 0
-                                          ? audio.currentTime / audio.duration
-                                          : 0,
-                                    }));
-                                  }}
-                                  onEnded={() => {
-                                    setPlayingAudioId(null);
-                                    setAudioProgress((current) => ({
-                                      ...current,
-                                      [message.id]: 0,
-                                    }));
-                                  }}
-                                  className="hidden"
-                                />
-                              </div>
+                              <AccentAudioPlayer src={voiceAttachment.url} accent="#ffffff" label={voiceAttachment.name || "Голосовое сообщение"} className="chat-accent-audio w-[min(20.5rem,76vw)]" />
                             )}
                             {message.body && !isVoiceMessage && !isStickerMessage && !isBigEmojiMessage && (
                               <p className="whitespace-pre-wrap break-words text-[15px] font-medium leading-5">
@@ -2518,9 +2417,6 @@ export default function ChatPage() {
                   <button type="button" onClick={() => { audioInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
                     <Music2 aria-hidden="true" size={18} /> Аудиофайл
                   </button>
-                  <button type="button" onClick={() => { if (isRecording) { stopRecording(); } else { startRecording(); } setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
-                    <Mic aria-hidden="true" size={18} /> Голосовое
-                  </button>
                 </div>
               )}
             </div>
@@ -2638,8 +2534,8 @@ export default function ChatPage() {
                   {isPartnerTyping
                     ? "печатает..."
                     : partnerLastSeen
-                      ? `был(а) в сети ${formatMessageTime(partnerLastSeen)}`
-                      : "личный чат пары"}
+                      ? formatPartnerLastSeen(partnerLastSeen)
+                      : "время посещения неизвестно"}
                 </p>
               </div>
             </div>
@@ -2761,17 +2657,8 @@ export default function ChatPage() {
                     const attachment = item.attachment;
                     if (!attachment) return null;
                     return (
-                      <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-white/65 p-3 shadow-inner dark:bg-white/8">
-                        <button onClick={() => toggleAudio(item.id)} aria-label={playingAudioId === item.id ? "Пауза" : "Воспроизвести"} className="grid h-11 w-11 place-items-center rounded-full bg-[#0284c7] text-white shadow">{playingAudioId === item.id ? <Pause aria-hidden="true" size={17} fill="currentColor" /> : <Play aria-hidden="true" size={17} fill="currentColor" />}</button>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex h-7 items-center gap-[2px]">
-                            {Array.from({ length: 32 }).map((_, index) => (
-                              <span key={index} className="w-1 rounded-full bg-[#0284c7]/55" style={{ height: Math.max(5, 10 + Math.sin(index * 0.8) * 8) }} />
-                            ))}
-                          </div>
-                          <p className="text-xs font-semibold opacity-55">{formatDay(item.createdAt)}</p>
-                        </div>
-                        <audio ref={(node) => { audioRefs.current[item.id] = node; }} src={attachment.url} preload="none" className="hidden" onEnded={() => setPlayingAudioId(null)} />
+                      <div key={item.id} className="flex items-center gap-2 rounded-2xl bg-white/65 p-2 shadow-inner dark:bg-white/8">
+                        <div className="min-w-0 flex-1"><AccentAudioPlayer src={attachment.url} accent="#0284c7" label={attachment.name || "Голосовое сообщение"} /><p className="mt-1 px-2 text-xs font-semibold opacity-55">{formatDay(item.createdAt)}</p></div>
                         <button onClick={() => scrollToMessage(item.messageId)} aria-label="Перейти к сообщению" className="grid h-9 w-9 place-items-center rounded-full bg-sky-100 text-[#0284c7] shadow-inner dark:bg-white/10 dark:text-white"><ArrowDown aria-hidden="true" size={16} /></button>
                       </div>
                     );

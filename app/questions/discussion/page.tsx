@@ -1,6 +1,7 @@
 "use client";
 
 import { FluentEmojiText } from "@/components/FluentEmoji";
+import EmojiPicker from "@/components/EmojiPicker";
 
 import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import { compressImageFile } from "@/lib/imageCompression";
@@ -19,7 +20,7 @@ import { toBrowserSupabaseUrl } from "@/lib/supabaseUrls";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, MessageCircle, Mic, Paperclip, Send, Square, X } from "lucide-react";
+import { ArrowLeft, FileText, ImageIcon, MessageCircle, Mic, Music2, Paperclip, Send, Smile, Square, X } from "lucide-react";
 
 type Couple = {
   id: string;
@@ -47,20 +48,21 @@ type DiscussionMessage = {
   created_at: string;
   updated_at: string | null;
   attachment_url: string | null;
-  attachment_type: "image" | "video" | "audio" | null;
+  attachment_type: "image" | "video" | "audio" | "file" | null;
   attachment_name: string | null;
   attachment_mime_type: string | null;
 };
 
 type PendingMedia = {
   file: File;
-  type: "image" | "video" | "audio";
+  type: "image" | "video" | "audio" | "file";
   previewUrl: string;
 };
 
 const messageSelect =
   "id, user_id, text, created_at, updated_at, attachment_url, attachment_type, attachment_name, attachment_mime_type";
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 function formatTime(value: string) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -86,7 +88,9 @@ function getInitial(value?: string | null) {
 export default function QuestionDiscussionPage() {
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const audioInputRef = useRef<HTMLInputElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const discardRecordingRef = useRef(false);
@@ -103,6 +107,8 @@ export default function QuestionDiscussionPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   const answerId = question?.id || null;
   const currentName = useMemo(() => {
@@ -248,12 +254,8 @@ export default function QuestionDiscussionPage() {
 
   function selectMedia(file: File) {
     const type = getMediaKind(file);
-    if (type !== "image" && type !== "video" && type !== "audio") {
-      setErrorMessage("Можно прикрепить только фото, видео или аудио.");
-      return;
-    }
-    const maximumSize = type === "audio" ? MAX_AUDIO_SIZE : type === "image" ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
-    const validation = validateMediaFile(file, ["image", "video", "audio"], maximumSize);
+    const maximumSize = type === "audio" ? MAX_AUDIO_SIZE : type === "image" ? MAX_IMAGE_SIZE : type === "video" ? MAX_VIDEO_SIZE : MAX_FILE_SIZE;
+    const validation = validateMediaFile(file, ["image", "video", "audio", "file"], maximumSize);
     if (validation.error) {
       setErrorMessage(validation.error);
       return;
@@ -406,6 +408,7 @@ export default function QuestionDiscussionPage() {
                         {mediaUrl && message.attachment_type === "image" && <Image src={mediaUrl} alt={message.attachment_name || "Фото"} width={720} height={520} sizes="(max-width: 768px) 76vw, 520px" className="mb-2 max-h-80 w-full rounded-2xl object-cover" unoptimized />}
                         {mediaUrl && message.attachment_type === "video" && <video src={mediaUrl} controls playsInline preload="metadata" className="mb-2 max-h-80 w-full rounded-2xl bg-black" />}
                         {mediaUrl && message.attachment_type === "audio" && <div className="mb-1 min-w-[min(17rem,68vw)]"><AccentAudioPlayer src={mediaUrl} accent={isMine ? "#ffffff" : "#10b981"} label="Голосовое сообщение" /></div>}
+                        {mediaUrl && message.attachment_type === "file" && <a href={mediaUrl} target="_blank" rel="noreferrer" className={`mb-1 flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-black ${isMine ? "bg-white/14 text-white" : "bg-emerald-50 text-emerald-800 dark:bg-white/8 dark:text-white"}`}><FileText size={18} aria-hidden="true" /><span className="min-w-0 truncate">{message.attachment_name || "Файл"}</span></a>}
                         {message.text && <p className="whitespace-pre-wrap break-words text-sm font-semibold leading-5"><FluentEmojiText>{message.text}</FluentEmojiText></p>}
                         <p className={`mt-1 text-right text-[10px] font-bold ${isMine ? "text-white/65" : "text-emerald-800/40 dark:text-white/38"}`}>{formatTime(message.created_at)}</p>
                       </article>
@@ -425,6 +428,7 @@ export default function QuestionDiscussionPage() {
               {pendingMedia.type === "image" && <Image src={pendingMedia.previewUrl} alt="Предпросмотр" width={54} height={54} className="h-12 w-12 rounded-xl object-cover" unoptimized />}
               {pendingMedia.type === "video" && <video src={pendingMedia.previewUrl} className="h-12 w-12 rounded-xl object-cover" muted />}
               {pendingMedia.type === "audio" && <span className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-500 text-white"><Mic size={20} /></span>}
+              {pendingMedia.type === "file" && <span className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-500 text-white"><FileText size={20} /></span>}
               <div className="min-w-0 flex-1"><p className="truncate text-sm font-black">{pendingMedia.file.name}</p><p className="text-xs font-semibold opacity-45">Готово к отправке</p></div>
               <button type="button" onClick={() => setPendingMedia(null)} aria-label="Убрать вложение" className="grid h-9 w-9 place-items-center rounded-full bg-white text-emerald-700 shadow-sm dark:bg-black/25 dark:text-white"><X size={17} /></button>
             </div>
@@ -437,14 +441,27 @@ export default function QuestionDiscussionPage() {
               <button type="button" onClick={() => stopRecording(false)} className="grid h-9 w-9 place-items-center rounded-full bg-emerald-500 text-white"><Square size={14} fill="currentColor" /></button>
             </div>
           )}
-          <div className="question-discussion-composer flex items-end gap-2 rounded-[1.45rem] border border-emerald-100 bg-white p-1.5 shadow-sm dark:border-white/10 dark:bg-white/8">
-            <input ref={fileInputRef} type="file" accept="image/*,video/*,audio/*,.m4a,.mp3,.ogg,.wav,.webm" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) selectMedia(file); event.target.value = ""; }} />
-            <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Прикрепить медиа" className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-emerald-600 transition hover:bg-emerald-50 dark:text-emerald-100 dark:hover:bg-white/8"><Paperclip size={21} /></button>
-            <textarea value={draft} onChange={(event) => { setDraft(event.target.value); event.currentTarget.style.height = "auto"; event.currentTarget.style.height = `${Math.min(event.currentTarget.scrollHeight, 112)}px`; }} rows={1} maxLength={1000} placeholder="Сообщение" className="max-h-28 min-h-10 min-w-0 flex-1 resize-none bg-transparent px-1 py-2.5 text-sm font-semibold outline-none placeholder:text-emerald-800/35 dark:placeholder:text-white/35" />
+          <div className="question-discussion-composer relative flex items-center gap-1 rounded-[1.45rem] border border-emerald-100 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/8">
+            <input ref={mediaInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) selectMedia(file); event.target.value = ""; }} />
+            <input ref={fileInputRef} type="file" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) selectMedia(file); event.target.value = ""; }} />
+            <input ref={audioInputRef} type="file" accept="audio/*,.m4a,.mp3,.ogg,.wav,.webm" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) selectMedia(file); event.target.value = ""; }} />
+            <div className="relative shrink-0">
+              <button type="button" onClick={() => { setIsAttachMenuOpen((current) => !current); setIsEmojiPickerOpen(false); }} aria-label="Прикрепить файл" className="question-discussion-icon grid h-9 w-9 place-items-center rounded-full text-emerald-600 transition hover:bg-emerald-50 dark:text-emerald-100 dark:hover:bg-white/8"><Paperclip size={19} /></button>
+              {isAttachMenuOpen && <div className="absolute bottom-12 left-0 z-40 w-52 rounded-2xl border border-emerald-100 bg-white/98 p-2 text-emerald-950 shadow-2xl dark:border-white/10 dark:bg-[#071c13] dark:text-white">
+                <button type="button" onClick={() => { mediaInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-black hover:bg-emerald-50 dark:hover:bg-white/8"><ImageIcon size={18} />Фото/Видео</button>
+                <button type="button" onClick={() => { fileInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-black hover:bg-emerald-50 dark:hover:bg-white/8"><FileText size={18} />Файл</button>
+                <button type="button" onClick={() => { audioInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-black hover:bg-emerald-50 dark:hover:bg-white/8"><Music2 size={18} />Аудиофайл</button>
+              </div>}
+            </div>
+            <div className="relative shrink-0">
+              <button type="button" onClick={() => { setIsEmojiPickerOpen((current) => !current); setIsAttachMenuOpen(false); }} aria-label="Выбрать эмодзи" className="question-discussion-icon grid h-9 w-9 place-items-center rounded-full text-emerald-600 transition hover:bg-emerald-50 dark:text-emerald-100 dark:hover:bg-white/8"><Smile size={19} /></button>
+              {isEmojiPickerOpen && <EmojiPicker tone="emerald" compact multiple onSelect={(emoji) => { setDraft((current) => `${current}${emoji}`); setIsEmojiPickerOpen(false); }} className="fixed bottom-[4.5rem] left-2 right-2 z-50 mx-auto max-w-sm sm:absolute sm:bottom-12 sm:left-0 sm:right-auto sm:w-80" />}
+            </div>
+            <textarea value={draft} onChange={(event) => { setDraft(event.target.value); event.currentTarget.style.height = "auto"; event.currentTarget.style.height = `${Math.min(event.currentTarget.scrollHeight, 112)}px`; }} rows={1} maxLength={1000} placeholder="Сообщение" className="question-discussion-input max-h-28 h-9 min-h-9 min-w-0 flex-1 resize-none bg-transparent px-1 py-[0.45rem] text-sm font-semibold leading-5 outline-none placeholder:text-emerald-800/35 dark:placeholder:text-white/35" />
             {draft.trim() || pendingMedia ? (
-              <button type="submit" disabled={isSending} aria-label="Отправить" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500 text-white shadow-md disabled:opacity-45"><Send size={18} /></button>
+              <button type="submit" disabled={isSending} aria-label="Отправить" className="question-discussion-action grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500 p-0 text-white shadow-md disabled:opacity-45"><Send size={18} /></button>
             ) : (
-              <button type="button" onClick={() => isRecording ? stopRecording(false) : void startRecording()} aria-label="Записать голосовое" className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-white shadow-md ${isRecording ? "bg-rose-500" : "bg-emerald-500"}`}><Mic size={19} /></button>
+              <button type="button" onClick={() => isRecording ? stopRecording(false) : void startRecording()} aria-label="Записать голосовое" className={`question-discussion-action grid h-10 w-10 shrink-0 place-items-center rounded-full p-0 text-white shadow-md ${isRecording ? "bg-rose-500" : "bg-emerald-500"}`}><Mic size={19} /></button>
             )}
           </div>
         </form>

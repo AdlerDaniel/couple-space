@@ -10,6 +10,7 @@ import CouplePresenceTracker from "./CouplePresenceTracker";
 import MobileNav from "./MobileNav";
 import Navbar from "./Navbar";
 import ThemeToggle from "./ThemeToggle";
+import VisualViewportInsets from "./VisualViewportInsets";
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -20,6 +21,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
       {!isFullScreenChat && <ThemeToggle />}
+      <VisualViewportInsets />
       {!isAuthPage && <CouplePresenceTracker />}
       {!isAuthPage && (!isFullScreenChat || pathname === "/chat") && <div className="hidden lg:block"><Navbar /></div>}
       {!hideAppChrome && <AppBreadcrumbs />}

@@ -141,7 +141,6 @@ export default function AnswerSocialControls<TRecord extends object>({
             onSelect={(reaction) => void toggleReaction(reaction)}
             tone="emerald"
             compact
-            autoFocus
           />
         </div>
       )}

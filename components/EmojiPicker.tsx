@@ -14,7 +14,7 @@ import {
   UserRound,
   Volleyball,
 } from "lucide-react";
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { FluentEmoji } from "@/components/FluentEmoji";
 
 type EmojiTone = "pink" | "red" | "blue" | "emerald" | "sky" | "amber";
@@ -52,7 +52,6 @@ export default function EmojiPicker({
   className = "",
   compact = false,
   multiple = false,
-  autoFocus = false,
 }: {
   onSelect: (emoji: string) => void;
   selectedEmoji?: string;
@@ -60,14 +59,12 @@ export default function EmojiPicker({
   className?: string;
   compact?: boolean;
   multiple?: boolean;
-  autoFocus?: boolean;
 }) {
   const [catalog, setCatalog] = useState<EmojiCatalog | null>(null);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase("ru"));
   const [activeGroup, setActiveGroup] = useState<number | "recent">("recent");
   const [recent, setRecent] = useState<string[]>([]);
-  const searchRef = useRef<HTMLInputElement | null>(null);
   const styles = toneClasses[tone];
 
   useEffect(() => {
@@ -95,10 +92,6 @@ export default function EmojiPicker({
       window.cancelAnimationFrame(recentFrame);
     };
   }, []);
-
-  useEffect(() => {
-    if (autoFocus) searchRef.current?.focus();
-  }, [autoFocus]);
 
   const visible = useMemo(() => {
     if (!catalog) return [];
@@ -130,7 +123,6 @@ export default function EmojiPicker({
           <span className="sr-only">Поиск эмодзи</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-45" aria-hidden="true" />
           <input
-            ref={searchRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Найти эмодзи"
@@ -139,13 +131,13 @@ export default function EmojiPicker({
         </label>
 
         <div className="emoji-picker-categories mt-2 flex gap-1 overflow-x-auto pb-1">
-          <button type="button" onClick={() => { setActiveGroup("recent"); setQuery(""); }} className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition ${activeGroup === "recent" && !query ? styles.active : styles.soft}`} title="Недавние" aria-label="Недавние" aria-pressed={activeGroup === "recent" && !query}>
+          <button type="button" onPointerDown={(event) => event.preventDefault()} onClick={() => { setActiveGroup("recent"); setQuery(""); }} className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition ${activeGroup === "recent" && !query ? styles.active : styles.soft}`} title="Недавние" aria-label="Недавние" aria-pressed={activeGroup === "recent" && !query}>
             <Clock3 className="h-4 w-4" aria-hidden="true" />
           </button>
           {catalog?.groups.filter((group) => group.id !== 2).map((group, index) => {
             const Icon = groupIcons[index] || Flag;
             return (
-              <button key={group.id} type="button" onClick={() => { setActiveGroup(group.id); setQuery(""); }} className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition ${activeGroup === group.id && !query ? styles.active : styles.soft}`} title={group.label} aria-label={group.label} aria-pressed={activeGroup === group.id && !query}>
+              <button key={group.id} type="button" onPointerDown={(event) => event.preventDefault()} onClick={() => { setActiveGroup(group.id); setQuery(""); }} className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition ${activeGroup === group.id && !query ? styles.active : styles.soft}`} title={group.label} aria-label={group.label} aria-pressed={activeGroup === group.id && !query}>
                 <Icon className="h-4 w-4" aria-hidden="true" />
               </button>
             );
@@ -159,7 +151,7 @@ export default function EmojiPicker({
             </div>
           ) : visible.length ? (
             visible.map((item) => (
-              <button key={item.emoji} type="button" onClick={() => choose(item)} className={`grid aspect-square min-h-10 place-items-center rounded-xl transition hover:scale-110 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 ${styles.focus} dark:hover:bg-white/8 ${selectedEmoji === item.emoji ? styles.soft : ""}`} title={item.label} aria-label={item.label} role="option" aria-selected={selectedEmoji === item.emoji}>
+              <button key={item.emoji} type="button" onPointerDown={(event) => event.preventDefault()} onClick={() => choose(item)} className={`grid aspect-square min-h-10 place-items-center rounded-xl transition hover:scale-110 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 ${styles.focus} dark:hover:bg-white/8 ${selectedEmoji === item.emoji ? styles.soft : ""}`} title={item.label} aria-label={item.label} role="option" aria-selected={selectedEmoji === item.emoji}>
                 <FluentEmoji emoji={item.emoji} label={item.label} size={compact ? 28 : 32} />
               </button>
             ))

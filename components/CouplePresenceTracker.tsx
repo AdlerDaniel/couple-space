@@ -31,7 +31,10 @@ export default function CouplePresenceTracker() {
         });
       };
 
-      channel = supabase.channel(`couple-chat:${couple.id}`);
+      // Presence is deliberately kept on its own topic. Reusing the chat topic
+      // can return an already subscribed channel, after which Realtime rejects
+      // any postgres_changes callbacks added by the chat screen.
+      channel = supabase.channel(`couple-presence:${couple.id}:${user.id}`);
       channel.subscribe((status) => {
         if (status === "SUBSCRIBED") void publish();
       });

@@ -56,3 +56,27 @@ test("today keeps its compact composer and memories open a dedicated creation pa
   assert.match(memoriesSource, /router\.push\("\/memories\/new"\)/);
   assert.match(newMemorySource, /<MemoryComposer/);
 });
+
+test("memory cards expose compact reactions, editing and an Instagram-style detail route", async () => {
+  const [memoriesSource, composerSource, newMemorySource, detailSource] = await Promise.all([
+    readSource("app/memories/page.tsx"),
+    readSource("components/MemoryComposer.tsx"),
+    readSource("app/memories/new/page.tsx"),
+    readSource("app/memories/[id]/page.tsx"),
+  ]);
+  assert.match(memoriesSource, /memory-comment-button/);
+  assert.match(memoriesSource, /\/memories\/new\?edit=/);
+  assert.doesNotMatch(memoriesSource, /Реакции и комментарии/);
+  assert.match(composerSource, /initialMemory/);
+  assert.match(composerSource, /Сохранить изменения/);
+  assert.match(newMemorySource, /\.update\(|editId|initialMemory/);
+  assert.match(detailSource, /memory-post-layout/);
+  assert.match(detailSource, /memory-post-comments/);
+  assert.match(detailSource, /memory_comments/);
+});
+
+test("emoji picker never focuses search automatically", async () => {
+  const pickerSource = await readSource("components/EmojiPicker.tsx");
+  assert.doesNotMatch(pickerSource, /autoFocus|\.focus\(/);
+  assert.match(pickerSource, /placeholder="Найти эмодзи"/);
+});

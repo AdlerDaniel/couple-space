@@ -2266,7 +2266,7 @@ export default function ChatPage() {
           {pickerMode && (
             <div
               ref={pickerRef}
-              className="chat-picker-in fixed bottom-0 left-0 right-0 z-50 max-h-[76vh] overflow-hidden rounded-t-[1.75rem] border border-white/55 bg-white/96 p-3 text-[#075985] shadow-[0_-20px_80px_rgba(0,0,0,0.25)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#031b2e]/96 dark:text-white md:absolute md:bottom-[5.25rem] md:left-4 md:right-auto md:w-[25rem] md:rounded-[1.75rem]"
+              className="chat-picker-in fixed left-0 right-0 z-50 max-h-[76vh] overflow-hidden rounded-[1.75rem] border border-white/55 bg-white/96 p-3 text-[#075985] shadow-[0_-20px_80px_rgba(0,0,0,0.25)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#031b2e]/96 dark:text-white md:absolute md:bottom-[5.25rem] md:left-4 md:right-auto md:w-[25rem]"
               onPointerDown={(event) => event.stopPropagation()}
             >
               <div className="mb-3 flex rounded-2xl bg-sky-50 p-1 text-sm font-black shadow-inner dark:bg-white/8">
@@ -2297,7 +2297,6 @@ export default function ChatPage() {
                   onSelect={handleEmojiSelect}
                   tone="sky"
                   multiple={!reactionTargetId}
-                  autoFocus
                 />
               ) : (
                 <div>
@@ -2397,7 +2396,10 @@ export default function ChatPage() {
             <div className="chat-input-pill flex min-w-0 flex-1 items-end gap-1.5">
             <button
               type="button"
-              onPointerDown={(event) => event.stopPropagation()}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
               onClick={() => {
                 setReactionTargetId(null);
                 setPickerMode((current) => (current === "emoji" ? null : "emoji"));

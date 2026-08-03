@@ -12,7 +12,7 @@ import {
   MAX_IMAGE_SIZE,
   validateMediaFile,
 } from "@/lib/mediaFiles";
-import { encodeMemoryMedia, type MemoryAttachment } from "@/lib/memoryMedia";
+import { decodeMemoryMedia, encodeMemoryMedia, type MemoryAttachment } from "@/lib/memoryMedia";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
@@ -43,6 +43,7 @@ type MemoryComposerProps = {
   couple: CoupleLike;
   currentUserId: string;
   embedded?: boolean;
+  initialMemory?: CreatedMemory | null;
   onCreated?: (memory: CreatedMemory) => void;
 };
 
@@ -65,8 +66,10 @@ export default function MemoryComposer({
   couple,
   currentUserId,
   embedded = false,
+  initialMemory = null,
   onCreated,
 }: MemoryComposerProps) {
+  const initialMedia = decodeMemoryMedia(initialMemory?.image);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const discardRecordingRef = useRef(false);
@@ -74,11 +77,11 @@ export default function MemoryComposer({
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
-  const [title, setTitle] = useState("");
-  const [caption, setCaption] = useState("");
-  const [memoryImage, setMemoryImage] = useState<string | null>(null);
+  const [title, setTitle] = useState(initialMemory?.title || "");
+  const [caption, setCaption] = useState(initialMemory?.caption || initialMemory?.text || "");
+  const [memoryImage, setMemoryImage] = useState<string | null>(initialMedia.photoUrl);
   const [memoryImageFile, setMemoryImageFile] = useState<File | null>(null);
-  const [memoryVoice, setMemoryVoice] = useState<string | null>(null);
+  const [memoryVoice, setMemoryVoice] = useState<string | null>(initialMedia.voiceUrl);
   const [memoryVoiceFile, setMemoryVoiceFile] = useState<File | null>(null);
   const [memoryAttachments, setMemoryAttachments] = useState<PendingAttachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,6 +91,7 @@ export default function MemoryComposer({
   const [isRecording, setIsRecording] = useState(false);
   const [isRecordingPaused, setIsRecordingPaused] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const isEditing = Boolean(initialMemory?.id);
 
   function selectMemoryPhoto(file: File) {
     const validation = validateMediaFile(file, ["image"], MAX_IMAGE_SIZE);
@@ -242,16 +246,17 @@ export default function MemoryComposer({
   }
 
   async function addMemory() {
-    if (!title.trim() && !caption.trim() && !memoryImageFile && !memoryVoiceFile && memoryAttachments.length === 0) return;
+    if (!title.trim() && !caption.trim() && !memoryImage && !memoryVoice && memoryAttachments.length === 0) return;
 
     setIsSubmitting(true);
     setMessage("");
     const uploadedPaths: string[] = [];
 
     try {
-      let photoUrl: string | null = null;
-      let voiceUrl: string | null = null;
-      const attachments: MemoryAttachment[] = [];
+      const previousMedia = decodeMemoryMedia(initialMemory?.image);
+      let photoUrl: string | null = memoryImageFile ? null : memoryImage;
+      let voiceUrl: string | null = memoryVoiceFile ? null : memoryVoice;
+      const attachments: MemoryAttachment[] = [...(previousMedia.attachments || [])];
 
       if (memoryImageFile) {
         const compressedImage = await compressImageFile(memoryImageFile, {
@@ -277,20 +282,16 @@ export default function MemoryComposer({
         attachments.push({ url: upload.publicUrl, type: pending.type, name: pending.file.name, mimeType: pending.file.type || null, size: pending.file.size });
       }
 
-      const { data, error } = await supabase
-        .from("memories")
-        .insert([
-          {
-            title: title.trim(),
-            caption: caption.trim() || null,
-            text: caption.trim() || null,
-            image: encodeMemoryMedia({ photoUrl, voiceUrl, attachments }),
-            user_id: currentUserId,
-            couple_id: couple.id,
-          },
-        ])
-        .select()
-        .single<CreatedMemory>();
+      const payload = {
+        title: title.trim() || null,
+        caption: caption.trim() || null,
+        text: caption.trim() || null,
+        image: encodeMemoryMedia({ photoUrl, voiceUrl, attachments }),
+      };
+      const request = initialMemory
+        ? supabase.from("memories").update(payload).eq("id", initialMemory.id).eq("couple_id", couple.id)
+        : supabase.from("memories").insert([{ ...payload, user_id: currentUserId, couple_id: couple.id }]);
+      const { data, error } = await request.select().single<CreatedMemory>();
 
       if (error || !data) throw error || new Error("Не удалось создать воспоминание");
 
@@ -305,13 +306,13 @@ export default function MemoryComposer({
       setMemoryVoiceFile(null);
       memoryAttachments.forEach((item) => URL.revokeObjectURL(item.previewUrl));
       setMemoryAttachments([]);
-      setMessage("Воспоминание добавлено");
+      setMessage(initialMemory ? "Воспоминание обновлено" : "Воспоминание добавлено");
 
       await createPartnerNotification(couple, currentUserId, {
         type: "memory_added",
-        title: "Новое воспоминание",
-        body: title.trim() || caption.trim() || "Партнёр добавил воспоминание.",
-        href: "/memories",
+        title: initialMemory ? "Воспоминание обновлено" : "Новое воспоминание",
+        body: title.trim() || caption.trim() || (initialMemory ? "Партнёр обновил воспоминание." : "Партнёр добавил воспоминание."),
+        href: initialMemory ? `/memories/${initialMemory.id}` : "/memories",
       }).catch((notificationError) => console.error(notificationError));
     } catch (error) {
       console.error(error);
@@ -320,8 +321,8 @@ export default function MemoryComposer({
       }
       setMessage(
         error instanceof Error
-          ? `Не удалось добавить воспоминание: ${error.message}`
-          : "Не удалось добавить воспоминание. Попробуйте ещё раз.",
+          ? `Не удалось ${initialMemory ? "обновить" : "добавить"} воспоминание: ${error.message}`
+          : `Не удалось ${initialMemory ? "обновить" : "добавить"} воспоминание. Попробуйте ещё раз.`,
       );
     } finally {
       setIsSubmitting(false);
@@ -380,6 +381,7 @@ export default function MemoryComposer({
           <div className="relative shrink-0">
             <button
               type="button"
+              onPointerDown={(event) => event.preventDefault()}
               onClick={() => {
                 setIsAttachMenuOpen((current) => !current);
                 setIsEmojiPickerOpen(false);
@@ -439,6 +441,7 @@ export default function MemoryComposer({
           <div className="relative shrink-0">
             <button
               type="button"
+              onPointerDown={(event) => event.preventDefault()}
               onClick={() => {
                 setIsEmojiPickerOpen((current) => !current);
                 setIsAttachMenuOpen(false);
@@ -459,10 +462,9 @@ export default function MemoryComposer({
               <EmojiPicker
                 onSelect={addEmojiToCaption}
                 tone="blue"
-                className="memory-emoji-picker fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-2 right-2 top-auto z-50 mx-auto w-auto max-w-sm shadow-[0_20px_60px_rgba(37,99,235,0.22)] sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[min(22rem,calc(100vw-2rem))]"
+                className="memory-emoji-picker fixed left-2 right-2 top-auto z-50 mx-auto w-auto max-w-sm shadow-[0_20px_60px_rgba(37,99,235,0.22)] sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[min(22rem,calc(100vw-2rem))]"
                 compact
                 multiple
-                autoFocus
               />
             )}
           </div>
@@ -499,11 +501,11 @@ export default function MemoryComposer({
           type="button"
           onClick={addMemory}
           disabled={
-            isSubmitting || (!title.trim() && !caption.trim() && !memoryImageFile && !memoryVoiceFile && memoryAttachments.length === 0)
+            isSubmitting || (!title.trim() && !caption.trim() && !memoryImage && !memoryVoice && memoryAttachments.length === 0)
           }
           className="rounded-2xl bg-[#2563eb] px-7 py-3.5 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isSubmitting ? "Сохраняем..." : "Добавить воспоминание"}
+          {isSubmitting ? "Сохраняем..." : isEditing ? "Сохранить изменения" : "Добавить воспоминание"}
         </button>
       </div>
 

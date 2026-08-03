@@ -1,6 +1,6 @@
 "use client";
 
-import MemoryComposer from "@/components/MemoryComposer";
+import MemoryComposer, { type CreatedMemory } from "@/components/MemoryComposer";
 import { supabase } from "@/lib/supabaseClient";
 import { ArrowLeft, Images } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,8 @@ export default function NewMemoryPage() {
   const router = useRouter();
   const [couple, setCouple] = useState<Couple | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [initialMemory, setInitialMemory] = useState<CreatedMemory | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -37,6 +39,21 @@ export default function NewMemoryPage() {
         setMessage("Сначала подключите кабинет пары.");
         return;
       }
+      const editId = new URLSearchParams(window.location.search).get("edit");
+      if (editId) {
+        setIsEditing(true);
+        const { data: memoryData, error: memoryError } = await supabase
+          .from("memories")
+          .select("id, title, caption, text, image, is_pinned, reactions, user_id, couple_id, created_at")
+          .eq("id", editId)
+          .eq("couple_id", data.id)
+          .maybeSingle<CreatedMemory>();
+        if (memoryError || !memoryData) {
+          setMessage("Не удалось открыть воспоминание для редактирования.");
+          return;
+        }
+        setInitialMemory(memoryData);
+      }
       setCurrentUserId(user.id);
       setCouple(data);
     }
@@ -51,14 +68,14 @@ export default function NewMemoryPage() {
           <button type="button" onClick={() => router.back()} aria-label="Назад" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-blue-200 bg-white/80 text-[#2563eb] shadow-lg backdrop-blur dark:border-white/10 dark:bg-white/8 dark:text-white"><ArrowLeft size={21} /></button>
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#2563eb] text-white shadow-lg"><Images size={21} /></span>
           <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#2563eb]/60 dark:text-blue-200/60">Новый момент</p>
-            <h1 className="truncate text-2xl font-black sm:text-3xl">Добавить воспоминание</h1>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#2563eb]/60 dark:text-blue-200/60">{isEditing ? "Редактирование" : "Новый момент"}</p>
+            <h1 className="truncate text-2xl font-black sm:text-3xl">{isEditing ? "Изменить воспоминание" : "Добавить воспоминание"}</h1>
           </div>
         </header>
 
         {message && <p className="rounded-3xl bg-white/70 p-5 text-center font-black text-[#2563eb] shadow-xl dark:bg-white/8 dark:text-blue-100">{message}</p>}
         {!message && (!couple || !currentUserId) && <div className="h-72 animate-pulse rounded-[2rem] bg-white/55 shadow-xl dark:bg-white/8" />}
-        {couple && currentUserId && <MemoryComposer couple={couple} currentUserId={currentUserId} onCreated={() => router.replace("/memories")} />}
+        {couple && currentUserId && (!isEditing || initialMemory) && <MemoryComposer couple={couple} currentUserId={currentUserId} initialMemory={initialMemory} onCreated={(memory) => router.replace(`/memories/${memory.id}`)} />}
       </section>
     </main>
   );

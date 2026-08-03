@@ -12,8 +12,10 @@ test("watch and memories use dense two-column mobile grids", async () => {
   assert.match(css, /\.watch-card-grid[\s\S]*grid-template-columns:\s*repeat\(2/);
   assert.match(css, /\.memories-grid[\s\S]*grid-template-columns:\s*repeat\(2/);
   assert.match(watch, /watch-card-grid/);
-  assert.match(memories, /memory-interactions/);
+  assert.match(memories, /memory-comment-button/);
+  assert.match(memories, /href=\{`\/memories\/\$\{memory\.id\}`\}/);
   assert.match(memories, /memory-actions-menu/);
+  assert.doesNotMatch(memories, /Реакции и комментарии/);
 });
 
 test("question answers use integrated partner-only reactions and compact discussion", async () => {

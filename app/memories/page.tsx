@@ -7,9 +7,10 @@ import { supabase } from "@/lib/supabaseClient";
 import { createPartnerNotification } from "@/lib/notifications";
 import { decodeMemoryMedia } from "@/lib/memoryMedia";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, MessageCircle, MoreHorizontal, Pin, Send, SmilePlus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, MoreHorizontal, Pencil, Pin, SmilePlus, Trash2 } from "lucide-react";
 
 const PAGE_SIZE = 12;
 type Couple = {
@@ -93,7 +94,6 @@ export default function MemoriesPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [comments, setComments] = useState<Record<string, MemoryComment[]>>({});
-  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<"all" | "pinned">("all");
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -332,39 +332,6 @@ export default function MemoriesPage() {
     }
   }
 
-  async function addComment(memory: Memory) {
-    if (!couple || !currentUserId) return;
-    const text = commentDrafts[memory.id]?.trim();
-    if (!text) return;
-
-    const { data, error } = await supabase
-      .from("memory_comments")
-      .insert([
-        {
-          memory_id: memory.id,
-          couple_id: couple.id,
-          user_id: currentUserId,
-          text,
-        },
-      ])
-      .select()
-      .single();
-
-    if (!error && data) {
-      setComments((current) => ({
-        ...current,
-        [memory.id]: [...(current[memory.id] || []), data as MemoryComment],
-      }));
-      setCommentDrafts((current) => ({ ...current, [memory.id]: "" }));
-      await createPartnerNotification(couple, currentUserId, {
-        type: "memory_comment",
-        title: "Комментарий к воспоминанию",
-        body: text,
-        href: "/memories",
-      });
-    }
-  }
-
   function openRandomMemory() {
     if (visibleMemories.length === 0) return;
     setSelectedIndex(Math.floor(Math.random() * visibleMemories.length));
@@ -514,14 +481,8 @@ export default function MemoriesPage() {
                       <span>Дата: {formatTime(memory.created_at)}</span>
                     </div>
 
-                    <div className="memory-card-controls mt-4 flex items-start gap-1.5">
-                    <details className="memory-interactions min-w-0 flex-1">
-                      <summary>
-                        <MessageCircle aria-hidden="true" size={16} />
-                        Реакции и комментарии
-                        <span>{Object.keys(memory.reactions || {}).length + (comments[memory.id] || []).length}</span>
-                      </summary>
-                      <div className="memory-reactions mt-3 flex flex-wrap gap-2">
+                    <div className="memory-card-controls mt-4 flex items-center gap-1.5">
+                      <div className="memory-reactions relative flex min-w-0 flex-1 flex-wrap gap-1.5">
                         {Array.from(new Set(Object.values(memory.reactions || {}).filter((reaction): reaction is string => Boolean(reaction)))).map((reaction) => {
                         const userIds = getReactionUsers(memory, reaction);
                         const singleUser = userIds.length === 1 ? getMemoryUserMeta(userIds[0]) : null;
@@ -530,7 +491,7 @@ export default function MemoriesPage() {
                           <button
                             key={reaction}
                             onClick={() => toggleReaction(memory, reaction)}
-                            className={`memory-reaction-option inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full border px-2 text-lg shadow-sm transition hover:-translate-y-0.5 ${
+                            className={`memory-reaction-option inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-full border px-1.5 text-base shadow-sm transition hover:-translate-y-0.5 ${
                               isMyReaction
                                 ? "is-active border-blue-300 bg-blue-100"
                                 : "border-white/70 bg-white/65 dark:border-white/10 dark:bg-white/8"
@@ -543,7 +504,7 @@ export default function MemoriesPage() {
                                   : "Поставить реакцию"
                             }
                           >
-                            <FluentEmoji emoji={reaction} size={24} decorative />
+                            <FluentEmoji emoji={reaction} size={20} decorative />
                             {userIds.length > 1 ? (
                               <span className="text-xs font-black text-[#2563eb] dark:text-blue-100">{userIds.length}</span>
                             ) : singleUser?.avatar ? (
@@ -557,13 +518,12 @@ export default function MemoriesPage() {
                         <button
                           type="button"
                           onClick={() => setReactionPickerMemoryId((current) => current === memory.id ? null : memory.id)}
-                          className="memory-reaction-option inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-white/70 bg-white/65 px-2 text-[#2563eb] shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/8 dark:text-blue-100"
+                          className="memory-reaction-option inline-flex h-8 min-w-8 items-center justify-center rounded-full border border-blue-200/70 bg-blue-50/80 px-1.5 text-[#2563eb] shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-blue-500/12 dark:text-blue-100"
                           aria-label="Выбрать реакцию"
                           aria-expanded={reactionPickerMemoryId === memory.id}
                         >
                           <SmilePlus aria-hidden="true" size={18} />
                         </button>
-                      </div>
 
                       {reactionPickerMemoryId === memory.id && (
                         <EmojiPicker
@@ -573,50 +533,20 @@ export default function MemoriesPage() {
                             setReactionPickerMemoryId(null);
                           }}
                           tone="blue"
-                          className="mt-3"
+                          className="absolute bottom-10 left-0 z-30 w-[min(21rem,calc(100vw-3.5rem))]"
                           compact
-                          autoFocus
                         />
                       )}
-
-                      <div className="memory-comments mt-3 rounded-2xl bg-blue-50/70 p-3 dark:bg-white/8">
-                      <p className="mb-2 text-sm font-black text-[#2563eb] dark:text-blue-100">
-                        Комментарии
-                      </p>
-                      <div className="space-y-2">
-                        {(comments[memory.id] || []).map((comment) => (
-                          <div key={comment.id} className="rounded-xl bg-white/70 p-2 text-sm font-semibold dark:bg-black/18">
-                            <span className="font-black">
-                              {comment.user_id === currentUserId ? "Вы" : "Партнёр"}:
-                            </span>{" "}
-                            <FluentEmojiText>{comment.text}</FluentEmojiText>
-                          </div>
-                        ))}
                       </div>
-                      <div className="mt-3 flex gap-2">
-                        <input
-                          value={commentDrafts[memory.id] || ""}
-                          onChange={(event) =>
-                            setCommentDrafts((current) => ({
-                              ...current,
-                              [memory.id]: event.target.value,
-                            }))
-                          }
-                          placeholder="Комментарий..."
-                          className="min-w-0 flex-1 rounded-full bg-white/80 px-4 py-2 text-sm font-semibold outline-none dark:bg-white/10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => addComment(memory)}
-                          aria-label="Отправить комментарий"
-                          title="Отправить"
-                          className="rounded-full bg-[#2563eb] px-4 py-2 text-sm font-black text-white"
-                        >
-                          <Send aria-hidden="true" size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    </details>
+                      <Link
+                        href={`/memories/${memory.id}`}
+                        className="memory-comment-button relative grid h-9 w-9 shrink-0 place-items-center rounded-full border border-blue-200/70 bg-blue-50/85 text-[#2563eb] shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-blue-500/14 dark:text-blue-100"
+                        aria-label="Открыть комментарии"
+                        title="Комментарии"
+                      >
+                        <MessageCircle aria-hidden="true" size={17} />
+                        {(comments[memory.id] || []).length > 0 && <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#2563eb] px-1 text-[9px] font-black text-white">{(comments[memory.id] || []).length}</span>}
+                      </Link>
                     <details className="memory-actions-menu relative z-20 shrink-0">
                       <summary aria-label="Действия с воспоминанием" title="Действия">
                         <MoreHorizontal aria-hidden="true" size={18} />
@@ -626,6 +556,10 @@ export default function MemoriesPage() {
                           <Pin aria-hidden="true" size={15} />
                           {memory.is_pinned ? "Открепить" : "Закрепить"}
                         </button>
+                        <Link href={`/memories/new?edit=${memory.id}`}>
+                          <Pencil aria-hidden="true" size={15} />
+                          Редактировать
+                        </Link>
                         <button type="button" onClick={() => deleteMemory(memory)} className="is-danger">
                           <Trash2 aria-hidden="true" size={15} />
                           Удалить

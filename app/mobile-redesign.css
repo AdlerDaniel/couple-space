@@ -2903,3 +2903,119 @@ main textarea:not(.chat-composer-input) {
     flex-basis: 3rem !important;
   }
 }
+
+/* August 2026: final mobile alignment pass. */
+.dashboard-hero-portrait {
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+.emoji-picker {
+  max-width: calc(100vw - 1rem);
+}
+
+.chat-composer-row,
+.question-discussion-row {
+  align-items: flex-end !important;
+}
+
+.chat-input-pill {
+  min-height: 2.75rem;
+  align-items: center !important;
+  border: 1px solid #eef1f3;
+  border-radius: 999px;
+  padding: 0.12rem 0.2rem;
+  background: #fff;
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.05);
+}
+
+.dark .chat-input-pill {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: #202c33;
+}
+
+.chat-composer-input,
+.question-discussion-input {
+  scrollbar-width: thin;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.memory-voice-player {
+  border: 0;
+  padding-inline: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (max-width: 767px) {
+  .chat-composer-row {
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    gap: 0.35rem !important;
+  }
+
+  .chat-composer-input {
+    min-height: 2.5rem !important;
+    max-height: none !important;
+    padding: 0.57rem 0.2rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .chat-primary-action,
+  .question-discussion-action {
+    width: 2.75rem !important;
+    min-width: 2.75rem !important;
+    max-width: 2.75rem !important;
+    height: 2.75rem !important;
+    min-height: 2.75rem !important;
+    max-height: 2.75rem !important;
+    flex-basis: 2.75rem !important;
+  }
+
+  .question-discussion-composer {
+    min-height: 2.75rem !important;
+    padding: 0.12rem 0.2rem !important;
+  }
+
+  .question-discussion-input {
+    min-height: 2.5rem !important;
+    padding-block: 0.57rem !important;
+  }
+
+  .memory-caption-field {
+    min-height: 3rem;
+  }
+
+  .memory-emoji-picker {
+    max-height: calc(100dvh - 7rem);
+  }
+
+  .tracker-theme > div > .tracker-content-grid,
+  .tracker-theme > div > .tracker-support-grid {
+    margin: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .memory-card-body {
+    padding-bottom: 0.2rem !important;
+  }
+
+  .memory-card-controls {
+    align-items: flex-start;
+  }
+
+  .memory-actions-menu > summary,
+  .memory-interactions > summary {
+    min-height: 1.8rem;
+  }
+}

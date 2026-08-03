@@ -835,6 +835,12 @@ export default function TrackerPage() {
                 onFilter={setSelectedCategoryFilter}
                 days={filteredYearDays}
                 maxScore={maxYearScore}
+                year={viewDate.getFullYear()}
+                onSelectDate={(dateKey) => {
+                  setSelectedDate(dateKey);
+                  setViewDate(parseDateKey(dateKey));
+                  setPeriod("day");
+                }}
               />
             )}
           </div>
@@ -1610,17 +1616,21 @@ function YearHeatmap({
   days,
   maxScore,
   onFilter,
+  year,
+  onSelectDate,
 }: {
   categories: TrackerCategory[];
   filter: string;
   days: { date: Date; dateKey: string; rows: TrackerEvent[]; score: number }[];
   maxScore: number;
   onFilter: (categoryId: string) => void;
+  year: number;
+  onSelectDate: (dateKey: string) => void;
 }) {
   return (
     <section className={`${trackerPanelClass} animate-fadeIn rounded-[1.35rem] p-4 sm:p-5`}>
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <h2 className="text-2xl font-black">Годовая heatmap</h2>
+        <h2 className="text-2xl font-black">{year} год</h2>
         <div className="flex flex-wrap gap-2">
           {[{ id: "all", name: "Все" }, ...categories.map((category) => ({ id: category.id, name: category.name }))].map((item) => (
             <button
@@ -1640,9 +1650,12 @@ function YearHeatmap({
           const opacity = day.score ? 0.2 + (day.score / maxScore) * 0.8 : 0.08;
           const title = `${formatDate(day.dateKey)} · ${day.score || 0} активностей`;
           return (
-            <div
+            <button
+              type="button"
               key={day.dateKey}
               title={title}
+              aria-label={`Открыть ${title}`}
+              onClick={() => onSelectDate(day.dateKey)}
               className="anime-heat-cell aspect-square rounded-[0.25rem] transition hover:scale-150 hover:ring-2 hover:ring-white"
               style={{
                 backgroundColor: day.score ? `rgba(202,138,4,${opacity})` : "rgba(255,255,255,0.55)",

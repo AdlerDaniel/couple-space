@@ -46,6 +46,9 @@ test("memory cards omit empty fallback copy and keep the composer compact", asyn
   assert.match(memories, /getMemoryTitle/);
   assert.match(memories, /getMemoryDescription/);
   assert.match(memories, /displayTitle &&/);
+  assert.match(memories, /memory-card-controls/);
+  assert.match(memories, /memory-voice-player/);
+  assert.match(composer, /memory-emoji-picker fixed/);
   assert.match(mobileCss, /columns:\s*2 !important/);
   assert.match(mobileCss, /break-inside:\s*avoid/);
   assert.match(mobileCss, /memory-reaction-option\.is-active/);
@@ -59,6 +62,8 @@ test("chat uses a compact mobile profile header and integrated composer", async 
   assert.match(chat, /chat-mobile-more/);
   assert.match(chat, /chat-composer/);
   assert.match(chat, /placeholder="Сообщение"/);
+  assert.match(chat, /lineHeight \* 5/);
+  assert.match(chat, /overflow-y-hidden/);
   assert.match(shell, /pathname === "\/chat"/);
   assert.match(shell, /questions\/discussion/);
 });

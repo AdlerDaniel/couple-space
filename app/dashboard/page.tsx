@@ -544,7 +544,7 @@ export default function DashboardPage() {
                       alt={`Фото: ${partner.name}`}
                       fill
                       sizes="(min-width: 1024px) 560px, 50vw"
-                      className="object-cover"
+                      className="dashboard-hero-portrait object-cover"
  unoptimized />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-gradient-to-br from-rose-300 via-red-300 to-orange-200 text-[clamp(5rem,18vw,13rem)] font-black text-white/75 dark:from-rose-950 dark:via-red-950 dark:to-orange-950">

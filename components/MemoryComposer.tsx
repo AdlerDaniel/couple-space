@@ -375,7 +375,8 @@ export default function MemoryComposer({
           }}
         />
 
-        <div className="flex min-h-16 items-end gap-1 rounded-2xl border border-blue-200/70 bg-white/75 p-2 text-blue-950 shadow-inner transition focus-within:border-blue-400 focus-within:shadow-[0_0_0_4px_rgba(37,99,235,0.12)] dark:border-white/10 dark:bg-white/8 dark:text-white">
+        <div className="memory-caption-row flex items-end gap-1.5">
+        <div className="memory-caption-field flex min-h-12 min-w-0 flex-1 items-center gap-1 rounded-2xl border border-blue-200/70 bg-white/75 p-1 text-blue-950 shadow-inner transition focus-within:border-blue-400 focus-within:shadow-[0_0_0_4px_rgba(37,99,235,0.12)] dark:border-white/10 dark:bg-white/8 dark:text-white">
           <div className="relative shrink-0">
             <button
               type="button"
@@ -431,8 +432,8 @@ export default function MemoryComposer({
             value={caption}
             onChange={(event) => setCaption(event.target.value)}
             placeholder="Описание"
-            rows={2}
-            className="max-h-40 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 font-semibold leading-6 outline-none placeholder:text-blue-400/65 dark:placeholder:text-white/38"
+            rows={1}
+            className="max-h-40 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2 font-semibold leading-6 outline-none placeholder:text-blue-400/65 dark:placeholder:text-white/38"
           />
 
           <div className="relative shrink-0">
@@ -458,13 +459,15 @@ export default function MemoryComposer({
               <EmojiPicker
                 onSelect={addEmojiToCaption}
                 tone="blue"
-                className="absolute right-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] shadow-[0_20px_60px_rgba(37,99,235,0.22)]"
+                className="memory-emoji-picker fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-2 right-2 top-auto z-50 mx-auto w-auto max-w-sm shadow-[0_20px_60px_rgba(37,99,235,0.22)] sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[min(22rem,calc(100vw-2rem))]"
                 compact
                 multiple
                 autoFocus
               />
             )}
           </div>
+
+        </div>
 
           <button
             type="button"
@@ -474,7 +477,7 @@ export default function MemoryComposer({
               void toggleVoiceRecording();
             }}
             disabled={isSubmitting}
-            className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl transition hover:-translate-y-0.5 disabled:opacity-50 ${
+            className={`memory-voice-action grid h-12 w-12 shrink-0 place-items-center rounded-full transition hover:-translate-y-0.5 disabled:opacity-50 ${
               isRecording
                 ? "bg-rose-500 text-white shadow-[0_10px_28px_rgba(244,63,94,0.3)]"
                 : "text-blue-500/75 hover:bg-blue-100 dark:text-white/60 dark:hover:bg-white/10"

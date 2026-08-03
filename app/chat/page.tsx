@@ -1214,6 +1214,19 @@ export default function ChatPage() {
     sendTyping();
   }
 
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    const styles = window.getComputedStyle(textarea);
+    const lineHeight = Number.parseFloat(styles.lineHeight) || 21;
+    const verticalPadding = Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.paddingBottom);
+    const maxHeight = lineHeight * 5 + verticalPadding;
+    const nextHeight = Math.min(textarea.scrollHeight, maxHeight);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, [draft]);
+
   function handleDraftKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -2440,7 +2453,7 @@ export default function ChatPage() {
               placeholder="Сообщение"
               rows={1}
               maxLength={1000}
-              className="chat-composer-input max-h-32 min-h-10 min-w-0 flex-1 resize-none bg-transparent px-1 py-2.5 text-sm font-semibold text-[#075985] outline-none placeholder:text-sky-400/70 dark:text-white dark:placeholder:text-white/38 md:max-h-36 md:min-h-12 md:px-2 md:py-3 md:text-base"
+              className="chat-composer-input min-h-10 min-w-0 flex-1 resize-none overflow-y-hidden bg-transparent px-1 py-2.5 text-sm font-semibold text-[#075985] outline-none placeholder:text-sky-400/70 dark:text-white dark:placeholder:text-white/38 md:min-h-12 md:px-2 md:py-3 md:text-base"
             />
             </div>
             {draft.trim() || editingId || pendingAttachments.length > 0 ? (

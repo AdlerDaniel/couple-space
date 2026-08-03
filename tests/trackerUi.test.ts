@@ -56,3 +56,11 @@ test("tracker calendar uses compact category markers", async () => {
   assert.match(source, /activeCategories\.slice\(0, 4\)/);
   assert.doesNotMatch(source, /group min-h-24 rounded-2xl/);
 });
+
+test("tracker year view names the current year and opens a selected day", async () => {
+  const source = await readFile(new URL("../app/tracker/page.tsx", import.meta.url), "utf8");
+
+  assert.match(source, />\{year\} год</);
+  assert.match(source, /onClick=\{\(\) => onSelectDate\(day\.dateKey\)\}/);
+  assert.match(source, /setPeriod\("day"\)/);
+});

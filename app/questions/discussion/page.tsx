@@ -88,6 +88,7 @@ function getInitial(value?: string | null) {
 export default function QuestionDiscussionPage() {
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const composerTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioInputRef = useRef<HTMLInputElement | null>(null);
@@ -111,6 +112,19 @@ export default function QuestionDiscussionPage() {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   const answerId = question?.id || null;
+
+  useEffect(() => {
+    const textarea = composerTextareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    const styles = window.getComputedStyle(textarea);
+    const lineHeight = Number.parseFloat(styles.lineHeight) || 20;
+    const verticalPadding = Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.paddingBottom);
+    const maxHeight = lineHeight * 5 + verticalPadding;
+    const nextHeight = Math.min(textarea.scrollHeight, maxHeight);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, [draft]);
   const currentName = useMemo(() => {
     if (!couple || !currentUserId) return "Вы";
     return currentUserId === couple.partner_one_id
@@ -441,7 +455,8 @@ export default function QuestionDiscussionPage() {
               <button type="button" onClick={() => stopRecording(false)} className="grid h-9 w-9 place-items-center rounded-full bg-emerald-500 text-white"><Square size={14} fill="currentColor" /></button>
             </div>
           )}
-          <div className="question-discussion-composer relative flex items-center gap-1 rounded-[1.45rem] border border-emerald-100 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/8">
+          <div className="question-discussion-row flex items-end gap-1.5">
+          <div className="question-discussion-composer relative flex min-w-0 flex-1 items-center gap-1 rounded-[1.45rem] border border-emerald-100 bg-white p-1 shadow-sm dark:border-white/10 dark:bg-white/8">
             <input ref={mediaInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) selectMedia(file); event.target.value = ""; }} />
             <input ref={fileInputRef} type="file" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) selectMedia(file); event.target.value = ""; }} />
             <input ref={audioInputRef} type="file" accept="audio/*,.m4a,.mp3,.ogg,.wav,.webm" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) selectMedia(file); event.target.value = ""; }} />
@@ -457,7 +472,8 @@ export default function QuestionDiscussionPage() {
               <button type="button" onClick={() => { setIsEmojiPickerOpen((current) => !current); setIsAttachMenuOpen(false); }} aria-label="Выбрать эмодзи" className="question-discussion-icon grid h-9 w-9 place-items-center rounded-full text-emerald-600 transition hover:bg-emerald-50 dark:text-emerald-100 dark:hover:bg-white/8"><Smile size={19} /></button>
               {isEmojiPickerOpen && <EmojiPicker tone="emerald" compact multiple onSelect={(emoji) => { setDraft((current) => `${current}${emoji}`); setIsEmojiPickerOpen(false); }} className="fixed bottom-[4.5rem] left-2 right-2 z-50 mx-auto max-w-sm sm:absolute sm:bottom-12 sm:left-0 sm:right-auto sm:w-80" />}
             </div>
-            <textarea value={draft} onChange={(event) => { setDraft(event.target.value); event.currentTarget.style.height = "auto"; event.currentTarget.style.height = `${Math.min(event.currentTarget.scrollHeight, 112)}px`; }} rows={1} maxLength={1000} placeholder="Сообщение" className="question-discussion-input max-h-28 h-9 min-h-9 min-w-0 flex-1 resize-none bg-transparent px-1 py-[0.45rem] text-sm font-semibold leading-5 outline-none placeholder:text-emerald-800/35 dark:placeholder:text-white/35" />
+            <textarea ref={composerTextareaRef} value={draft} onChange={(event) => setDraft(event.target.value)} rows={1} maxLength={1000} placeholder="Сообщение" className="question-discussion-input min-h-9 min-w-0 flex-1 resize-none overflow-y-hidden bg-transparent px-1 py-2 text-sm font-semibold leading-5 outline-none placeholder:text-emerald-800/35 dark:placeholder:text-white/35" />
+          </div>
             {draft.trim() || pendingMedia ? (
               <button type="submit" disabled={isSending} aria-label="Отправить" className="question-discussion-action grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500 p-0 text-white shadow-md disabled:opacity-45"><Send size={18} /></button>
             ) : (

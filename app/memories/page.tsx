@@ -493,23 +493,8 @@ export default function MemoriesPage() {
                     </div>
                   )}
 
-                  <div className="memory-card-body p-3 pb-12">
+                  <div className="memory-card-body p-3">
                     {memory.is_pinned && <span className="mb-2 inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-[#2563eb] dark:bg-white/10 dark:text-blue-100">Закреплено</span>}
-                      <details className="memory-actions-menu absolute bottom-3 right-3 z-20">
-                        <summary aria-label="Действия с воспоминанием" title="Действия">
-                          <MoreHorizontal aria-hidden="true" size={18} />
-                        </summary>
-                        <div>
-                          <button type="button" onClick={() => togglePinned(memory)}>
-                            <Pin aria-hidden="true" size={15} />
-                            {memory.is_pinned ? "Открепить" : "Закрепить"}
-                          </button>
-                          <button type="button" onClick={() => deleteMemory(memory)} className="is-danger">
-                            <Trash2 aria-hidden="true" size={15} />
-                            Удалить
-                          </button>
-                        </div>
-                      </details>
                     {displayTitle && (
                       <h2 className="text-2xl font-black text-[#172554] dark:text-white">
                         <FluentEmojiText>{displayTitle}</FluentEmojiText>
@@ -521,12 +506,7 @@ export default function MemoriesPage() {
                       </p>
                     )}
                     {media.voiceUrl && (
-                      <div className="mt-4 rounded-2xl border border-blue-200/70 bg-blue-50/75 p-3 shadow-inner dark:border-white/10 dark:bg-white/8">
-                        <p className="mb-2 text-sm font-black text-[#2563eb] dark:text-blue-100">
-                          Голосовое воспоминание
-                        </p>
-                        <AccentAudioPlayer src={media.voiceUrl} accent="#2563eb" label="Голосовое воспоминание" />
-                      </div>
+                      <AccentAudioPlayer src={media.voiceUrl} accent="#2563eb" label="Голосовое воспоминание" className="memory-voice-player mt-2" />
                     )}
                     {(media.attachments || []).length > 0 && <div className="mt-3 grid gap-2">{(media.attachments || []).map((attachment, attachmentIndex) => attachment.type === "image" ? <Image key={`${attachment.url}-${attachmentIndex}`} src={attachment.url} alt={attachment.name} width={720} height={520} sizes="(max-width: 768px) 45vw, 420px" className="max-h-72 w-full rounded-2xl object-cover" unoptimized /> : attachment.type === "video" ? <video key={`${attachment.url}-${attachmentIndex}`} src={attachment.url} controls playsInline preload="metadata" className="max-h-72 w-full rounded-2xl bg-black" /> : attachment.type === "audio" ? <AccentAudioPlayer key={`${attachment.url}-${attachmentIndex}`} src={attachment.url} accent="#2563eb" label={attachment.name} /> : <a key={`${attachment.url}-${attachmentIndex}`} href={attachment.url} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-2 rounded-2xl bg-blue-50 px-3 py-2 text-xs font-black text-[#2563eb] dark:bg-white/8 dark:text-blue-100"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#2563eb] text-white">↗</span><span className="truncate">{attachment.name}</span></a>)}</div>}
                     <div className="memory-meta mt-4 grid gap-2 text-sm font-bold text-[#172554]/58 dark:text-white/45">
@@ -534,7 +514,8 @@ export default function MemoriesPage() {
                       <span>Дата: {formatTime(memory.created_at)}</span>
                     </div>
 
-                    <details className="memory-interactions mt-4">
+                    <div className="memory-card-controls mt-4 flex items-start gap-1.5">
+                    <details className="memory-interactions min-w-0 flex-1">
                       <summary>
                         <MessageCircle aria-hidden="true" size={16} />
                         Реакции и комментарии
@@ -636,6 +617,22 @@ export default function MemoriesPage() {
                       </div>
                     </div>
                     </details>
+                    <details className="memory-actions-menu relative z-20 shrink-0">
+                      <summary aria-label="Действия с воспоминанием" title="Действия">
+                        <MoreHorizontal aria-hidden="true" size={18} />
+                      </summary>
+                      <div>
+                        <button type="button" onClick={() => togglePinned(memory)}>
+                          <Pin aria-hidden="true" size={15} />
+                          {memory.is_pinned ? "Открепить" : "Закрепить"}
+                        </button>
+                        <button type="button" onClick={() => deleteMemory(memory)} className="is-danger">
+                          <Trash2 aria-hidden="true" size={15} />
+                          Удалить
+                        </button>
+                      </div>
+                    </details>
+                    </div>
                   </div>
                 </article>
               );

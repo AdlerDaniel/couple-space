@@ -25,6 +25,31 @@ function TypeIcon({ type }: { type: ContentType }) {
   return <Icon aria-hidden="true" size={20} />;
 }
 
+function WatchResultPoster({ result }: { result: WatchSearchResult }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!result.posterUrl || failed) {
+    return (
+      <span className="grid h-[4.5rem] w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-lime-200 to-emerald-100 text-lime-700 shadow-inner dark:from-lime-500/22 dark:to-emerald-500/12 dark:text-lime-100">
+        <TypeIcon type={result.contentType} />
+      </span>
+    );
+  }
+
+  return (
+    <Image
+      src={result.posterUrl}
+      alt={`Постер: ${result.title}`}
+      width={96}
+      height={144}
+      sizes="48px"
+      className="h-[4.5rem] w-12 shrink-0 rounded-xl object-cover shadow-sm"
+      onError={() => setFailed(true)}
+      unoptimized
+    />
+  );
+}
+
 export default function AddWatchPage() {
   const router = useRouter();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -85,20 +110,22 @@ export default function AddWatchPage() {
     return () => { ignore = true; window.clearTimeout(timer); };
   }, [title]);
 
-  async function addItem() {
+  async function addItem(resultOverride?: WatchSearchResult) {
     if (!couple || !currentUserId || isSaving) return;
-    const normalizedTitle = title.trim().replace(/\s+/g, " ");
+    const normalizedTitle = (resultOverride?.title || title).trim().replace(/\s+/g, " ");
     if (!normalizedTitle) { setMessage("Введите название."); return; }
     if (findDuplicateWatchTitle(items, normalizedTitle)) { setMessage("Такое название уже есть в списке."); return; }
+
+    const selected = resultOverride || selectedResult;
 
     setIsSaving(true);
     const { error } = await supabase.from("watch_items").insert([{
       couple_id: couple.id,
       title: normalizedTitle,
-      content_type: selectedResult?.contentType || contentType,
+      content_type: selected?.contentType || contentType,
       added_by: currentUserId,
-      external_url: selectedResult?.externalUrl || null,
-      poster_url: selectedResult?.posterUrl || null,
+      external_url: selected?.externalUrl || null,
+      poster_url: selected?.posterUrl || null,
     }]);
     setIsSaving(false);
     if (error) { setMessage(error.code === "23505" ? "Такое название уже есть в списке." : "Не удалось добавить. Попробуйте ещё раз."); return; }
@@ -132,8 +159,8 @@ export default function AddWatchPage() {
           {normalizeWatchTitle(title).length >= 2 && (
             <div className="mt-3 max-h-[min(24rem,46dvh)] overflow-y-auto rounded-[1.3rem] border border-lime-200/70 bg-white/88 p-2 shadow-inner dark:border-white/10 dark:bg-black/16">
               {isSearching ? <p className="p-3 text-sm font-black opacity-60">Ищем варианты…</p> : results.length ? results.map((result) => (
-                <button key={`${result.contentType}-${result.id}`} type="button" onClick={() => { setTitle(result.title); setContentType(result.contentType); setSelectedResult(result); setResults([]); }} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left transition hover:bg-lime-100 dark:hover:bg-white/10">
-                  {result.posterUrl ? <Image src={result.posterUrl} alt="" width={48} height={68} className="h-16 w-11 shrink-0 rounded-lg object-cover" unoptimized /> : <span className="grid h-16 w-11 shrink-0 place-items-center rounded-lg bg-lime-100 text-lime-700 dark:bg-white/8 dark:text-lime-100"><TypeIcon type={result.contentType} /></span>}
+                <button key={`${result.contentType}-${result.id}`} type="button" disabled={isSaving} onClick={() => { setTitle(result.title); setContentType(result.contentType); setSelectedResult(result); setResults([]); void addItem(result); }} className="flex w-full items-center gap-3 rounded-2xl p-2 text-left transition hover:bg-lime-100 disabled:cursor-wait disabled:opacity-55 dark:hover:bg-white/10">
+                  <WatchResultPoster result={result} />
                   <span className="min-w-0"><strong className="block break-words">{result.title}</strong><span className="mt-1 block text-xs font-bold opacity-55">{result.subtitle || contentTypes.find((item) => item.key === result.contentType)?.label}</span></span>
                 </button>
               )) : <p className="p-3 text-sm font-black opacity-60">Ничего не нашли. Название можно добавить вручную.</p>}

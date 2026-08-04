@@ -44,6 +44,7 @@ type Answer = {
   answer_two_voice_url?: string | null;
   answer_one_photo_url?: string | null;
   answer_two_photo_url?: string | null;
+  created_at?: string | null;
   date: string;
   couple_id: string;
 };
@@ -124,12 +125,13 @@ export default function TodayQuestionPage() {
   const myEditedAt = isPartnerOne
     ? answerRecord?.answer_one_edited_at
     : answerRecord?.answer_two_edited_at;
+  const mySavedAt = myEditedAt || answerRecord?.created_at || null;
   const hasMyAnswer = Boolean(myAnswer || myVoiceUrl || myPhotoUrl);
   const hasPartnerAnswer = Boolean(partnerAnswer || partnerVoiceUrl || partnerPhotoUrl);
   const canEdit =
     hasMyAnswer &&
-    Boolean(myEditedAt) &&
-    (nowMs === 0 || new Date(myEditedAt as string).getTime() + EDIT_WINDOW_MS > nowMs);
+    Boolean(mySavedAt) &&
+    (nowMs === 0 || new Date(mySavedAt as string).getTime() + EDIT_WINDOW_MS > nowMs);
   const myName = (isPartnerOne ? profile?.partner_one : profile?.partner_two) || "Вы";
   const partnerName = (isPartnerOne ? profile?.partner_two : profile?.partner_one) || "Партнёр";
   const myAvatar = isPartnerOne ? profile?.avatar_one : profile?.avatar_two;

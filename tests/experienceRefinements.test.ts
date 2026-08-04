@@ -24,6 +24,7 @@ test("question results use avatars, a dedicated discussion chat, and an expiring
   assert.match(source, /question-conversation-layout/);
   assert.match(source, /QuestionAvatar/);
   assert.match(source, /Время редактирования истекло/);
+  assert.match(source, /myEditedAt \|\| answerRecord\?\.created_at/);
   assert.match(source, /<Flame/);
   assert.match(source, /questions\/discussion\?answerId=/);
   assert.doesNotMatch(source, /<QuestionComments/);
@@ -49,6 +50,11 @@ test("memory cards omit empty fallback copy and keep the composer compact", asyn
   assert.match(memories, /memory-card-controls/);
   assert.match(memories, /memory-voice-player/);
   assert.match(composer, /memory-emoji-picker fixed/);
+  assert.match(memories, /portal/);
+  assert.match(memories, /onClick=\{\(event\) => event\.stopPropagation\(\)\}/);
+  assert.ok(
+    composer.lastIndexOf("Добавить воспоминание") > composer.lastIndexOf("memoryAttachments.length"),
+  );
   assert.match(mobileCss, /columns:\s*2 !important/);
   assert.match(mobileCss, /break-inside:\s*avoid/);
   assert.match(mobileCss, /memory-reaction-option\.is-active/);
@@ -64,6 +70,8 @@ test("chat uses a compact mobile profile header and integrated composer", async 
   assert.match(chat, /placeholder="Сообщение"/);
   assert.match(chat, /lineHeight \* 5/);
   assert.match(chat, /overflow-y-hidden/);
+  assert.match(chat, /chat-messages-scroll/);
+  assert.match(chat, /isVoiceMessage \? "px-0 py-0 shadow-none"/);
   assert.match(shell, /pathname === "\/chat"/);
   assert.match(shell, /questions\/discussion/);
 });
@@ -91,6 +99,16 @@ test("Today movie actions open the dedicated add page and roulette", async () =>
   assert.match(watchSource, /href="\/watch\/new"/);
   assert.doesNotMatch(watchSource, /Вернуться в Сегодня/);
   assert.match(addSource, /Добавить в список/);
+  assert.match(addSource, /WatchResultPoster/);
+  assert.match(addSource, /void addItem\(result\)/);
+});
+
+test("daily answer attachments keep voice recording as a separate action", async () => {
+  const source = await readSource("app/questions/answer/page.tsx");
+
+  assert.match(source, /pr-28/);
+  assert.match(source, /aria-label=\{isRecording \? "Завершить запись" : "Записать голос"\}/);
+  assert.match(source, /firstSavedAt = answerRecord\?\.\[editedAtField\] \|\| answerRecord\?\.created_at/);
 });
 
 test("achievements no longer create notifications or navigation entries", async () => {

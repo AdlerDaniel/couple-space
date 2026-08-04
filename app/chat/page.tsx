@@ -1815,7 +1815,7 @@ export default function ChatPage() {
           </div>
         )}
 
-        <div ref={scrollRef} onScroll={handleScroll} className="relative min-h-0 flex-1 overflow-y-auto px-2 py-3 pb-28 md:px-6 md:py-4 md:pb-4">
+        <div ref={scrollRef} onScroll={handleScroll} className="chat-messages-scroll relative min-h-0 flex-1 overflow-y-auto px-2 py-3 pb-28 md:px-6 md:py-4 md:pb-4">
           {visibleMessages.length === 0 ? (
             <div className="chat-empty-state grid h-full place-items-center text-center">
               <div className="max-w-sm rounded-[2rem] bg-white/55 p-7 shadow-inner backdrop-blur dark:bg-white/8">
@@ -1921,24 +1921,16 @@ export default function ChatPage() {
                           setMenuMessageId(message.id);
                         }}
                         className={`chat-message-bubble ${isMine ? "chat-message-bubble-mine" : "chat-message-bubble-partner"} relative w-fit max-w-[84%] break-words rounded-[14px] shadow-[0_4px_14px_rgba(0,0,0,0.1)] transition hover:-translate-y-0.5 sm:max-w-[78%] md:max-w-[62%] ${
-                          isStickerMessage || isBigEmojiMessage ? "px-0 py-0 shadow-none" : isVoiceMessage ? "px-3 py-2" : "px-3 py-1.5"
+                          isStickerMessage || isBigEmojiMessage || isVoiceMessage ? "px-0 py-0 shadow-none" : "px-3 py-1.5"
                         } ${
-                          isStickerMessage || isBigEmojiMessage
+                          isStickerMessage || isBigEmojiMessage || isVoiceMessage
                             ? "bg-transparent text-white"
-                            : isVoiceMessage
-                            ? `bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white shadow-sky-500/18 ${
-                                isLastInGroup
-                                  ? isMine
-                                    ? "rounded-br-[4px]"
-                                    : "rounded-bl-[4px]"
-                                  : ""
-                              }`
                             : isMine
                             ? `bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white shadow-sky-500/18 ${isLastInGroup ? "rounded-br-[4px]" : ""}`
                             : `bg-[#0f2638] text-white shadow-black/10 ${isLastInGroup ? "rounded-bl-[4px]" : ""}`
                         }`}
                       >
-                        {isLastInGroup && !isStickerMessage && !isBigEmojiMessage && (
+                        {isLastInGroup && !isStickerMessage && !isBigEmojiMessage && !isVoiceMessage && (
                           <span
                             className={`chat-message-tail pointer-events-none absolute bottom-0 h-3 w-3 ${
                               isMine
@@ -2063,7 +2055,7 @@ export default function ChatPage() {
                               </div>
                             )}
                             {voiceAttachment && (
-                              <AccentAudioPlayer src={voiceAttachment.url} accent="#ffffff" label={voiceAttachment.name || "Голосовое сообщение"} className="chat-accent-audio w-[min(20.5rem,76vw)]" />
+                              <AccentAudioPlayer src={voiceAttachment.url} accent="#2563eb" label={voiceAttachment.name || "Голосовое сообщение"} className="chat-accent-audio w-[min(20.5rem,76vw)]" />
                             )}
                             {message.body && !isVoiceMessage && !isStickerMessage && !isBigEmojiMessage && (
                               <p className="whitespace-pre-wrap break-words text-[15px] font-medium leading-5">
@@ -2077,7 +2069,7 @@ export default function ChatPage() {
                             )}
                           </>
                         {isVoiceMessage && (
-                          <div className="-mt-0.5 flex justify-end">{metaNode}</div>
+                          <div className="chat-voice-meta -mt-0.5 flex justify-end">{metaNode}</div>
                         )}
                         {Object.keys(groupedReactions).length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1">

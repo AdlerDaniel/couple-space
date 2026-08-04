@@ -17,7 +17,7 @@ import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ImageIcon, Mic, Music2, Paperclip } from "lucide-react";
+import { ImageIcon, Mic, Music2, Paperclip, Square } from "lucide-react";
 
 const EDIT_WINDOW_MINUTES = 15;
 const EDIT_WINDOW_MS = EDIT_WINDOW_MINUTES * 60 * 1000;
@@ -40,6 +40,7 @@ type Answer = {
   answer_two_voice_url?: string | null;
   answer_one_photo_url?: string | null;
   answer_two_photo_url?: string | null;
+  created_at?: string | null;
   date: string;
   couple_id: string;
 };
@@ -81,7 +82,7 @@ export default function QuestionAnswerPage() {
   const editedAtField = isPartnerOne ? "answer_one_edited_at" : "answer_two_edited_at";
   const voiceField = isPartnerOne ? "answer_one_voice_url" : "answer_two_voice_url";
   const photoField = isPartnerOne ? "answer_one_photo_url" : "answer_two_photo_url";
-  const firstSavedAt = answerRecord?.[editedAtField] || null;
+  const firstSavedAt = answerRecord?.[editedAtField] || answerRecord?.created_at || null;
   const isEditLocked =
     nowMs > 0 &&
     Boolean(firstSavedAt) &&
@@ -599,38 +600,28 @@ export default function QuestionAnswerPage() {
                   disabled={isEditLocked}
                   maxLength={ANSWER_MAX_LENGTH}
                   placeholder="Напиши свой ответ..."
-                  className="min-h-[180px] w-full resize-none overflow-hidden rounded-[1.3rem] border border-emerald-200/80 bg-white/82 p-5 pr-16 text-lg font-semibold leading-8 text-emerald-950 shadow-[0_18px_50px_rgba(21,128,61,0.12)] outline-none transition placeholder:text-emerald-700/38 focus:border-emerald-400 focus:shadow-[0_0_0_4px_rgba(20,184,166,0.14),0_22px_70px_rgba(21,128,61,0.18)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/36 dark:focus:shadow-[0_0_0_4px_rgba(52,211,153,0.14),0_22px_70px_rgba(0,0,0,0.32)]"
+                  className="min-h-[180px] w-full resize-none overflow-hidden rounded-[1.3rem] border border-emerald-200/80 bg-white/82 p-5 pr-28 text-lg font-semibold leading-8 text-emerald-950 shadow-[0_18px_50px_rgba(21,128,61,0.12)] outline-none transition placeholder:text-emerald-700/38 focus:border-emerald-400 focus:shadow-[0_0_0_4px_rgba(20,184,166,0.14),0_22px_70px_rgba(21,128,61,0.18)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/36 dark:focus:shadow-[0_0_0_4px_rgba(52,211,153,0.14),0_22px_70px_rgba(0,0,0,0.32)]"
                 />
 
-                <div className="absolute right-3 top-3 z-20">
-                  <button
-                    type="button"
-                    onClick={() => setIsAttachMenuOpen((current) => !current)}
-                    disabled={isEditLocked || isUploadingMedia}
-                    aria-label="Добавить вложение"
-                    aria-expanded={isAttachMenuOpen}
-                    className={`grid h-11 w-11 place-items-center rounded-full border shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
-                      isAttachMenuOpen || voiceUrl || photoUrl
-                        ? "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-300/20 dark:bg-emerald-500/18 dark:text-emerald-100"
-                        : "border-emerald-200/80 bg-white/76 text-emerald-700 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100"
-                    }`}
-                  >
-                    <Paperclip aria-hidden="true" size={20} />
-                  </button>
+                <div className="absolute right-3 top-3 z-20 flex items-start gap-2">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsAttachMenuOpen((current) => !current)}
+                      disabled={isEditLocked || isUploadingMedia}
+                      aria-label="Добавить вложение"
+                      aria-expanded={isAttachMenuOpen}
+                      className={`grid h-11 w-11 place-items-center rounded-full border shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
+                        isAttachMenuOpen || voiceUrl || photoUrl
+                          ? "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-300/20 dark:bg-emerald-500/18 dark:text-emerald-100"
+                          : "border-emerald-200/80 bg-white/76 text-emerald-700 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100"
+                      }`}
+                    >
+                      <Paperclip aria-hidden="true" size={20} />
+                    </button>
 
-                  {isAttachMenuOpen && (
-                    <div className="absolute right-0 top-[3.25rem] z-30 w-56 overflow-hidden rounded-2xl border border-emerald-200/80 bg-white/96 p-2 text-emerald-950 shadow-[0_20px_60px_rgba(5,150,105,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#071c13]/96 dark:text-white">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAttachMenuOpen(false);
-                          void toggleVoiceRecording();
-                        }}
-                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-emerald-50 dark:hover:bg-white/8"
-                      >
-                        <Mic aria-hidden="true" size={19} />
-                        {isRecording ? "Завершить запись" : "Записать голос"}
-                      </button>
+                    {isAttachMenuOpen && (
+                      <div className="absolute right-0 top-[3.25rem] z-30 w-56 overflow-hidden rounded-2xl border border-emerald-200/80 bg-white/96 p-2 text-emerald-950 shadow-[0_20px_60px_rgba(5,150,105,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#071c13]/96 dark:text-white">
                       <button
                         type="button"
                         onClick={() => {
@@ -653,8 +644,26 @@ export default function QuestionAnswerPage() {
                         <ImageIcon aria-hidden="true" size={19} />
                         Загрузить фото
                       </button>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAttachMenuOpen(false);
+                      void toggleVoiceRecording();
+                    }}
+                    disabled={isEditLocked || isUploadingMedia}
+                    aria-label={isRecording ? "Завершить запись" : "Записать голос"}
+                    title={isRecording ? "Завершить запись" : "Записать голос"}
+                    className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
+                      isRecording
+                        ? "border-rose-300 bg-rose-500 text-white"
+                        : "border-emerald-200/80 bg-white/76 text-emerald-700 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100"
+                    }`}
+                  >
+                    {isRecording ? <Square aria-hidden="true" size={17} fill="currentColor" /> : <Mic aria-hidden="true" size={20} />}
+                  </button>
                 </div>
               </div>
 

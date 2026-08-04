@@ -433,7 +433,7 @@ export default function MemoriesPage() {
                   tabIndex={0}
                   onClick={(event) => {
                     const target = event.target as HTMLElement;
-                    if (target.closest("button, a, input, textarea, select, video, audio, img, [role='slider'], .accent-audio-player, .memory-voice-player")) return;
+                    if (target.closest("button, a, input, textarea, select, video, audio, img, summary, details, [role='slider'], .accent-audio-player, .memory-voice-player, .emoji-picker")) return;
                     router.push(`/memories/${memory.id}`);
                   }}
                   onKeyDown={(event) => {
@@ -546,8 +546,9 @@ export default function MemoriesPage() {
                             setReactionPickerMemoryId(null);
                           }}
                           tone="blue"
-                          className="fixed inset-x-3 bottom-24 z-[100] mx-auto w-[min(21rem,calc(100vw-1.5rem))] sm:absolute sm:inset-x-auto sm:bottom-10 sm:left-0 sm:mx-0 sm:w-[min(21rem,calc(100vw-3.5rem))]"
+                          className="fixed bottom-24 left-1/2 z-[100] w-[min(21rem,calc(100vw-1.5rem))] -translate-x-1/2"
                           compact
+                          portal
                         />
                       )}
                       </div>
@@ -560,7 +561,11 @@ export default function MemoriesPage() {
                         <MessageCircle aria-hidden="true" size={17} />
                         {(comments[memory.id] || []).length > 0 && <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#2563eb] px-1 text-[9px] font-black text-white">{(comments[memory.id] || []).length}</span>}
                       </Link>
-                    <details className="memory-actions-menu relative z-20 shrink-0">
+                    <details
+                      className="memory-actions-menu relative z-20 shrink-0"
+                      onClick={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => event.stopPropagation()}
+                    >
                       <summary aria-label="Действия с воспоминанием" title="Действия">
                         <MoreHorizontal aria-hidden="true" size={18} />
                       </summary>

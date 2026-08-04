@@ -2841,10 +2841,15 @@ main textarea:not(.chat-composer-input) {
 }
 
 .chat-accent-audio {
-  border-color: rgba(255, 255, 255, 0.34) !important;
-  background: rgba(255, 255, 255, 0.09) !important;
-  color: #fff !important;
+  border-color: color-mix(in srgb, var(--audio-accent) 26%, transparent) !important;
+  background: color-mix(in srgb, var(--audio-accent) 10%, white 90%) !important;
+  color: var(--audio-accent) !important;
   box-shadow: none !important;
+}
+
+.dark .chat-accent-audio {
+  border-color: color-mix(in srgb, var(--audio-accent) 42%, transparent) !important;
+  background: color-mix(in srgb, var(--audio-accent) 18%, #08111f 82%) !important;
 }
 
 @media (max-width: 640px) {
@@ -3288,4 +3293,72 @@ main textarea:not(.chat-composer-input) {
   border-color: rgba(96, 165, 250, 0.22);
   background: rgba(37, 99, 235, 0.18);
   color: #bfdbfe;
+}
+
+/* August 2026: portal overlays and compact chat media. */
+.memory-card:has(.memory-actions-menu[open]) {
+  content-visibility: visible;
+  z-index: 90 !important;
+}
+
+.chat-big-emoji-message {
+  display: grid;
+  width: 5rem;
+  max-width: calc(100vw - 2rem);
+  justify-items: center;
+  overflow: visible;
+}
+
+.chat-big-emoji-message .fluent-emoji,
+.chat-big-emoji-message .fluent-emoji-fallback {
+  display: grid;
+  max-width: 100%;
+  place-items: center;
+}
+
+.chat-big-emoji-message .fluent-emoji-fallback {
+  overflow: visible;
+  font-size: 3.75rem;
+  text-align: center;
+}
+
+.chat-primary-action {
+  box-sizing: border-box !important;
+  align-self: center !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 50% !important;
+  overflow: hidden;
+  transform: none !important;
+}
+
+.chat-primary-action svg {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  transform: translateX(-0.04rem);
+}
+
+.chat-messages-scroll {
+  scrollbar-color: #2563eb transparent !important;
+  scrollbar-width: thin;
+}
+
+.chat-messages-scroll::-webkit-scrollbar {
+  width: 0.34rem;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.chat-voice-meta > span {
+  color: rgba(37, 99, 235, 0.62) !important;
+}
+
+.dark .chat-voice-meta > span {
+  color: rgba(191, 219, 254, 0.64) !important;
 }

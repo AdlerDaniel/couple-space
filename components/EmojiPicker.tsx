@@ -15,6 +15,7 @@ import {
   Volleyball,
 } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { FluentEmoji } from "@/components/FluentEmoji";
 
 type EmojiTone = "pink" | "red" | "blue" | "emerald" | "sky" | "amber";
@@ -52,6 +53,7 @@ export default function EmojiPicker({
   className = "",
   compact = false,
   multiple = false,
+  portal = false,
 }: {
   onSelect: (emoji: string) => void;
   selectedEmoji?: string;
@@ -59,6 +61,7 @@ export default function EmojiPicker({
   className?: string;
   compact?: boolean;
   multiple?: boolean;
+  portal?: boolean;
 }) {
   const [catalog, setCatalog] = useState<EmojiCatalog | null>(null);
   const [query, setQuery] = useState("");
@@ -116,8 +119,12 @@ export default function EmojiPicker({
     if (!multiple) setQuery("");
   }
 
-  return (
-    <div className={`emoji-picker overflow-hidden rounded-2xl border border-black/8 bg-white/96 text-slate-900 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-[#0d1117]/96 dark:text-white ${className}`}>
+  const picker = (
+    <div
+      className={`emoji-picker overflow-hidden rounded-2xl border border-black/8 bg-white/96 text-slate-900 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-[#0d1117]/96 dark:text-white ${className}`}
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
       <div className={compact ? "p-2.5" : "p-3"}>
         <label className="relative block">
           <span className="sr-only">Поиск эмодзи</span>
@@ -164,4 +171,6 @@ export default function EmojiPicker({
       </div>
     </div>
   );
+
+  return portal && typeof document !== "undefined" ? createPortal(picker, document.body) : picker;
 }

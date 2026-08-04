@@ -496,19 +496,6 @@ export default function MemoryComposer({
         </div>
       </div>
 
-      <div className="mt-4 flex justify-end">
-        <button
-          type="button"
-          onClick={addMemory}
-          disabled={
-            isSubmitting || (!title.trim() && !caption.trim() && !memoryImage && !memoryVoice && memoryAttachments.length === 0)
-          }
-          className="rounded-2xl bg-[#2563eb] px-7 py-3.5 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isSubmitting ? "Сохраняем..." : isEditing ? "Сохранить изменения" : "Добавить воспоминание"}
-        </button>
-      </div>
-
       {isRecording && (
         <div className="mt-4 rounded-2xl bg-[#2563eb] p-4 text-white shadow-lg">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -573,6 +560,19 @@ export default function MemoryComposer({
           {message}
         </p>
       )}
+
+      <div className="mt-5 flex justify-end">
+        <button
+          type="button"
+          onClick={addMemory}
+          disabled={
+            isSubmitting || (!title.trim() && !caption.trim() && !memoryImage && !memoryVoice && memoryAttachments.length === 0)
+          }
+          className="w-full rounded-2xl bg-[#2563eb] px-7 py-3.5 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+        >
+          {isSubmitting ? "Сохраняем..." : isEditing ? "Сохранить изменения" : "Добавить воспоминание"}
+        </button>
+      </div>
     </div>
   );
 }

@@ -6,11 +6,12 @@ test("login stays keyboard-accessible and visually stable on mobile", async ({ p
     content: "*,*::before,*::after{animation:none!important;transition:none!important}",
   });
 
-  const main = page.locator("main");
-  await expect(main).toBeVisible();
   const loginInput = page.getByRole("textbox", { name: "Логин" });
   const passwordInput = page.getByLabel("Пароль");
   const rememberCheckbox = page.getByRole("checkbox", { name: /Запомнить меня/ });
+  const main = page.getByRole("main").filter({ has: loginInput });
+
+  await expect(main).toBeVisible();
 
   await expect(loginInput).toHaveAccessibleName("Логин");
   await expect(passwordInput).toHaveAccessibleName("Пароль");

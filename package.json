@@ -23,7 +23,7 @@
     "check": "npm run typecheck && npm run lint && npm test",
     "verify:vercel": "npm run check && npm run build",
     "verify:sites": "npm run build:sites",
-    "supabase:start": "npx --yes supabase@2.111.0 start --exclude studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor",
+    "supabase:start": "npx --yes supabase@2.111.0 start --exclude studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor",
     "supabase:stop": "npx --yes supabase@2.111.0 stop",
     "supabase:reset": "npx --yes supabase@2.111.0 db reset --local",
     "supabase:test": "npx --yes supabase@2.111.0 test db",

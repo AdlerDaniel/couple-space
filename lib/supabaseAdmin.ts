@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
+import type { Database } from "./database.types.ts";
 
 type CoupleMembership = {
   id: string;
@@ -6,7 +7,7 @@ type CoupleMembership = {
   partner_two_id: string | null;
 };
 
-let cachedAdminClient: SupabaseClient | null = null;
+let cachedAdminClient: SupabaseClient<Database> | null = null;
 
 export function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -17,7 +18,7 @@ export function getAdminClient() {
   }
 
   if (!cachedAdminClient) {
-    cachedAdminClient = createClient(supabaseUrl, serviceRoleKey, {
+    cachedAdminClient = createClient<Database>(supabaseUrl, serviceRoleKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
@@ -49,7 +50,7 @@ export function getBearerToken(request: Request) {
 }
 
 export async function getAuthenticatedUser(
-  adminSupabase: SupabaseClient,
+  adminSupabase: SupabaseClient<Database>,
   request: Request
 ): Promise<User | null> {
   const token = getBearerToken(request);
@@ -65,7 +66,7 @@ export async function getAuthenticatedUser(
 }
 
 export async function getAuthorizedCouple(
-  adminSupabase: SupabaseClient,
+  adminSupabase: SupabaseClient<Database>,
   coupleId: string,
   userId: string
 ) {

@@ -18,6 +18,17 @@ function getRequiredEnvironment(name: string) {
   return value;
 }
 
+function requireLocalSupabaseUrl(value: string) {
+  const url = new URL(value);
+  const isLocalHost = url.hostname === "127.0.0.1" || url.hostname === "localhost";
+  if (url.protocol !== "http:" || !isLocalHost || url.port !== "54321") {
+    throw new Error(
+      "Realtime E2E is destructive and may run only against the local Supabase stack at http://127.0.0.1:54321",
+    );
+  }
+  return url.toString().replace(/\/$/, "");
+}
+
 async function createTemporaryUser(
   admin: SupabaseClient,
   email: string,
@@ -94,7 +105,9 @@ test("a late archive answer reveals the partner answer through Realtime", async 
   browser,
   baseURL,
 }) => {
-  const supabaseUrl = getRequiredEnvironment("NEXT_PUBLIC_SUPABASE_URL");
+  const supabaseUrl = requireLocalSupabaseUrl(
+    getRequiredEnvironment("NEXT_PUBLIC_SUPABASE_URL"),
+  );
   const publishableKey = getRequiredEnvironment("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   const serviceRoleKey = getRequiredEnvironment("SUPABASE_SERVICE_ROLE_KEY");
   if (!baseURL) throw new Error("Playwright baseURL is not configured");

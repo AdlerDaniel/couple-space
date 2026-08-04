@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-publishable-key
+  SUPABASE_ORIGIN: https://ci-placeholder.supabase.co
+
+jobs:
+  verify-database:
+    name: Verify local Supabase migrations and RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Start the free local Supabase stack
+        run: npm run supabase:start
+      - name: Export local Supabase credentials for the application
+        shell: bash
+        run: |
+          eval "$(npx --yes supabase@2.111.0 status -o env)"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "SUPABASE_ORIGIN=$API_URL"
+          } >> "$GITHUB_ENV"
+      - name: Rebuild the local database from migrations and seed
+        run: npm run supabase:reset
+      - name: Run pgTAP database isolation tests
+        run: npm run supabase:test
+      - name: Lint the rebuilt local database
+        run: npm run supabase:lint
+      - name: Ensure generated database types match the local schema
+        shell: bash
+        run: |
+          npx --yes supabase@2.111.0 gen types typescript --local > /tmp/database.types.ts
+          diff --unified lib/database.types.ts /tmp/database.types.ts
+      - name: Install the free Playwright Chromium runtime
+        run: npx playwright install --with-deps chromium
+      - name: Verify the two-user Realtime flow
+        run: npm run test:e2e:archive-realtime
+      - name: Stop local Supabase
+        if: always()
+        run: npm run supabase:stop -- --no-backup
+
+  verify-vercel:
+    name: Verify native Next.js build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck, lint, test and build
+        run: npm run verify:vercel
+      - name: Install the free Playwright Chromium runtime
+        run: npx playwright install --with-deps chromium
+      - name: Verify the public mobile UI and accessibility contract
+        shell: bash
+        run: |
+          npm run start -- -H 127.0.0.1 -p 3102 > /tmp/couple-space-next.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:3102/login > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:3102/login > /dev/null
+          E2E_BASE_URL=http://127.0.0.1:3102 npm run test:e2e:public
+
+  verify-sites:
+    name: Verify secondary Sites build
+    if: github.event_name == 'push'
+    needs: verify-vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Sites compatibility target
+        run: npm run verify:sites

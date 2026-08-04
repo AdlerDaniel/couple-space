@@ -1,5 +1,8 @@
 import { NextRequest } from "next/server";
 import { resolve4, resolve6 } from "node:dns/promises";
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
+import type { IncomingMessage } from "node:http";
 import { enforceRateLimit } from "@/lib/apiSecurity";
 import { getAdminClient, getAuthenticatedUser } from "@/lib/supabaseAdmin";
 
@@ -32,11 +35,12 @@ function readTitle(html: string) {
 
 function decodeHtml(value: string) {
   return value
-    .replaceAll("&amp;", "&")
     .replaceAll("&quot;", "\"")
     .replaceAll("&#39;", "'")
     .replaceAll("&lt;", "<")
     .replaceAll("&gt;", ">")
+    // Decode ampersands last so encoded entity text is not decoded twice.
+    .replaceAll("&amp;", "&")
     .trim();
 }
 
@@ -44,7 +48,10 @@ function resolveUrl(value: string, baseUrl: string) {
   if (!value) return null;
 
   try {
-    return new URL(value, baseUrl).toString();
+    const resolvedUrl = new URL(value, baseUrl);
+    return ["http:", "https:"].includes(resolvedUrl.protocol)
+      ? resolvedUrl.toString()
+      : null;
   } catch {
     return null;
   }
@@ -110,13 +117,13 @@ async function resolveHostAddresses(hostname: string) {
   );
 }
 
-async function assertPublicHttpUrl(targetUrl: URL) {
+async function resolvePublicAddress(targetUrl: URL) {
   if (!["http:", "https:"].includes(targetUrl.protocol)) {
-    return "Unsupported URL";
+    throw new Error("Unsupported URL");
   }
 
   if (targetUrl.username || targetUrl.password || targetUrl.href.length > maxUrlLength) {
-    return "Unsupported URL";
+    throw new Error("Unsupported URL");
   }
 
   const normalizedHostname = targetUrl.hostname.replace(/^\[|\]$/g, "");
@@ -125,7 +132,7 @@ async function assertPublicHttpUrl(targetUrl: URL) {
     normalizedHostname.includes(":");
 
   if (isLiteralAddress && isBlockedAddress(normalizedHostname)) {
-    return "Unsupported URL";
+    throw new Error("Unsupported URL");
   }
 
   // Cloudflare Workers mediate outbound fetches and block internal network
@@ -135,66 +142,91 @@ async function assertPublicHttpUrl(targetUrl: URL) {
   if (process.env.DEPLOY_TARGET !== "sites") {
     const addresses = await resolveHostAddresses(normalizedHostname);
     if (addresses.length === 0 || addresses.some(isBlockedAddress)) {
-      return "Unsupported URL";
+      throw new Error("Unsupported URL");
     }
+
+    // Pin the connection to the validated address. This closes the DNS
+    // rebinding window between validation and the outbound request.
+    return addresses[0];
   }
 
-  return null;
+  return normalizedHostname;
 }
 
-async function readLimitedText(response: Response) {
-  const contentType = response.headers.get("content-type") || "";
+function headerValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] || "" : value || "";
+}
+
+async function readLimitedText(response: IncomingMessage) {
+  const contentType = headerValue(response.headers["content-type"]);
   if (!contentType.toLowerCase().includes("text/html")) {
     throw new Error("Unsupported content type");
   }
 
-  const contentLength = Number(response.headers.get("content-length") || 0);
+  const contentLength = Number(headerValue(response.headers["content-length"]) || 0);
   if (contentLength > maxPreviewBytes) {
     throw new Error("Response too large");
   }
 
-  if (!response.body) return "";
-
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
+  const chunks: Buffer[] = [];
   let received = 0;
 
-  while (received <= maxPreviewBytes) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    received += value.byteLength;
+  for await (const chunk of response) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    received += buffer.byteLength;
     if (received > maxPreviewBytes) {
-      await reader.cancel();
+      response.destroy();
       throw new Error("Response too large");
     }
-    chunks.push(value);
+    chunks.push(buffer);
   }
 
-  return new TextDecoder().decode(Buffer.concat(chunks));
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+function requestAtAddress(targetUrl: URL, address: string) {
+  return new Promise<IncomingMessage>((resolve, reject) => {
+    const request = (targetUrl.protocol === "https:" ? httpsRequest : httpRequest)(
+      {
+        protocol: targetUrl.protocol,
+        hostname: address,
+        port: targetUrl.port || undefined,
+        path: `${targetUrl.pathname}${targetUrl.search}`,
+        method: "GET",
+        family: address.includes(":") ? 6 : 4,
+        servername: targetUrl.protocol === "https:" ? targetUrl.hostname : undefined,
+        headers: {
+          host: targetUrl.host,
+          "user-agent": "Mozilla/5.0 CoupleSpaceLinkPreview/1.0",
+          accept: "text/html,application/xhtml+xml",
+        },
+      },
+      resolve,
+    );
+
+    request.setTimeout(6000, () => request.destroy(new Error("Request timed out")));
+    request.on("error", reject);
+    request.end();
+  });
 }
 
 async function fetchPreviewResponse(initialUrl: URL) {
   let currentUrl = initialUrl;
 
   for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount += 1) {
-    const validationError = await assertPublicHttpUrl(currentUrl);
-    if (validationError) throw new Error(validationError);
+    const address = await resolvePublicAddress(currentUrl);
+    const response = await requestAtAddress(currentUrl, address);
+    const status = response.statusCode || 0;
 
-    const response = await fetch(currentUrl.toString(), {
-      redirect: "manual",
-      headers: {
-        "user-agent": "Mozilla/5.0 CoupleSpaceLinkPreview/1.0",
-      },
-      signal: AbortSignal.timeout(6000),
-    });
+    if (status < 300 || status >= 400) return response;
 
-    if (response.status < 300 || response.status >= 400) return response;
-
-    const location = response.headers.get("location");
+    const location = headerValue(response.headers.location);
     if (!location || redirectCount === maxRedirects) {
+      response.resume();
       throw new Error("Too many redirects");
     }
 
+    response.resume();
     currentUrl = new URL(location, currentUrl);
   }
 
@@ -222,8 +254,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const targetUrl = new URL(rawUrl);
-    const validationError = await assertPublicHttpUrl(targetUrl);
-    if (validationError) return Response.json({ error: validationError }, { status: 400 });
+    await resolvePublicAddress(targetUrl);
 
     const response = await fetchPreviewResponse(targetUrl);
     const html = await readLimitedText(response);

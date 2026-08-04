@@ -93,7 +93,7 @@ export default function AddWatchPage() {
 
   useEffect(() => {
     const normalized = normalizeWatchTitle(title);
-    if (normalized.length < 2) { setResults([]); setIsSearching(false); return; }
+    if (normalized.length < 2) return;
     let ignore = false;
     const timer = window.setTimeout(async () => {
       setIsSearching(true);
@@ -146,8 +146,11 @@ export default function AddWatchPage() {
             <input
               value={title}
               onChange={(event) => {
-                setTitle(event.target.value);
+                const nextTitle = event.target.value;
+                setTitle(nextTitle);
                 setSelectedResult(null);
+                setResults([]);
+                if (normalizeWatchTitle(nextTitle).length < 2) setIsSearching(false);
                 setMessage("");
               }}
               onKeyDown={(event) => { if (event.key === "Enter") void addItem(); }}

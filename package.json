@@ -23,6 +23,12 @@
     "check": "npm run typecheck && npm run lint && npm test",
     "verify:vercel": "npm run check && npm run build",
     "verify:sites": "npm run build:sites",
+    "supabase:start": "npx --yes supabase@2.111.0 start",
+    "supabase:stop": "npx --yes supabase@2.111.0 stop",
+    "supabase:reset": "npx --yes supabase@2.111.0 db reset --local",
+    "supabase:test": "npx --yes supabase@2.111.0 test db",
+    "supabase:lint": "npx --yes supabase@2.111.0 db lint --local --level warning",
+    "test:e2e:public": "playwright test --config=playwright.public.config.ts",
     "test:e2e:archive-realtime": "playwright test --config=playwright.realtime.config.ts",
     "screenshots:mobile": "playwright test tests/mobile-screenshots.spec.ts"
   },

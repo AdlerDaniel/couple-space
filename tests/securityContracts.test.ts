@@ -61,6 +61,21 @@ test("public server routes authenticate or rate-limit expensive operations", asy
   assert.match(rateLimitMigration, /revoke execute[\s\S]*from public, anon, authenticated/);
 });
 
+test("link previews pin validated public addresses and restrict preview assets", async () => {
+  const linkPreview = await readSource("app/api/link-preview/route.ts");
+
+  assert.match(linkPreview, /const address = await resolvePublicAddress\(currentUrl\)/);
+  assert.match(linkPreview, /requestAtAddress\(currentUrl, address\)/);
+  assert.match(linkPreview, /servername: targetUrl\.protocol === "https:" \? targetUrl\.hostname/);
+  assert.match(linkPreview, /addresses\.some\(isBlockedAddress\)/);
+  assert.doesNotMatch(linkPreview, /fetch\(currentUrl\.toString\(\)/);
+  assert.match(linkPreview, /\["http:", "https:"\]\.includes\(resolvedUrl\.protocol\)/);
+
+  const quoteDecode = linkPreview.indexOf('.replaceAll("&quot;", "\\\"")');
+  const ampDecode = linkPreview.indexOf('.replaceAll("&amp;", "&")');
+  assert.ok(quoteDecode >= 0 && ampDecode > quoteDecode);
+});
+
 test("Supabase rewrites are environment-specific for Vercel and backup builds", async () => {
   const [config, exampleEnv] = await Promise.all([
     readSource("next.config.ts"),

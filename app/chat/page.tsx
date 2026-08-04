@@ -13,7 +13,7 @@ import {
 } from "@/lib/mediaFiles";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
-import { toBrowserSupabaseUrl, toPortableSupabaseUrl } from "@/lib/supabaseUrls";
+import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import type {
   ChatAttachment,
   ChatMessage,

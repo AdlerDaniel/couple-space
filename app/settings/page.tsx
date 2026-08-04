@@ -170,6 +170,11 @@ export default function SettingsPage() {
                     </button>
                   ))}
                 </div>
+                {saveMessage ? (
+                  <p className="mt-3 text-sm font-bold opacity-70" role="status">
+                    {saveMessage}
+                  </p>
+                ) : null}
                 <div className="mt-5 border-t border-[#78350f]/15 pt-4 dark:border-white/10">
                   <p className="font-black">Системные push-уведомления</p>
                   <p className="mt-1 text-sm font-bold opacity-65">

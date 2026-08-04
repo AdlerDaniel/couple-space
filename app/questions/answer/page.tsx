@@ -585,21 +585,78 @@ export default function QuestionAnswerPage() {
             </h1>
 
             <div className="mt-8 rounded-[1.7rem] bg-white/72 p-4 shadow-inner dark:bg-black/18">
-              <textarea
-                ref={textareaRef}
-                value={myAnswer}
-                onChange={(event) => {
-                  const nextAnswer = event.target.value.slice(0, ANSWER_MAX_LENGTH);
-                  setMyAnswer(nextAnswer);
-                  if (nextAnswer.trim() !== lastSavedAnswer.trim()) {
-                    setSaveStatus("Сохраняем...");
-                  }
-                }}
-                disabled={isEditLocked}
-                maxLength={ANSWER_MAX_LENGTH}
-                placeholder="Напиши свой ответ..."
-                className="min-h-[180px] w-full resize-none overflow-hidden rounded-[1.3rem] border border-emerald-200/80 bg-white/82 p-5 text-lg font-semibold leading-8 text-emerald-950 shadow-[0_18px_50px_rgba(21,128,61,0.12)] outline-none transition placeholder:text-emerald-700/38 focus:border-emerald-400 focus:shadow-[0_0_0_4px_rgba(20,184,166,0.14),0_22px_70px_rgba(21,128,61,0.18)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/36 dark:focus:shadow-[0_0_0_4px_rgba(52,211,153,0.14),0_22px_70px_rgba(0,0,0,0.32)]"
-              />
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  value={myAnswer}
+                  onChange={(event) => {
+                    const nextAnswer = event.target.value.slice(0, ANSWER_MAX_LENGTH);
+                    setMyAnswer(nextAnswer);
+                    if (nextAnswer.trim() !== lastSavedAnswer.trim()) {
+                      setSaveStatus("Сохраняем...");
+                    }
+                  }}
+                  disabled={isEditLocked}
+                  maxLength={ANSWER_MAX_LENGTH}
+                  placeholder="Напиши свой ответ..."
+                  className="min-h-[180px] w-full resize-none overflow-hidden rounded-[1.3rem] border border-emerald-200/80 bg-white/82 p-5 pb-16 pr-16 text-lg font-semibold leading-8 text-emerald-950 shadow-[0_18px_50px_rgba(21,128,61,0.12)] outline-none transition placeholder:text-emerald-700/38 focus:border-emerald-400 focus:shadow-[0_0_0_4px_rgba(20,184,166,0.14),0_22px_70px_rgba(21,128,61,0.18)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/36 dark:focus:shadow-[0_0_0_4px_rgba(52,211,153,0.14),0_22px_70px_rgba(0,0,0,0.32)]"
+                />
+
+                <div className="absolute bottom-4 right-4 z-20">
+                  <button
+                    type="button"
+                    onClick={() => setIsAttachMenuOpen((current) => !current)}
+                    disabled={isEditLocked || isUploadingMedia}
+                    aria-label="Добавить вложение"
+                    aria-expanded={isAttachMenuOpen}
+                    className={`grid h-11 w-11 place-items-center rounded-full border shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
+                      isAttachMenuOpen || voiceUrl || photoUrl
+                        ? "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-300/20 dark:bg-emerald-500/18 dark:text-emerald-100"
+                        : "border-emerald-200/80 bg-white/76 text-emerald-700 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100"
+                    }`}
+                  >
+                    <Paperclip aria-hidden="true" size={20} />
+                  </button>
+
+                  {isAttachMenuOpen && (
+                    <div className="absolute bottom-[3.25rem] right-0 z-30 w-56 overflow-hidden rounded-2xl border border-emerald-200/80 bg-white/96 p-2 text-emerald-950 shadow-[0_20px_60px_rgba(5,150,105,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#071c13]/96 dark:text-white">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAttachMenuOpen(false);
+                          void toggleVoiceRecording();
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-emerald-50 dark:hover:bg-white/8"
+                      >
+                        <Mic aria-hidden="true" size={19} />
+                        {isRecording ? "Завершить запись" : "Записать голос"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAttachMenuOpen(false);
+                          audioInputRef.current?.click();
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-emerald-50 dark:hover:bg-white/8"
+                      >
+                        <Music2 aria-hidden="true" size={19} />
+                        Загрузить аудио
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAttachMenuOpen(false);
+                          photoInputRef.current?.click();
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-emerald-50 dark:hover:bg-white/8"
+                      >
+                        <ImageIcon aria-hidden="true" size={19} />
+                        Загрузить фото
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div className="mt-3 flex items-center justify-between gap-4 text-sm font-bold text-emerald-800/55 dark:text-white/45">
                 <span>{myAnswer.length > 0 ? "Автосохранение включено" : "Начните писать ответ"}</span>
@@ -630,61 +687,6 @@ export default function QuestionAnswerPage() {
                   event.target.value = "";
                 }}
               />
-
-              <div className="relative mt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsAttachMenuOpen((current) => !current)}
-                  disabled={isEditLocked || isUploadingMedia}
-                  aria-label="Добавить вложение"
-                  aria-expanded={isAttachMenuOpen}
-                  className={`grid h-11 w-11 place-items-center rounded-full border shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
-                    isAttachMenuOpen || voiceUrl || photoUrl
-                      ? "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-300/20 dark:bg-emerald-500/18 dark:text-emerald-100"
-                      : "border-emerald-200/80 bg-white/76 text-emerald-700 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100"
-                  }`}
-                >
-                  <Paperclip aria-hidden="true" size={20} />
-                </button>
-
-                {isAttachMenuOpen && (
-                  <div className="absolute bottom-[3.25rem] right-0 z-30 w-56 overflow-hidden rounded-2xl border border-emerald-200/80 bg-white/96 p-2 text-emerald-950 shadow-[0_20px_60px_rgba(5,150,105,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#071c13]/96 dark:text-white">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAttachMenuOpen(false);
-                        void toggleVoiceRecording();
-                      }}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-emerald-50 dark:hover:bg-white/8"
-                    >
-                      <Mic aria-hidden="true" size={19} />
-                      {isRecording ? "Завершить запись" : "Записать голос"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAttachMenuOpen(false);
-                        audioInputRef.current?.click();
-                      }}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-emerald-50 dark:hover:bg-white/8"
-                    >
-                      <Music2 aria-hidden="true" size={19} />
-                      Загрузить аудио
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAttachMenuOpen(false);
-                        photoInputRef.current?.click();
-                      }}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-emerald-50 dark:hover:bg-white/8"
-                    >
-                      <ImageIcon aria-hidden="true" size={19} />
-                      Загрузить фото
-                    </button>
-                  </div>
-                )}
-              </div>
 
               {isRecording && (
                 <div className="mt-4 rounded-[1.2rem] border border-emerald-200/70 bg-gradient-to-r from-emerald-500 to-teal-500 p-4 text-white shadow-[0_18px_55px_rgba(21,128,61,0.24)]">

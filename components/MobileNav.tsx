@@ -244,7 +244,7 @@ export default function MobileNav() {
                   key={notification.id}
                   href={notification.href || "/dashboard"}
                   onClick={() => setIsNotificationsOpen(false)}
-                  className="mb-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750"
+                  className="mb-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
                 >
                   <div className="flex items-start gap-3">
                     <span

@@ -310,12 +310,12 @@ export default function TodayQuestionPage() {
       <section className="questions-reveal relative mx-auto max-w-5xl">
         <div className="question-hero mb-8 text-center">
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <p className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-black text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
+            <p className="inline-flex h-10 items-center gap-1.5 rounded-full border border-emerald-200/70 bg-white/45 px-5 text-sm font-black leading-none text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
               <Mail aria-hidden="true" size={14} /> Вопрос дня
             </p>
             <button
               onClick={() => router.push("/questions/archive")}
-              className="rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-black text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200 dark:hover:bg-emerald-500/15"
+              className="inline-flex h-10 items-center rounded-full border border-emerald-200/70 bg-white/45 px-5 text-sm font-black leading-none text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200 dark:hover:bg-emerald-500/15"
             >
               Архив
             </button>

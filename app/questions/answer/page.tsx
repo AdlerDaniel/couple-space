@@ -599,10 +599,10 @@ export default function QuestionAnswerPage() {
                   disabled={isEditLocked}
                   maxLength={ANSWER_MAX_LENGTH}
                   placeholder="Напиши свой ответ..."
-                  className="min-h-[180px] w-full resize-none overflow-hidden rounded-[1.3rem] border border-emerald-200/80 bg-white/82 p-5 pb-16 pr-16 text-lg font-semibold leading-8 text-emerald-950 shadow-[0_18px_50px_rgba(21,128,61,0.12)] outline-none transition placeholder:text-emerald-700/38 focus:border-emerald-400 focus:shadow-[0_0_0_4px_rgba(20,184,166,0.14),0_22px_70px_rgba(21,128,61,0.18)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/36 dark:focus:shadow-[0_0_0_4px_rgba(52,211,153,0.14),0_22px_70px_rgba(0,0,0,0.32)]"
+                  className="min-h-[180px] w-full resize-none overflow-hidden rounded-[1.3rem] border border-emerald-200/80 bg-white/82 p-5 pr-16 text-lg font-semibold leading-8 text-emerald-950 shadow-[0_18px_50px_rgba(21,128,61,0.12)] outline-none transition placeholder:text-emerald-700/38 focus:border-emerald-400 focus:shadow-[0_0_0_4px_rgba(20,184,166,0.14),0_22px_70px_rgba(21,128,61,0.18)] disabled:cursor-not-allowed disabled:opacity-65 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-white/36 dark:focus:shadow-[0_0_0_4px_rgba(52,211,153,0.14),0_22px_70px_rgba(0,0,0,0.32)]"
                 />
 
-                <div className="absolute bottom-4 right-4 z-20">
+                <div className="absolute right-3 top-3 z-20">
                   <button
                     type="button"
                     onClick={() => setIsAttachMenuOpen((current) => !current)}
@@ -619,7 +619,7 @@ export default function QuestionAnswerPage() {
                   </button>
 
                   {isAttachMenuOpen && (
-                    <div className="absolute bottom-[3.25rem] right-0 z-30 w-56 overflow-hidden rounded-2xl border border-emerald-200/80 bg-white/96 p-2 text-emerald-950 shadow-[0_20px_60px_rgba(5,150,105,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#071c13]/96 dark:text-white">
+                    <div className="absolute right-0 top-[3.25rem] z-30 w-56 overflow-hidden rounded-2xl border border-emerald-200/80 bg-white/96 p-2 text-emerald-950 shadow-[0_20px_60px_rgba(5,150,105,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#071c13]/96 dark:text-white">
                       <button
                         type="button"
                         onClick={() => {

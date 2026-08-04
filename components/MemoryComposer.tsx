@@ -376,7 +376,7 @@ export default function MemoryComposer({
           }}
         />
 
-        <div className="memory-caption-row flex items-end gap-1.5">
+        <div className="memory-caption-row flex items-center gap-1.5">
         <div className="memory-caption-field flex min-h-12 min-w-0 flex-1 items-center gap-1 rounded-2xl border border-blue-200/70 bg-white/75 p-1 text-blue-950 shadow-inner transition focus-within:border-blue-400 focus-within:shadow-[0_0_0_4px_rgba(37,99,235,0.12)] dark:border-white/10 dark:bg-white/8 dark:text-white">
           <div className="relative shrink-0">
             <button
@@ -435,7 +435,7 @@ export default function MemoryComposer({
             onChange={(event) => setCaption(event.target.value)}
             placeholder="Описание"
             rows={1}
-            className="max-h-40 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2 font-semibold leading-6 outline-none placeholder:text-blue-400/65 dark:placeholder:text-white/38"
+            className="max-h-40 min-h-11 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2.5 font-semibold leading-6 outline-none placeholder:text-blue-400/65 dark:placeholder:text-white/38"
           />
 
           <div className="relative shrink-0">

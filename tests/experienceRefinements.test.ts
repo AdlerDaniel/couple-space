@@ -78,12 +78,19 @@ test("archive and tracker keep dense two-column mobile lists", async () => {
   assert.match(tracker, /mobile-disclosure/);
 });
 
-test("Today movie actions open the shared add dialog and roulette", async () => {
-  const source = await readSource("app/today/page.tsx");
+test("Today movie actions open the dedicated add page and roulette", async () => {
+  const [source, watchSource, addSource] = await Promise.all([
+    readSource("app/today/page.tsx"),
+    readSource("app/watch/page.tsx"),
+    readSource("app/watch/new/page.tsx"),
+  ]);
 
-  assert.match(source, /href="\/watch\?add=1"/);
+  assert.match(source, /href="\/watch\/new"/);
   assert.match(source, /href="\/watch\?spin=1"/);
   assert.doesNotMatch(source, /Сохранить момент дня/);
+  assert.match(watchSource, /href="\/watch\/new"/);
+  assert.doesNotMatch(watchSource, /Вернуться в Сегодня/);
+  assert.match(addSource, /Добавить в список/);
 });
 
 test("achievements no longer create notifications or navigation entries", async () => {

@@ -138,23 +138,27 @@ export default function MemoryPostPage() {
   return (
     <main className="memory-post-page min-h-screen bg-[radial-gradient(circle_at_15%_8%,rgba(37,99,235,0.17),transparent_34%),#eff6ff] px-3 pb-24 pt-20 text-[#172554] dark:bg-[radial-gradient(circle_at_15%_8%,rgba(37,99,235,0.14),transparent_34%),#020617] dark:text-white md:px-6 md:pt-28">
       <div className="mx-auto max-w-6xl">
-        <button type="button" onClick={() => router.back()} className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-200/70 bg-white/80 px-4 py-2 text-sm font-black text-[#2563eb] shadow-sm dark:border-white/10 dark:bg-white/8 dark:text-blue-100"><ArrowLeft size={18} />Назад</button>
-        <section className="memory-post-layout overflow-hidden rounded-[1.6rem] border border-blue-100/80 bg-white/88 shadow-[0_30px_90px_rgba(30,64,175,0.17)] backdrop-blur-xl dark:border-white/10 dark:bg-[#101c36]/96 lg:grid lg:min-h-[36rem] lg:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.75fr)]">
-          <article className="memory-post-media flex min-h-[20rem] min-w-0 flex-col justify-center bg-[#e7efff] dark:bg-[#071124]">
-            {media.photoUrl && <Image src={media.photoUrl} alt={title || "Воспоминание"} width={1400} height={1200} sizes="(min-width: 1024px) 65vw, 100vw" className="max-h-[70dvh] w-full object-contain" unoptimized />}
-            {media.voiceUrl && <div className="w-full p-5 sm:p-8"><AccentAudioPlayer src={media.voiceUrl} accent="#2563eb" label="Голосовое воспоминание" className="memory-post-audio" /></div>}
-            {(media.attachments || []).map((attachment, index) => attachment.type === "image" ? <Image key={`${attachment.url}-${index}`} src={attachment.url} alt={attachment.name} width={1200} height={900} className="max-h-[60dvh] w-full object-contain" unoptimized /> : attachment.type === "video" ? <video key={`${attachment.url}-${index}`} src={attachment.url} controls playsInline className="max-h-[60dvh] w-full bg-black" /> : attachment.type === "audio" ? <div key={`${attachment.url}-${index}`} className="p-5"><AccentAudioPlayer src={attachment.url} accent="#2563eb" label={attachment.name} /></div> : <a key={`${attachment.url}-${index}`} href={attachment.url} target="_blank" rel="noreferrer" className="m-5 flex items-center gap-2 rounded-2xl bg-white/80 p-4 font-black text-[#2563eb] dark:bg-white/8 dark:text-blue-100"><FileText size={20} />{attachment.name}</a>)}
-            {!media.photoUrl && !media.voiceUrl && !(media.attachments || []).length && <div className="grid min-h-[22rem] place-items-center p-8 text-center text-[#2563eb]/45"><MessageCircle size={48} /></div>}
+        <button type="button" onClick={() => router.back()} className="memory-post-back mb-4 inline-flex items-center gap-2 rounded-full border border-blue-300/70 bg-blue-100/90 px-4 py-2 text-sm font-black text-[#1d4ed8] shadow-sm transition hover:bg-blue-200/80 dark:border-blue-300/20 dark:bg-blue-500/18 dark:text-blue-100"><ArrowLeft size={18} />Назад</button>
+        <section className="memory-post-layout overflow-hidden rounded-[1.6rem] border border-blue-200/80 bg-blue-50/88 shadow-[0_30px_90px_rgba(30,64,175,0.17)] backdrop-blur-xl dark:border-blue-300/15 dark:bg-[#101c36]/96 lg:grid lg:min-h-[36rem] lg:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.75fr)]">
+          <article className="memory-post-media min-w-0 bg-[#e7efff] dark:bg-[#071124]">
+            <header className="memory-post-caption border-b border-blue-200/70 bg-blue-100/78 p-4 dark:border-white/10 dark:bg-blue-500/10">
+              <div className="flex items-center gap-3">
+                {author.avatar ? <Image src={author.avatar} alt={author.name} width={42} height={42} className="h-10 w-10 rounded-full object-cover" unoptimized /> : <span className="grid h-10 w-10 place-items-center rounded-full bg-[#2563eb] font-black text-white">{author.initial}</span>}
+                <div className="min-w-0"><p className="truncate font-black">{author.name}</p><p className="text-xs font-bold opacity-50">{formatDate(memory.created_at)}</p></div>
+              </div>
+              {(title || description) && <div className="mt-3 pl-[3.25rem]">{title && <h1 className="break-words text-xl font-black leading-tight sm:text-2xl"><FluentEmojiText>{title}</FluentEmojiText></h1>}{description && <p className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold leading-6 opacity-70"><FluentEmojiText>{description}</FluentEmojiText></p>}</div>}
+            </header>
+            <div className="memory-post-content flex min-h-[20rem] flex-col justify-center">
+              {media.photoUrl && <Image src={media.photoUrl} alt={title || "Воспоминание"} width={1400} height={1200} sizes="(min-width: 1024px) 65vw, 100vw" className="max-h-[70dvh] w-full object-contain" unoptimized />}
+              {media.voiceUrl && <div className="w-full p-5 sm:p-8"><AccentAudioPlayer src={media.voiceUrl} accent="#2563eb" label="Голосовое воспоминание" className="memory-post-audio" /></div>}
+              {(media.attachments || []).map((attachment, index) => attachment.type === "image" ? <Image key={`${attachment.url}-${index}`} src={attachment.url} alt={attachment.name} width={1200} height={900} className="max-h-[60dvh] w-full object-contain" unoptimized /> : attachment.type === "video" ? <video key={`${attachment.url}-${index}`} src={attachment.url} controls playsInline className="max-h-[60dvh] w-full bg-black" /> : attachment.type === "audio" ? <div key={`${attachment.url}-${index}`} className="p-5"><AccentAudioPlayer src={attachment.url} accent="#2563eb" label={attachment.name} /></div> : <a key={`${attachment.url}-${index}`} href={attachment.url} target="_blank" rel="noreferrer" className="m-5 flex items-center gap-2 rounded-2xl bg-blue-100 p-4 font-black text-[#2563eb] dark:bg-white/8 dark:text-blue-100"><FileText size={20} />{attachment.name}</a>)}
+              {!media.photoUrl && !media.voiceUrl && !(media.attachments || []).length && <div className="grid min-h-[22rem] place-items-center p-8 text-center text-[#2563eb]/45"><MessageCircle size={48} /></div>}
+            </div>
           </article>
 
-          <aside className="memory-post-comments flex min-h-[28rem] min-w-0 flex-col border-t border-blue-100/80 dark:border-white/10 lg:border-l lg:border-t-0">
-            <header className="flex items-center gap-3 border-b border-blue-100/80 p-4 dark:border-white/10">
-              {author.avatar ? <Image src={author.avatar} alt={author.name} width={42} height={42} className="h-10 w-10 rounded-full object-cover" unoptimized /> : <span className="grid h-10 w-10 place-items-center rounded-full bg-[#2563eb] font-black text-white">{author.initial}</span>}
-              <div className="min-w-0"><p className="truncate font-black">{author.name}</p><p className="text-xs font-bold opacity-45">{formatDate(memory.created_at)}</p></div>
-            </header>
-
+          <aside className="memory-post-comments flex min-h-[24rem] min-w-0 flex-col border-t border-blue-200/80 bg-blue-50/72 dark:border-white/10 dark:bg-blue-950/18 lg:border-l lg:border-t-0">
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
-              {(title || description) && <div className="mb-5 flex gap-3">{author.avatar ? <Image src={author.avatar} alt="" width={34} height={34} className="h-8 w-8 rounded-full object-cover" unoptimized /> : <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-blue-100 text-xs font-black text-[#2563eb] dark:bg-white/10 dark:text-white">{author.initial}</span>}<div className="min-w-0"><p className="text-sm"><span className="mr-2 font-black">{author.name}</span>{title && <span className="font-black"><FluentEmojiText>{title}</FluentEmojiText></span>}</p>{description && <p className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold leading-5 opacity-68"><FluentEmojiText>{description}</FluentEmojiText></p>}</div></div>}
+              <p className="mb-4 text-xs font-black uppercase tracking-[0.14em] text-blue-700/55 dark:text-blue-100/55">Комментарии</p>
               <div className="space-y-4">
                 {comments.map((comment) => { const meta = userMeta(comment.user_id); return <div key={comment.id} className="flex gap-3">{meta.avatar ? <Image src={meta.avatar} alt={meta.name} width={34} height={34} className="h-8 w-8 rounded-full object-cover" unoptimized /> : <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-blue-100 text-xs font-black text-[#2563eb] dark:bg-white/10 dark:text-white">{meta.initial}</span>}<div className="min-w-0"><p className="break-words text-sm"><span className="mr-2 font-black">{meta.name}</span><FluentEmojiText>{comment.text}</FluentEmojiText></p><p className="mt-1 text-[10px] font-bold opacity-38">{formatDate(comment.created_at)}</p></div></div>; })}
                 {!comments.length && <p className="py-8 text-center text-sm font-bold opacity-42">Комментариев пока нет</p>}
@@ -162,15 +166,15 @@ export default function MemoryPostPage() {
               </div>
             </div>
 
-            <div className="relative border-t border-blue-100/80 p-3 dark:border-white/10">
-              <div className="mb-2 flex min-h-8 flex-wrap items-center gap-1.5">
+            <div className="memory-post-composer relative border-t border-blue-200/80 bg-blue-100/55 p-3 dark:border-white/10 dark:bg-blue-500/8">
+              {reactions.length > 0 && <div className="mb-2 flex min-h-8 flex-wrap items-center gap-1.5">
                 {reactions.map((reaction) => <button key={reaction} type="button" onClick={() => void toggleReaction(reaction)} className={`inline-flex h-8 items-center gap-1 rounded-full border px-2 ${memory.reactions?.[currentUserId || ""] === reaction ? "border-blue-300 bg-blue-100 dark:bg-blue-500/22" : "border-blue-100 bg-blue-50 dark:border-white/10 dark:bg-white/8"}`}><FluentEmoji emoji={reaction} size={20} decorative /><span className="text-[10px] font-black">{Object.values(memory.reactions || {}).filter((item) => item === reaction).length}</span></button>)}
-                <button type="button" onPointerDown={(event) => event.preventDefault()} onClick={() => setIsReactionPickerOpen((current) => !current)} className="grid h-8 w-8 place-items-center rounded-full border border-blue-200 bg-blue-50 text-[#2563eb] dark:border-white/10 dark:bg-white/8 dark:text-blue-100" aria-label="Добавить реакцию"><SmilePlus size={17} /></button>
-              </div>
-              {isReactionPickerOpen && <EmojiPicker tone="blue" compact selectedEmoji={memory.reactions?.[currentUserId || ""]} onSelect={(reaction) => void toggleReaction(reaction)} className="absolute bottom-[5.8rem] left-2 right-2 z-30" />}
-              <form onSubmit={sendComment} className="flex items-center gap-2">
-                <input value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={1000} placeholder="Добавьте комментарий…" className="h-11 min-w-0 flex-1 rounded-full border border-blue-100 bg-blue-50/65 px-4 text-sm font-semibold outline-none focus:border-blue-400 dark:border-white/10 dark:bg-white/8" />
-                <button type="submit" disabled={!draft.trim() || isSending} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#2563eb] text-white shadow-md disabled:opacity-35" aria-label="Отправить комментарий"><Send size={18} /></button>
+              </div>}
+              {isReactionPickerOpen && <EmojiPicker tone="blue" compact selectedEmoji={memory.reactions?.[currentUserId || ""]} onSelect={(reaction) => void toggleReaction(reaction)} className="absolute bottom-[4.5rem] left-2 right-2 z-50" />}
+              <form onSubmit={sendComment} className="flex items-end gap-2">
+                <button type="button" onPointerDown={(event) => event.preventDefault()} onClick={() => setIsReactionPickerOpen((current) => !current)} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-blue-300/70 bg-blue-100 text-[#2563eb] dark:border-white/10 dark:bg-blue-500/16 dark:text-blue-100" aria-label="Добавить реакцию"><SmilePlus size={18} /></button>
+                <textarea value={draft} onChange={(event) => setDraft(event.target.value)} rows={1} maxLength={1000} placeholder="Добавьте комментарий…" className="memory-comment-input min-h-11 max-h-32 min-w-0 flex-1 resize-none overflow-y-auto rounded-[1.35rem] border border-blue-200 bg-blue-50/85 px-4 py-3 text-sm font-semibold leading-5 outline-none focus:border-blue-400 dark:border-white/10 dark:bg-white/8" />
+                <button type="submit" disabled={!draft.trim() || isSending} className="memory-comment-send grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#2563eb] p-0 text-white shadow-md disabled:opacity-35" aria-label="Отправить комментарий"><Send size={18} /></button>
               </form>
               {message && <p className="mt-2 text-center text-xs font-black text-rose-500">{message}</p>}
             </div>

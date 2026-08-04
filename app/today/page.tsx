@@ -9,6 +9,7 @@ import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
+import { Heart } from "lucide-react";
 
 type Couple = {
   id: string;
@@ -242,7 +243,7 @@ export default function TodayPage() {
           </div>
           {state.couple && (
             <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-              {myName} <span className="px-1 text-rose-500">♥</span> {partnerName}
+              {myName} <Heart aria-hidden="true" className="mx-1 inline-block align-[-0.16em] text-rose-500" size={15} fill="currentColor" /> {partnerName}
             </p>
           )}
         </header>
@@ -369,7 +370,7 @@ export default function TodayPage() {
                       : "Фильм, сериал или аниме — сохраните один вариант, чтобы вечером не тратить время на поиск."}
                   </p>
                   <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                    <Link href="/watch?add=1" className="today-primary-action">Добавить фильм</Link>
+                    <Link href="/watch/new" className="today-primary-action">Добавить фильм</Link>
                     <Link href="/watch?spin=1" className="today-secondary-action">Запустить рулетку</Link>
                   </div>
                 </div>

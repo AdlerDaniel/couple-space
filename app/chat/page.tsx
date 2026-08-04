@@ -52,7 +52,6 @@ import {
   Smile,
   Square,
   Star,
-  Sticker,
   X,
 } from "lucide-react";
 
@@ -1718,7 +1717,7 @@ export default function ChatPage() {
             <button
               type="button"
               onClick={() => setIsProfilePanelOpen(true)}
-              className="chat-mobile-more hidden h-12 w-12 shrink-0 place-items-center rounded-full border border-slate-100 bg-white text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/8 dark:text-white md:hidden"
+              className="chat-mobile-more hidden h-11 w-8 shrink-0 place-items-center border-0 bg-transparent p-0 text-sky-600 shadow-none dark:text-sky-100 md:hidden"
               aria-label="Открыть меню чата"
             >
               <EllipsisVertical aria-hidden="true" size={23} />
@@ -2417,12 +2416,6 @@ export default function ChatPage() {
               </button>
               {isAttachMenuOpen && (
                 <div className="chat-menu-in absolute bottom-14 right-0 z-30 w-52 overflow-hidden rounded-2xl bg-white/95 p-2 text-[#075985] shadow-[0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl dark:bg-black/90 dark:text-white">
-                  <button type="button" onClick={() => { setReactionTargetId(null); setPickerMode("emoji"); setIsAttachMenuOpen(false); }} className="chat-mobile-attach-option flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
-                    <Smile aria-hidden="true" size={18} /> Эмодзи
-                  </button>
-                  <button type="button" onClick={() => { setReactionTargetId(null); setPickerMode("stickers"); setIsAttachMenuOpen(false); }} className="chat-mobile-attach-option flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
-                    <Sticker aria-hidden="true" size={18} /> Стикеры
-                  </button>
                   <button type="button" onClick={() => { mediaInputRef.current?.click(); setIsAttachMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-black hover:bg-sky-50 dark:hover:bg-white/10">
                     <ImageIcon aria-hidden="true" size={18} /> Фото/Видео
                   </button>

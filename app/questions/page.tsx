@@ -113,13 +113,13 @@ export default function QuestionsPage() {
 
       <section className="relative mx-auto flex min-h-[calc(100vh-7rem)] max-w-5xl flex-col items-center justify-center text-center">
         <div className="questions-reveal mb-8 flex flex-wrap items-center justify-center gap-3">
-          <div className="inline-flex items-center gap-3 rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-bold text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
+          <div className="inline-flex h-10 items-center gap-3 rounded-full border border-emerald-200/70 bg-white/45 px-5 text-sm font-bold leading-none text-emerald-700 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/8 dark:text-emerald-200">
             <Mail aria-hidden="true" size={16} />
             Вопрос дня
           </div>
           <button
             onClick={() => router.push("/questions/archive")}
-            className="rounded-full border border-emerald-200/70 bg-white/45 px-5 py-2 text-sm font-bold text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200 dark:hover:bg-emerald-500/15"
+            className="inline-flex h-10 items-center rounded-full border border-emerald-200/70 bg-white/45 px-5 text-sm font-bold leading-none text-emerald-700 shadow-lg backdrop-blur-xl transition hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-200 dark:hover:bg-emerald-500/15"
           >
             Архив
           </button>

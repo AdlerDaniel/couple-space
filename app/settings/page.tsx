@@ -47,16 +47,6 @@ const defaultNotificationSettings = Object.fromEntries(
   notificationOptions.map(([key]) => [key, true]),
 ) as NotificationSettings;
 
-const timeZoneOptions = [
-  "Europe/Moscow",
-  "Europe/Kyiv",
-  "Europe/Berlin",
-  "Asia/Tbilisi",
-  "Asia/Almaty",
-  "America/New_York",
-  "America/Los_Angeles",
-];
-
 function normalizeSettings(value: unknown): NotificationSettings {
   if (!value || typeof value !== "object") return defaultNotificationSettings;
   return { ...defaultNotificationSettings, ...(value as NotificationSettings) };
@@ -69,7 +59,6 @@ export default function SettingsPage() {
   const [coupleId, setCoupleId] = useState<string | null>(null);
   const [notificationSettings, setNotificationSettings] =
     useState<NotificationSettings>(defaultNotificationSettings);
-  const [timeZone, setTimeZone] = useState("Europe/Moscow");
   const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
@@ -93,23 +82,14 @@ export default function SettingsPage() {
       if (!couple) return;
       setCoupleId(couple.id);
 
-      const [{ data: profileData }, { data: settingsData }] = await Promise.all([
-        supabase
-          .from("couple_profiles")
-          .select("time_zone")
-          .eq("couple_id", couple.id)
-          .limit(1)
-          .maybeSingle<{ time_zone: string | null }>(),
-        supabase
-          .from("user_notification_settings")
-          .select("settings")
-          .eq("couple_id", couple.id)
-          .eq("user_id", user.id)
-          .limit(1)
-          .maybeSingle<{ settings: NotificationSettings | null }>(),
-      ]);
+      const { data: settingsData } = await supabase
+        .from("user_notification_settings")
+        .select("settings")
+        .eq("couple_id", couple.id)
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle<{ settings: NotificationSettings | null }>();
 
-      setTimeZone(profileData?.time_zone || "Europe/Moscow");
       setNotificationSettings(normalizeSettings(settingsData?.settings));
     }
 
@@ -138,18 +118,6 @@ export default function SettingsPage() {
       void saveNotificationSettings(next);
       return next;
     });
-  }
-
-  async function updateTimeZone(value: string) {
-    setTimeZone(value);
-    if (!coupleId) return;
-
-    const { error } = await supabase
-      .from("couple_profiles")
-      .update({ time_zone: value })
-      .eq("couple_id", coupleId);
-
-    setSaveMessage(error ? "Не удалось сохранить таймзону." : "Таймзона пары сохранена.");
   }
 
   return (
@@ -214,25 +182,6 @@ export default function SettingsPage() {
                 </div>
               </section>
 
-              <section className="rounded-[1.5rem] border border-white/55 bg-white/62 p-5 shadow-inner backdrop-blur-xl dark:border-white/10 dark:bg-white/8">
-                <p className="text-xl font-black">Таймзона пары</p>
-                <p className="mt-2 text-sm font-bold opacity-65">
-                  Вопрос дня и отметка “сегодня” будут считаться в выбранной таймзоне.
-                </p>
-                <select
-                  value={timeZone}
-                  onChange={(event) => updateTimeZone(event.target.value)}
-                  className="mt-4 h-12 w-full rounded-2xl border border-white/55 bg-white/75 px-4 font-black outline-none dark:border-white/10 dark:bg-black/20"
-                >
-                  {timeZoneOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-3 text-sm font-black opacity-60">Сейчас выбрано: {timeZone}</p>
-                {saveMessage && <p className="mt-3 text-sm font-black opacity-70">{saveMessage}</p>}
-              </section>
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">

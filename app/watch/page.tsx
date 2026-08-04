@@ -553,7 +553,7 @@ export default function WatchPage() {
             rel="noreferrer"
             aria-label={`Открыть внешнюю ссылку для ${item.title}`}
             title="Открыть ссылку"
-            className="mt-3 inline-flex text-sm font-black text-lime-700 underline decoration-lime-300 underline-offset-4 dark:text-lime-100"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-lime-300/70 bg-lime-100 px-3 py-2 text-sm font-black text-lime-800 shadow-sm transition hover:bg-lime-200 dark:border-lime-300/20 dark:bg-lime-500/18 dark:text-lime-100"
           >
             <ExternalLink aria-hidden="true" size={16} />
             <span>Открыть ссылку</span>
@@ -662,10 +662,10 @@ export default function WatchPage() {
           </div>
         </section>
 
-        <button type="button" onClick={() => setIsAddOpen(true)} className="watch-add-mobile">
+        <Link href="/watch/new" className="watch-add-mobile">
           <span aria-hidden="true">+</span>
           Добавить фильм
-        </button>
+        </Link>
         {isAddOpen && <button type="button" className="watch-add-backdrop" onClick={() => setIsAddOpen(false)} aria-label="Закрыть добавление фильма" />}
         <section className={`watch-add-sheet mt-6 rounded-[1.7rem] border border-white/70 bg-white/64 p-4 shadow-inner backdrop-blur-xl dark:border-white/10 dark:bg-white/8 md:p-5 ${isAddOpen ? "is-open" : ""}`}>
           <div className="watch-add-mobile-head">
@@ -842,14 +842,6 @@ export default function WatchPage() {
           </section>
         </div>
 
-        <div className="mt-8 text-center">
-          <Link
-            href="/today"
-            className="inline-flex rounded-full bg-white/70 px-5 py-3 text-sm font-black text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
-          >
-            Вернуться в Сегодня
-          </Link>
-        </div>
       </section>
 
       {pendingDelete && (

@@ -27,13 +27,18 @@ test("question archive includes missed days and allows a late answer", async () 
   assert.match(detailSource, /После сохранения откроется ответ партнёра/);
 });
 
-test("settings keep account, couple, notification controls and time zone only", async () => {
-  const source = await readFile(new URL("../app/settings/page.tsx", import.meta.url), "utf8");
+test("settings keep account, couple and notification controls while Moscow is fixed", async () => {
+  const [source, migration] = await Promise.all([
+    readFile(new URL("../app/settings/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260804122000_lock_couple_timezone_to_moscow.sql", import.meta.url), "utf8"),
+  ]);
 
   assert.match(source, /title: "Аккаунт"/);
   assert.match(source, /title: "Пара"/);
   assert.match(source, /Настройки уведомлений/);
-  assert.match(source, /Таймзона пары/);
+  assert.doesNotMatch(source, /Таймзона пары|timeZoneOptions|updateTimeZone/);
+  assert.match(migration, /set time_zone = 'Europe\/Moscow'/);
+  assert.match(migration, /alter column time_zone set default 'Europe\/Moscow'/);
   assert.doesNotMatch(source, /title: "Приватность"|title: "Уведомления"|title: "Медиа и хранилище"|title: "Сессия"/);
 });
 

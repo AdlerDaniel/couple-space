@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Cropper from "react-easy-crop";
+import { Heart } from "lucide-react";
 
 type CoupleProfile = {
   partner_one: string;
@@ -601,8 +602,8 @@ export default function DashboardPage() {
                   image={avatarOneUrl}
                   status={getStatus(profile, "one")}
                 />
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl shadow-lg">
-                  ❤️
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white text-[#dc2626] shadow-lg">
+                  <Heart aria-hidden="true" size={24} fill="currentColor" />
                 </div>
                 <AvatarBubble
                   name={profile.partner_two}
@@ -624,12 +625,6 @@ export default function DashboardPage() {
                 <span className="rounded-full bg-white/60 px-4 py-2 text-sm font-black text-[#dc2626] shadow-lg backdrop-blur dark:bg-black/25 dark:text-white">
                   Вместе с {startDate ? formatDate(startDate) : "первого дня"}
                 </span>
-                <Link
-                  href="/today"
-                  className="rounded-full bg-white px-4 py-2 text-sm font-black text-[#dc2626] shadow-lg transition hover:bg-red-50 dark:bg-white/15 dark:text-white dark:hover:bg-white/20"
-                >
-                  Рабочий экран на сегодня
-                </Link>
               </div>
             </div>
           </div>

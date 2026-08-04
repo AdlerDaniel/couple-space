@@ -429,7 +429,20 @@ export default function MemoriesPage() {
               return (
                 <article
                   key={memory.id}
-                  className="memory-card performance-list-item group relative mb-5 break-inside-avoid overflow-visible rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] dark:border-white/10 dark:bg-white/8"
+                  role="link"
+                  tabIndex={0}
+                  onClick={(event) => {
+                    const target = event.target as HTMLElement;
+                    if (target.closest("button, a, input, textarea, select, video, audio, img, [role='slider'], .accent-audio-player, .memory-voice-player")) return;
+                    router.push(`/memories/${memory.id}`);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      router.push(`/memories/${memory.id}`);
+                    }
+                  }}
+                  className={`memory-card performance-list-item group relative mb-5 break-inside-avoid overflow-visible rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/45 dark:border-white/10 dark:bg-white/8 ${reactionPickerMemoryId === memory.id ? "z-[70]" : ""}`}
                 >
                   {media.photoUrl && (
                     <div className="relative overflow-hidden rounded-[1.35rem] bg-blue-100 dark:bg-white/8">
@@ -533,7 +546,7 @@ export default function MemoriesPage() {
                             setReactionPickerMemoryId(null);
                           }}
                           tone="blue"
-                          className="absolute bottom-10 left-0 z-30 w-[min(21rem,calc(100vw-3.5rem))]"
+                          className="fixed inset-x-3 bottom-24 z-[100] mx-auto w-[min(21rem,calc(100vw-1.5rem))] sm:absolute sm:inset-x-auto sm:bottom-10 sm:left-0 sm:mx-0 sm:w-[min(21rem,calc(100vw-3.5rem))]"
                           compact
                         />
                       )}

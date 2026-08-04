@@ -1921,13 +1921,17 @@ export default function ChatPage() {
                           setMenuMessageId(message.id);
                         }}
                         className={`chat-message-bubble ${isMine ? "chat-message-bubble-mine" : "chat-message-bubble-partner"} relative w-fit max-w-[84%] break-words rounded-[14px] shadow-[0_4px_14px_rgba(0,0,0,0.1)] transition hover:-translate-y-0.5 sm:max-w-[78%] md:max-w-[62%] ${
-                          isStickerMessage || isBigEmojiMessage || isVoiceMessage ? "px-0 py-0 shadow-none" : "px-3 py-1.5"
+                          isStickerMessage || isVoiceMessage
+                            ? "px-0 py-0 shadow-none"
+                            : isBigEmojiMessage
+                              ? "p-2"
+                              : "px-3 py-1.5"
                         } ${
-                          isStickerMessage || isBigEmojiMessage || isVoiceMessage
+                          isStickerMessage || isVoiceMessage
                             ? "bg-transparent text-white"
                             : isMine
-                            ? `bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white shadow-sky-500/18 ${isLastInGroup ? "rounded-br-[4px]" : ""}`
-                            : `bg-[#0f2638] text-white shadow-black/10 ${isLastInGroup ? "rounded-bl-[4px]" : ""}`
+                              ? `bg-gradient-to-br from-[#0284c7] to-[#0369a1] text-white shadow-sky-500/18 ${isLastInGroup ? "rounded-br-[4px]" : ""}`
+                              : `bg-[#0f2638] text-white shadow-black/10 ${isLastInGroup ? "rounded-bl-[4px]" : ""}`
                         }`}
                       >
                         {isLastInGroup && !isStickerMessage && !isBigEmojiMessage && !isVoiceMessage && (
@@ -1956,7 +1960,7 @@ export default function ChatPage() {
                               <div className={`chat-big-emoji-message ${isMine ? "ml-auto" : ""}`}>
                                 <FluentEmoji emoji={message.body || ""} size="4.5rem" decorative className="drop-shadow-[0_12px_26px_rgba(0,0,0,0.25)]" />
                                 <div className={`mt-1 flex ${isMine ? "justify-end" : "justify-start"}`}>
-                                  <span className="rounded-full bg-black/34 px-2 py-0.5 backdrop-blur">
+                                  <span className="chat-big-emoji-meta px-1 py-0.5">
                                     {metaNode}
                                   </span>
                                 </div>

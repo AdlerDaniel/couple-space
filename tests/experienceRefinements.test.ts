@@ -63,6 +63,7 @@ test("memory cards omit empty fallback copy and keep the composer compact", asyn
 test("chat uses a compact mobile profile header and integrated composer", async () => {
   const chat = await readSource("app/chat/page.tsx");
   const shell = await readSource("components/AppShell.tsx");
+  const css = await readSource("app/mobile-redesign.css");
 
   assert.match(chat, /chat-partner-pill/);
   assert.match(chat, /chat-mobile-more/);
@@ -71,7 +72,10 @@ test("chat uses a compact mobile profile header and integrated composer", async 
   assert.match(chat, /lineHeight \* 5/);
   assert.match(chat, /overflow-y-hidden/);
   assert.match(chat, /chat-messages-scroll/);
-  assert.match(chat, /isVoiceMessage \? "px-0 py-0 shadow-none"/);
+  assert.match(chat, /isStickerMessage \|\| isVoiceMessage/);
+  assert.match(chat, /isBigEmojiMessage\s+\? "p-2"/);
+  assert.match(css, /\.chat-message-bubble:has\(\.chat-accent-audio\)/);
+  assert.match(css, /\.memories-grid > \.memory-card \{[\s\S]*?content-visibility: visible !important/);
   assert.match(shell, /pathname === "\/chat"/);
   assert.match(shell, /questions\/discussion/);
 });

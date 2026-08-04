@@ -2,12 +2,47 @@
 
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
-import { trackerCategoryColors, trackerDefaultCategories } from "@/lib/trackerCategories";
+import { trackerDefaultCategories } from "@/lib/trackerCategories";
 import { FluentEmoji } from "@/components/FluentEmoji";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { TrackerNavigation, type TrackerPeriod } from "./TrackerNavigation";
+import { TrackerNavigation } from "./TrackerNavigation";
 import { TrackerSummaryCards } from "./TrackerSummaryCards";
+import {
+  addDays,
+  compareWithPreviousMonth,
+  countOnly,
+  endOfMonth,
+  formatDate,
+  formatShortDate,
+  getBestDay,
+  getCalendarDays,
+  getCategoryColor,
+  getDateRange,
+  getDayMood,
+  getDayMoodNote,
+  getGoalDateRange,
+  getMostFrequent,
+  getStreak,
+  getVisibleEventNote,
+  getWeekDays,
+  goalPeriods,
+  groupByDate,
+  hasDayMood,
+  monthTitle,
+  moods,
+  parseDateKey,
+  startOfMonth,
+  sumEvents,
+  toDateKey,
+  type Couple,
+  type GoalPeriod,
+  type Mood,
+  type Period,
+  type TrackerCategory,
+  type TrackerEvent,
+  type TrackerGoal,
+} from "./trackerDomain";
 import {
   CirclePlus,
   Dumbbell,
@@ -20,92 +55,6 @@ import {
   Trash2,
   Utensils,
 } from "lucide-react";
-
-type Period = TrackerPeriod;
-type Mood = "great" | "good" | "normal" | "tired" | "bad";
-type Participants = "both" | "me" | "partner";
-
-type Couple = {
-  id: string;
-  partner_one_id: string;
-  partner_two_id: string | null;
-};
-
-type TrackerCategory = {
-  id: string;
-  name: string;
-  slug: string;
-  icon: string;
-  color: string;
-  sort_order: number;
-  is_default: boolean;
-};
-
-type TrackerEvent = {
-  id: string;
-  couple_id: string;
-  category_id: string;
-  date: string;
-  time: string | null;
-  count: number;
-  duration_minutes: number;
-  note: string | null;
-  mood: Mood;
-  participants: Participants;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-};
-
-type TrackerGoal = {
-  id: string;
-  couple_id: string;
-  title: string;
-  category_id: string | null;
-  period: GoalPeriod;
-  target_count: number;
-  created_by: string;
-  created_at: string;
-};
-
-type GoalPeriod = "day" | "week" | "month" | "year";
-
-function getCategoryColor(category: TrackerCategory) {
-  return trackerCategoryColors[category.slug] || category.color || "#ca8a04";
-}
-
-const goalPeriods: { key: GoalPeriod; label: string }[] = [
-  { key: "day", label: "за день" },
-  { key: "week", label: "за неделю" },
-  { key: "month", label: "за месяц" },
-  { key: "year", label: "за год" },
-];
-
-const moods: { key: Mood; label: string; icon: string }[] = [
-  { key: "bad", label: "Злость", icon: "😠" },
-  { key: "great", label: "Радость", icon: "😄" },
-  { key: "tired", label: "Грусть", icon: "😢" },
-  { key: "good", label: "С любовью", icon: "🥰" },
-  { key: "normal", label: "Заигрывание", icon: "😏" },
-];
-
-const DAY_MOOD_MARKER = "[[day-mood]]";
-
-function hasDayMood(event: TrackerEvent) {
-  return event.note?.startsWith(DAY_MOOD_MARKER) || false;
-}
-
-function getDayMood(events: TrackerEvent[]) {
-  const marker = events.find(hasDayMood);
-  return marker ? moods.find((mood) => mood.key === marker.mood) || null : null;
-}
-
-function getVisibleEventNote(event: TrackerEvent) {
-  if (!event.note) return "";
-  return event.note.startsWith(DAY_MOOD_MARKER)
-    ? event.note.slice(DAY_MOOD_MARKER.length).trim()
-    : event.note;
-}
 
 function CategoryIcon({ category, size = 18 }: { category: TrackerCategory; size?: number }) {
   const Icon = category.slug === "food"
@@ -122,165 +71,6 @@ function CategoryIcon({ category, size = 18 }: { category: TrackerCategory; size
 
 const trackerPanelClass =
   "border border-amber-900/12 bg-white/64 shadow-[0_20px_55px_rgba(146,64,14,0.09)] backdrop-blur-xl dark:border-amber-200/10 dark:bg-[#211a0c]/78 dark:shadow-[0_24px_70px_rgba(0,0,0,0.26)]";
-
-function toDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseDateKey(dateKey: string) {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function addDays(date: Date, days: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-function startOfWeek(date: Date) {
-  const next = new Date(date);
-  const day = next.getDay() || 7;
-  next.setDate(next.getDate() - day + 1);
-  return next;
-}
-
-function startOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function endOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
-}
-
-function formatDate(dateKey: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(parseDateKey(dateKey));
-}
-
-function formatShortDate(date: Date) {
-  return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" }).format(date);
-}
-
-function monthTitle(date: Date) {
-  return new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(date);
-}
-
-function getDateRange(date: Date, period: Period) {
-  if (period === "day") return { from: toDateKey(date), to: toDateKey(date) };
-  if (period === "week") {
-    const start = startOfWeek(date);
-    return { from: toDateKey(start), to: toDateKey(addDays(start, 6)) };
-  }
-  if (period === "year") {
-    return {
-      from: toDateKey(new Date(date.getFullYear(), 0, 1)),
-      to: toDateKey(new Date(date.getFullYear(), 11, 31)),
-    };
-  }
-  return { from: toDateKey(startOfMonth(date)), to: toDateKey(endOfMonth(date)) };
-}
-
-function getGoalDateRange(period: GoalPeriod) {
-  return getDateRange(new Date(), period);
-}
-
-function sumEvents(events: TrackerEvent[], categoryId?: string) {
-  return events
-    .filter((event) => !categoryId || event.category_id === categoryId)
-    .reduce((sum, event) => sum + event.count + Math.ceil(event.duration_minutes / 60), 0);
-}
-
-function countOnly(events: TrackerEvent[], categoryId?: string) {
-  return events
-    .filter((event) => !categoryId || event.category_id === categoryId)
-    .reduce((sum, event) => sum + event.count, 0);
-}
-
-function groupByDate(events: TrackerEvent[]) {
-  return events.reduce<Record<string, TrackerEvent[]>>((result, event) => {
-    result[event.date] = [...(result[event.date] || []), event];
-    return result;
-  }, {});
-}
-
-function getCalendarDays(monthDate: Date) {
-  const start = startOfMonth(monthDate);
-  const end = endOfMonth(monthDate);
-  const gridStart = startOfWeek(start);
-  const days: Date[] = [];
-  let cursor = gridStart;
-
-  while (days.length < 42) {
-    days.push(cursor);
-    cursor = addDays(cursor, 1);
-    if (cursor > end && days.length % 7 === 0) break;
-  }
-
-  return days;
-}
-
-function getStreak(events: TrackerEvent[]) {
-  const activeDays = new Set(events.map((event) => event.date));
-  let cursor = new Date();
-  let streak = 0;
-
-  while (activeDays.has(toDateKey(cursor))) {
-    streak += 1;
-    cursor = addDays(cursor, -1);
-  }
-
-  return streak;
-}
-
-function getBestDay(events: TrackerEvent[]) {
-  const grouped = groupByDate(events);
-  const best = Object.entries(grouped)
-    .map(([date, rows]) => ({ date, score: sumEvents(rows) }))
-    .sort((a, b) => b.score - a.score)[0];
-  return best ? `${formatShortDate(parseDateKey(best.date))} · ${best.score}` : "пока нет";
-}
-
-function getMostFrequent(events: TrackerEvent[], categories: TrackerCategory[]) {
-  const best = categories
-    .map((category) => ({
-      category,
-      value: countOnly(events, category.id),
-    }))
-    .sort((a, b) => b.value - a.value)[0];
-  return best && best.value > 0 ? best.category.name : "пока нет";
-}
-
-function compareWithPreviousMonth(events: TrackerEvent[], selectedDate: Date) {
-  const thisStart = startOfMonth(selectedDate);
-  const thisEnd = endOfMonth(selectedDate);
-  const previousStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
-  const previousEnd = endOfMonth(previousStart);
-  const current = events.filter((event) => {
-    const date = parseDateKey(event.date);
-    return date >= thisStart && date <= thisEnd;
-  }).length;
-  const previous = events.filter((event) => {
-    const date = parseDateKey(event.date);
-    return date >= previousStart && date <= previousEnd;
-  }).length;
-
-  if (!previous && current) return "+100% к прошлому месяцу";
-  if (!previous) return "нет прошлого месяца";
-  const diff = Math.round(((current - previous) / previous) * 100);
-  return `${diff > 0 ? "+" : ""}${diff}% к прошлому месяцу`;
-}
-
-function getWeekDays(selectedDate: Date) {
-  const start = startOfWeek(selectedDate);
-  return Array.from({ length: 7 }, (_, index) => addDays(start, index));
-}
 
 export default function TrackerPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -632,14 +422,12 @@ export default function TrackerPage() {
     const targetEvent = markerEvent || mySelectedDayEvents[0];
 
     if (targetEvent) {
-      const cleanNote = targetEvent.note?.startsWith(DAY_MOOD_MARKER)
-        ? targetEvent.note.slice(DAY_MOOD_MARKER.length).trimStart()
-        : targetEvent.note || "";
+      const cleanNote = getVisibleEventNote(targetEvent);
       const { data, error } = await supabase
         .from("tracker_events")
         .update({
           mood,
-          note: `${DAY_MOOD_MARKER}${cleanNote ? `\n${cleanNote}` : ""}`,
+          note: getDayMoodNote(cleanNote),
           updated_at: new Date().toISOString(),
         })
         .eq("id", targetEvent.id)
@@ -664,7 +452,7 @@ export default function TrackerPage() {
         time: null,
         count: 0,
         duration_minutes: 0,
-        note: DAY_MOOD_MARKER,
+        note: getDayMoodNote(),
         mood,
         participants: "me",
         created_by: currentUserId,

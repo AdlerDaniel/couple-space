@@ -22,10 +22,12 @@ test("tracker follows the calendar and selected-day reference hierarchy", async 
 });
 
 test("tracker uses a single persisted day mood and Lucide category icons", async () => {
-  const [source, categories] = await Promise.all([
+  const [page, domain, categories] = await Promise.all([
     readFile(new URL("../app/tracker/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/tracker/trackerDomain.ts", import.meta.url), "utf8"),
     readFile(new URL("../lib/trackerCategories.ts", import.meta.url), "utf8"),
   ]);
+  const source = `${page}\n${domain}`;
 
   assert.match(source, /DAY_MOOD_MARKER/);
   assert.match(source, /tracker-calendar-mood-empty/);

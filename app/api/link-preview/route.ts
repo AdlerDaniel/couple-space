@@ -34,14 +34,15 @@ function readTitle(html: string) {
 }
 
 function decodeHtml(value: string) {
-  return value
-    .replaceAll("&quot;", "\"")
-    .replaceAll("&#39;", "'")
-    .replaceAll("&lt;", "<")
-    .replaceAll("&gt;", ">")
-    // Decode ampersands last so encoded entity text is not decoded twice.
-    .replaceAll("&amp;", "&")
-    .trim();
+  const entities: Record<string, string> = {
+    "&quot;": "\"",
+    "&#39;": "'",
+    "&lt;": "<",
+    "&gt;": ">",
+    "&amp;": "&",
+  };
+
+  return value.replace(/&(?:quot|#39|lt|gt|amp);/g, (entity) => entities[entity]).trim();
 }
 
 function resolveUrl(value: string, baseUrl: string) {

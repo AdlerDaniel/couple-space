@@ -1,18 +1,18 @@
-import { Suspense } from "react";
+import { getQuizById, quizzes } from "@/lib/quizzes";
 import QuizResultClient from "./QuizResultClient";
 
-export default function QuizResultPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#f1e7ff] to-[#fbf7ff] px-6 text-[#7c3aed] dark:from-[#170525] dark:to-[#09020f] dark:text-[#c084fc]">
-          <div className="rounded-3xl bg-white/40 p-8 font-semibold shadow-2xl backdrop-blur dark:bg-white/5">
-            Собираем ответы...
-          </div>
-        </main>
-      }
-    >
-      <QuizResultClient />
-    </Suspense>
-  );
+type QuizResultPageProps = {
+  searchParams: Promise<{ quiz?: string | string[] }>;
+};
+
+export default async function QuizResultPage({ searchParams }: QuizResultPageProps) {
+  const params = await searchParams;
+  const quizId = Array.isArray(params.quiz) ? params.quiz[0] : params.quiz;
+  const quiz = getQuizById(quizId || null);
+  const similarQuiz = quiz
+    ? quizzes.find((item) => item.category === quiz.category && item.id !== quiz.id) ||
+      quizzes.find((item) => item.id !== quiz.id)
+    : null;
+
+  return <QuizResultClient quiz={quiz} similarQuizId={similarQuiz?.id || null} />;
 }

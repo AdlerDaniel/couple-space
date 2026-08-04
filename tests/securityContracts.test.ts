@@ -71,9 +71,8 @@ test("link previews pin validated public addresses and restrict preview assets",
   assert.doesNotMatch(linkPreview, /fetch\(currentUrl\.toString\(\)/);
   assert.match(linkPreview, /\["http:", "https:"\]\.includes\(resolvedUrl\.protocol\)/);
 
-  const quoteDecode = linkPreview.indexOf('.replaceAll("&quot;", "\\\"")');
-  const ampDecode = linkPreview.indexOf('.replaceAll("&amp;", "&")');
-  assert.ok(quoteDecode >= 0 && ampDecode > quoteDecode);
+  assert.match(linkPreview, /replace\(\/&\(\?:quot\|#39\|lt\|gt\|amp\);\/g/);
+  assert.doesNotMatch(linkPreview, /replaceAll\("&amp;"/);
 });
 
 test("Supabase rewrites are environment-specific for Vercel and backup builds", async () => {

@@ -18,6 +18,11 @@ export type Quiz = {
   questions: QuizQuestion[];
 };
 
+export type QuizSummary = Pick<Quiz, "id" | "category" | "title" | "duration"> & {
+  questionCount: number;
+  firstQuestion: string;
+};
+
 export const quizCategories: QuizCategory[] = [
   "Согласен/не согласен",
   "Деньги",

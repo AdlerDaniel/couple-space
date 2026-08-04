@@ -2,12 +2,12 @@
 
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
-import { getQuizById, quizzes } from "@/lib/quizzes";
+import type { Quiz } from "@/lib/quizzes";
 import { clearLegacyQuizCache } from "@/lib/quizDrafts";
 import { fetchQuizProgress } from "@/lib/quizProgressRepository";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type Couple = {
   id: string;
@@ -67,11 +67,14 @@ function AnswerValue({ value, isPhoto }: { value?: string; isPhoto: boolean }) {
   );
 }
 
-export default function QuizResultClient() {
+export default function QuizResultClient({
+  quiz,
+  similarQuizId,
+}: {
+  quiz: Quiz | null;
+  similarQuizId: string | null;
+}) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const quizId = searchParams.get("quiz");
-  const quiz = useMemo(() => getQuizById(quizId), [quizId]);
 
   const [couple, setCouple] = useState<Couple | null>(null);
   const [profile, setProfile] = useState<CoupleProfile | null>(null);
@@ -271,10 +274,6 @@ export default function QuizResultClient() {
     const myAnswer = myAnswers[question.id];
     return myAnswer && myAnswer === partnerAnswers[question.id];
   });
-  const similarQuiz =
-    quizzes.find((item) => item.category === quiz.category && item.id !== quiz.id) ||
-    quizzes.find((item) => item.id !== quiz.id);
-
   function sendResultToChat() {
     if (!quiz) return;
 
@@ -514,9 +513,9 @@ export default function QuizResultClient() {
               Добавить комментарий
             </button>
 
-            {similarQuiz && (
+            {similarQuizId && (
               <button
-                onClick={() => router.push(`/quizzes/play?quiz=${similarQuiz.id}`)}
+                onClick={() => router.push(`/quizzes/play?quiz=${similarQuizId}`)}
                 className="mt-3 w-full rounded-full bg-white/55 px-6 py-3 font-semibold text-[#6d28d9] shadow-inner transition hover:bg-violet-50 dark:bg-white/10 dark:text-[#d8b4fe]"
               >
                 Пройти похожую викторину

@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import { createPartnerNotification } from "@/lib/notifications";
 import { compressImageFile } from "@/lib/imageCompression";
-import { getQuizById } from "@/lib/quizzes";
+import type { Quiz } from "@/lib/quizzes";
 import {
   clearLegacyQuizCache,
   clearQuizDraft,
@@ -13,8 +13,8 @@ import {
 } from "@/lib/quizDrafts";
 import { fetchQuizProgress, saveQuizProgress } from "@/lib/quizProgressRepository";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type Couple = {
   id: string;
@@ -28,11 +28,8 @@ function getSafeQuizMediaPath(coupleId: string, quizId: string, userId: string, 
   return `${coupleId}/${quizId}/${userId}/${crypto.randomUUID()}.${extension || fallbackExtension}`;
 }
 
-export default function QuizPlayClient() {
+export default function QuizPlayClient({ quiz }: { quiz: Quiz | null }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const quizId = searchParams.get("quiz");
-  const quiz = useMemo(() => getQuizById(quizId), [quizId]);
 
   const [couple, setCouple] = useState<Couple | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);

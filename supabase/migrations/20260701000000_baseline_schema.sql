@@ -199,6 +199,7 @@ create table public.watch_items (id uuid default gen_random_uuid() not null,
   external_url text,
   poster_url text);
 
+alter table public.couples add constraint couples_pkey PRIMARY KEY (id);
 alter table public.couple_profiles add constraint couple_profiles_couple_id_fkey FOREIGN KEY (couple_id) REFERENCES couples(id) ON DELETE CASCADE;
 alter table public.couple_profiles add constraint couple_profiles_couple_id_key UNIQUE (couple_id);
 alter table public.couple_profiles add constraint couple_profiles_pkey PRIMARY KEY (id);
@@ -214,7 +215,6 @@ alter table public.question_answers add constraint question_answers_pkey PRIMARY
 alter table public.couples add constraint couples_invite_code_key UNIQUE (invite_code);
 alter table public.couples add constraint couples_partner_one_id_fkey FOREIGN KEY (partner_one_id) REFERENCES auth.users(id) ON DELETE SET NULL;
 alter table public.couples add constraint couples_partner_two_id_fkey FOREIGN KEY (partner_two_id) REFERENCES auth.users(id) ON DELETE SET NULL;
-alter table public.couples add constraint couples_pkey PRIMARY KEY (id);
 alter table public.quiz_answers add constraint quiz_answers_couple_id_fkey FOREIGN KEY (couple_id) REFERENCES couples(id) ON DELETE CASCADE;
 alter table public.quiz_answers add constraint quiz_answers_pkey PRIMARY KEY (id);
 alter table public.quiz_answers add constraint quiz_answers_quiz_id_couple_id_user_id_key UNIQUE (quiz_id, couple_id, user_id);

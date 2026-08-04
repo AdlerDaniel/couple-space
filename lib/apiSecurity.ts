@@ -103,39 +103,38 @@ export async function enforceRateLimit(
 ) {
   const identity = options.identity || getClientAddress(request);
   const identityHash = hashIdentity(options.route, identity);
-  const cutoff = new Date(Date.now() - options.windowMs).toISOString();
+  const windowSeconds = Math.max(1, Math.ceil(options.windowMs / 1000));
+  const { data, error } = await adminSupabase.rpc("consume_api_rate_limit", {
+    p_route: options.route,
+    p_identity_hash: identityHash,
+    p_window_seconds: windowSeconds,
+    p_limit: options.limit,
+  });
 
-  await adminSupabase
-    .from("api_rate_limit_events")
-    .delete()
-    .eq("route", options.route)
-    .eq("identity_hash", identityHash)
-    .lt("created_at", cutoff);
+  const result = Array.isArray(data)
+    ? (data[0] as
+        | {
+            allowed?: boolean;
+            request_count?: number;
+            retry_after_seconds?: number;
+          }
+        | undefined)
+    : undefined;
 
-  const { error: insertError } = await adminSupabase
-    .from("api_rate_limit_events")
-    .insert({ route: options.route, identity_hash: identityHash });
-
-  if (insertError) {
-    console.error("Rate limit storage error", insertError.message);
-    return null;
+  if (error || typeof result?.allowed !== "boolean") {
+    console.error("Rate limit service error", error?.message || "Invalid RPC response");
+    return Response.json(
+      { error: "Защита от частых запросов временно недоступна. Попробуйте позже." },
+      {
+        status: 503,
+        headers: { "Retry-After": "10" },
+      },
+    );
   }
 
-  const { count, error: countError } = await adminSupabase
-    .from("api_rate_limit_events")
-    .select("id", { count: "exact", head: true })
-    .eq("route", options.route)
-    .eq("identity_hash", identityHash)
-    .gte("created_at", cutoff);
+  if (result.allowed) return null;
 
-  if (countError) {
-    console.error("Rate limit count error", countError.message);
-    return null;
-  }
-
-  if ((count || 0) <= options.limit) return null;
-
-  const retryAfter = Math.max(1, Math.ceil(options.windowMs / 1000));
+  const retryAfter = Math.max(1, result.retry_after_seconds || windowSeconds);
   return Response.json(
     { error: "Слишком много запросов. Попробуйте позже." },
     {

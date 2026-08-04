@@ -1,8 +1,21 @@
 import type { NextConfig } from "next";
 
+function getSupabaseOrigin() {
+  const configuredUrl =
+    process.env.SUPABASE_ORIGIN || process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!configuredUrl) {
+    throw new Error(
+      "SUPABASE_ORIGIN or NEXT_PUBLIC_SUPABASE_URL must be configured before building Couple Space",
+    );
+  }
+
+  return new URL(configuredUrl).origin;
+}
+
 const nextConfig: NextConfig = {
   async rewrites() {
-    const supabaseOrigin = "https://adyfbxbmfrdetzdxdmmh.supabase.co";
+    const supabaseOrigin = getSupabaseOrigin();
 
     return {
       afterFiles: [

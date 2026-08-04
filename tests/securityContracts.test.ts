@@ -36,12 +36,14 @@ test("countdowns are private to the couple and authorship columns cannot be rewr
 });
 
 test("public server routes authenticate or rate-limit expensive operations", async () => {
-  const [signup, watchSearch, linkPreview, pushSend, membership] = await Promise.all([
+  const [signup, watchSearch, linkPreview, pushSend, membership, apiSecurity, rateLimitMigration] = await Promise.all([
     readSource("app/api/auth/login-signup/route.ts"),
     readSource("app/api/watch/search/route.ts"),
     readSource("app/api/link-preview/route.ts"),
     readSource("app/api/push/send/route.ts"),
     readSource("app/api/couple/membership/route.ts"),
+    readSource("lib/apiSecurity.ts"),
+    readSource("supabase/migrations/20260804172817_atomic_fail_closed_rate_limit.sql"),
   ]);
 
   assert.match(signup, /enforceRateLimit/);
@@ -51,6 +53,24 @@ test("public server routes authenticate or rate-limit expensive operations", asy
   assert.match(pushSend, /notificationId/);
   assert.doesNotMatch(pushSend, /sendDirectNotification/);
   assert.match(membership, /getAuthenticatedUser/);
+  assert.match(apiSecurity, /\.rpc\("consume_api_rate_limit"/);
+  assert.match(apiSecurity, /status: 503/);
+  assert.doesNotMatch(apiSecurity, /Rate limit storage error[\s\S]*return null/);
+  assert.match(rateLimitMigration, /pg_advisory_xact_lock/);
+  assert.match(rateLimitMigration, /security invoker/);
+  assert.match(rateLimitMigration, /revoke execute[\s\S]*from public, anon, authenticated/);
+});
+
+test("Supabase rewrites are environment-specific for Vercel and backup builds", async () => {
+  const [config, exampleEnv] = await Promise.all([
+    readSource("next.config.ts"),
+    readSource(".env.example"),
+  ]);
+
+  assert.match(config, /process\.env\.SUPABASE_ORIGIN/);
+  assert.match(config, /process\.env\.NEXT_PUBLIC_SUPABASE_URL/);
+  assert.doesNotMatch(config, /adyfbxbmfrdetzdxdmmh\.supabase\.co/);
+  assert.match(exampleEnv, /SUPABASE_ORIGIN=/);
 });
 
 test("couple membership and archived answers use race-safe server operations", async () => {

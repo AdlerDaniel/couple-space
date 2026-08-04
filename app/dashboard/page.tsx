@@ -17,28 +17,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Cropper from "react-easy-crop";
 import { Heart } from "lucide-react";
-
-type CoupleProfile = {
-  partner_one: string;
-  partner_two: string;
-  start_date: string;
-  id: string;
-  avatar?: string | null;
-  avatar_one?: string | null;
-  avatar_two?: string | null;
-  status_one_text?: string | null;
-  status_one_emoji?: string | null;
-  status_two_text?: string | null;
-  status_two_emoji?: string | null;
-  status_updates_one?: number | null;
-  status_updates_two?: number | null;
-};
-
-type Couple = {
-  id: string;
-  partner_one_id: string;
-  partner_two_id: string | null;
-};
+import { fetchDashboardSession } from "./dashboardRepository";
+import type { Couple, CoupleProfile } from "./dashboardTypes";
 
 type CropPixels = {
   x: number;
@@ -225,91 +205,42 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadData() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push("/login");
-        return;
-      }
-
-      setCurrentUserId(user.id);
-
-      const { data: coupleData, error: coupleError } = await supabase
-        .from("couples")
-        .select("id, partner_one_id, partner_two_id")
-        .or(`partner_one_id.eq.${user.id},partner_two_id.eq.${user.id}`)
-        .limit(1)
-        .single();
-
-      if (coupleError || !coupleData) {
-        router.push("/profile");
-        return;
-      }
-
-      setCouple(coupleData);
-
-      const { data: profileData, error: profileError } = await supabase
-        .from("couple_profiles")
-        .select("id, partner_one, partner_two, start_date, avatar, avatar_one, avatar_two, status_one_text, status_one_emoji, status_two_text, status_two_emoji, status_updates_one, status_updates_two")
-        .eq("couple_id", coupleData.id)
-        .limit(1)
-        .single();
-
-      let activeProfile = profileData as CoupleProfile | null;
-
-      if (profileError || !profileData) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        const response = await fetch("/api/couple/profile", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(session?.access_token
-              ? { Authorization: `Bearer ${session.access_token}` }
-              : {}),
-          },
-          body: JSON.stringify({ coupleId: coupleData.id }),
-        });
-
-        const result = (await response.json()) as {
-          profile?: CoupleProfile;
-          error?: string;
-        };
-
-        if (!response.ok || !result.profile) {
-          console.error(result.error || "Профиль ещё не создан");
+      try {
+        const session = await fetchDashboardSession();
+        if (session.status === "unauthenticated") {
+          router.push("/login");
+          return;
+        }
+        if (session.status === "no-couple") {
+          router.push("/profile");
           return;
         }
 
-        activeProfile = result.profile;
+        const { userId, couple: activeCouple, profile: activeProfile } = session;
+        setCurrentUserId(userId);
+        setCouple(activeCouple);
+        setProfile(activeProfile);
+        setStartDate(activeProfile.start_date);
+        setAvatarOneUrl(activeProfile.avatar_one || null);
+        setAvatarTwoUrl(activeProfile.avatar_two || null);
+        const myStatus = getStatus(
+          activeProfile,
+          userId === activeCouple.partner_one_id ? "one" : "two"
+        );
+        setStatusText(myStatus.text);
+        setStatusEmoji(myStatus.emoji);
+        setDaysTogether(
+          Math.floor(
+            (Date.now() - new Date(activeProfile.start_date).getTime()) / (1000 * 60 * 60 * 24)
+          )
+        );
+      } catch (error) {
+        console.error(error);
       }
-
-      if (!activeProfile) return;
-
-      setProfile(activeProfile);
-      setStartDate(activeProfile.start_date);
-      setAvatarOneUrl(activeProfile.avatar_one || null);
-      setAvatarTwoUrl(activeProfile.avatar_two || null);
-
-      const userIsPartnerOne = user.id === coupleData.partner_one_id;
-      const myStatus = getStatus(activeProfile, userIsPartnerOne ? "one" : "two");
-      setStatusText(myStatus.text);
-      setStatusEmoji(myStatus.emoji);
-
-      const diff = Math.floor(
-        (new Date().getTime() - new Date(activeProfile.start_date).getTime()) /
-          (1000 * 60 * 60 * 24)
-      );
-
-      setDaysTogether(diff);
 
     }
 
-    loadData();
+    void loadData();
   }, [router]);
 
   const coupleName = `${profile?.partner_one || "Вы"} + ${

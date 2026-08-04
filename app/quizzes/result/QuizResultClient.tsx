@@ -3,6 +3,8 @@
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import { getQuizById, quizzes } from "@/lib/quizzes";
+import { clearLegacyQuizCache } from "@/lib/quizDrafts";
+import { fetchQuizProgress } from "@/lib/quizProgressRepository";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -26,14 +28,6 @@ type DiscussionComment = {
   text: string;
   created_at: string;
 };
-
-function localAnswersKey(coupleId: string, quizId: string) {
-  return `couple-space:quiz-answers:${coupleId}:${quizId}`;
-}
-
-function localCommentsKey(coupleId: string, quizId: string) {
-  return `couple-space:quiz-comments:${coupleId}:${quizId}`;
-}
 
 function getReadableName(value?: string | null, fallback = "Партнёр") {
   const name = value?.trim();
@@ -85,6 +79,7 @@ export default function QuizResultClient() {
   const [answersByUser, setAnswersByUser] = useState<StoredAnswers>({});
   const [comments, setComments] = useState<DiscussionComment[]>([]);
   const [commentText, setCommentText] = useState("");
+  const [commentError, setCommentError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -135,68 +130,25 @@ export default function QuizResultClient() {
     const activeCouple = couple;
     const activeQuiz = quiz;
 
-    const rawAnswers = localStorage.getItem(localAnswersKey(activeCouple.id, activeQuiz.id));
-    if (rawAnswers) {
-      try {
-        const storedAnswers = JSON.parse(rawAnswers) as StoredAnswers;
-        queueMicrotask(() => setAnswersByUser(storedAnswers));
-      } catch {
-        queueMicrotask(() => setAnswersByUser({}));
-      }
-    }
-
-    const rawComments = localStorage.getItem(localCommentsKey(activeCouple.id, activeQuiz.id));
-    if (rawComments) {
-      try {
-        const storedComments = JSON.parse(rawComments) as DiscussionComment[];
-        queueMicrotask(() => setComments(storedComments));
-      } catch {
-        queueMicrotask(() => setComments([]));
-      }
-    }
+    clearLegacyQuizCache(activeCouple.id, activeQuiz.id);
 
     async function loadRemote() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const authHeaders: Record<string, string> = session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}` }
-        : {};
-      const response = await fetch(
-        `/api/quizzes/progress?coupleId=${activeCouple.id}&quizId=${activeQuiz.id}`,
-        { headers: authHeaders }
-      );
-      const result = response.ok
-        ? ((await response.json()) as {
-            answers?: Array<{
-              user_id: string;
-              answers: Record<string, string>;
-            }>;
-          })
-        : { answers: [] };
+      const [remoteAnswers, commentsResult] = await Promise.all([
+        fetchQuizProgress(activeCouple.id, activeQuiz.id).catch(() => []),
+        supabase
+          .from("quiz_comments")
+          .select("id, user_id, text, created_at")
+          .eq("couple_id", activeCouple.id)
+          .eq("quiz_id", activeQuiz.id)
+          .order("created_at", { ascending: true }),
+      ]);
 
-      if (result.answers?.length) {
-        setAnswersByUser((current) => {
-          const next = { ...current };
-          result.answers?.forEach((item) => {
-            next[item.user_id] = item.answers;
-          });
-          localStorage.setItem(localAnswersKey(activeCouple.id, activeQuiz.id), JSON.stringify(next));
-          return next;
-        });
-      }
-
-      const { data: commentsData } = await supabase
-        .from("quiz_comments")
-        .select("id, user_id, text, created_at")
-        .eq("couple_id", activeCouple.id)
-        .eq("quiz_id", activeQuiz.id)
-        .order("created_at", { ascending: true });
-
-      if (commentsData?.length) {
-        setComments(commentsData);
-        localStorage.setItem(localCommentsKey(activeCouple.id, activeQuiz.id), JSON.stringify(commentsData));
-      }
+      const nextAnswers: StoredAnswers = {};
+      remoteAnswers.forEach((item) => {
+        if (item.answers) nextAnswers[item.user_id] = item.answers;
+      });
+      setAnswersByUser(nextAnswers);
+      setComments(commentsResult.data || []);
     }
 
     loadRemote();
@@ -205,31 +157,35 @@ export default function QuizResultClient() {
   async function addComment() {
     if (!quiz || !couple || !currentUserId || !commentText.trim()) return;
 
-    const newComment = {
-      id: crypto.randomUUID(),
-      user_id: currentUserId,
-      text: commentText.trim(),
-      created_at: new Date().toISOString(),
-    };
-
-    const nextComments = [...comments, newComment];
-    setComments(nextComments);
-    localStorage.setItem(localCommentsKey(couple.id, quiz.id), JSON.stringify(nextComments));
+    const text = commentText.trim();
+    setCommentError("");
     setCommentText("");
 
-    await supabase.from("quiz_comments").insert([
-      {
-        quiz_id: quiz.id,
-        couple_id: couple.id,
-        user_id: currentUserId,
-        text: newComment.text,
-      },
-    ]);
+    const { data: savedComment, error } = await supabase
+      .from("quiz_comments")
+      .insert([
+        {
+          quiz_id: quiz.id,
+          couple_id: couple.id,
+          user_id: currentUserId,
+          text,
+        },
+      ])
+      .select("id, user_id, text, created_at")
+      .single<DiscussionComment>();
+
+    if (error || !savedComment) {
+      setCommentText(text);
+      setCommentError("Не удалось сохранить комментарий. Попробуйте ещё раз.");
+      return;
+    }
+
+    setComments((current) => [...current, savedComment]);
 
     await createPartnerNotification(couple, currentUserId, {
       type: "quiz_comment",
       title: "Комментарий к результатам",
-      body: newComment.text,
+      body: text,
       href: `/quizzes/result?quiz=${quiz.id}`,
     });
   }
@@ -543,6 +499,12 @@ export default function QuizResultClient() {
               placeholder="Напишите, что хочется обсудить..."
               className="mt-5 min-h-28 w-full rounded-2xl border border-[#7c3aed]/25 bg-white/60 p-4 text-[#6d28d9] outline-none placeholder:text-[#8b5cf6]/60 dark:border-white/10 dark:bg-black/20 dark:text-[#d8b4fe] dark:placeholder:text-[#d8b4fe]/50"
             />
+
+            {commentError && (
+              <p className="mt-2 text-sm font-semibold text-rose-600 dark:text-rose-300">
+                {commentError}
+              </p>
+            )}
 
             <button
               onClick={addComment}

@@ -2,7 +2,7 @@
 
 import EmojiPicker from "@/components/EmojiPicker";
 import AccentAudioPlayer from "@/components/AccentAudioPlayer";
-import { FluentEmoji, FluentEmojiText, fluentEmojiUrl } from "@/components/FluentEmoji";
+import { FluentEmoji, FluentEmojiText } from "@/components/FluentEmoji";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
   createCompatibleAudioRecorder,
@@ -13,8 +13,48 @@ import {
 } from "@/lib/mediaFiles";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
-import { authorizedFetch } from "@/lib/authorizedFetch";
 import { toBrowserSupabaseUrl, toPortableSupabaseUrl } from "@/lib/supabaseUrls";
+import type {
+  ChatAttachment,
+  ChatMessage,
+  Couple,
+  CoupleProfile,
+  PendingAttachment,
+  ProfileAttachmentItem,
+  ProfileTab,
+} from "./chatTypes";
+import {
+  allStickers,
+  CHAT_PAGE_SIZE,
+  chatSelect,
+  draftStoragePrefix,
+  externalChatDraftKey,
+  extractFirstUrl,
+  favoriteStickerStorageKey,
+  formatAudioTime,
+  formatDay,
+  formatFileSize,
+  formatMessageTime,
+  formatPartnerLastSeen,
+  getFileIcon,
+  getInitial,
+  getMessageAttachments,
+  isGifAttachment,
+  isMessageVisible,
+  isSingleEmojiText,
+  maxFileSize,
+  maxMediaSize,
+  readStoredStringList,
+  recentStickerStorageKey,
+  stickerPacks,
+} from "./chatUtils";
+import { useChatRealtime } from "./useChatRealtime";
+import { ChatLinkPreview } from "./ChatLinkPreview";
+import {
+  fetchChatSession,
+  fetchOlderChatMessages,
+  markChatMessagesRead,
+} from "./chatRepository";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -54,354 +94,6 @@ import {
   Star,
   X,
 } from "lucide-react";
-
-type Couple = {
-  id: string;
-  partner_one_id: string;
-  partner_two_id: string | null;
-};
-
-type CoupleProfile = {
-  partner_one: string;
-  partner_two: string;
-  avatar?: string | null;
-  avatar_one?: string | null;
-  avatar_two?: string | null;
-};
-
-type ChatReaction = {
-  emoji: string;
-  user_id: string;
-};
-
-type ChatAttachment = {
-  id: string;
-  url: string;
-  type: "image" | "video" | "audio" | "file" | "sticker";
-  name: string;
-  size: number;
-  mime_type: string;
-};
-
-type PendingAttachment = {
-  id: string;
-  file: File;
-  type: ChatAttachment["type"];
-  previewUrl: string | null;
-};
-
-type LinkPreviewData = {
-  url: string;
-  title: string;
-  description: string;
-  image: string | null;
-  domain: string;
-};
-
-type ProfileTab = "media" | "files" | "links" | "voices" | "gifs";
-
-type ProfileAttachmentItem = {
-  id: string;
-  messageId: string;
-  createdAt: string;
-  attachment?: ChatAttachment;
-  url?: string;
-  body?: string | null;
-};
-
-type StickerPack = {
-  id: string;
-  name: string;
-  icon: string;
-  stickers: {
-    id: string;
-    name: string;
-    emoji: string;
-    url: string;
-  }[];
-};
-
-type ChatMessage = {
-  id: string;
-  couple_id: string;
-  sender_id: string;
-  body: string | null;
-  created_at: string;
-  edited_at: string | null;
-  read_at: string | null;
-  reply_to_id: string | null;
-  reactions: ChatReaction[] | null;
-  attachment_url: string | null;
-  attachment_type: "image" | "audio" | null;
-  attachment_name: string | null;
-  attachments: ChatAttachment[] | null;
-  pinned_at: string | null;
-  deleted_for: string[] | null;
-  deleted_for_everyone: boolean | null;
-};
-
-const chatSelect =
-  "id, couple_id, sender_id, body, created_at, edited_at, read_at, reply_to_id, reactions, attachment_url, attachment_type, attachment_name, attachments, pinned_at, deleted_for, deleted_for_everyone";
-const draftStoragePrefix = "couple-space:chat-draft:";
-const recentStickerStorageKey = "couple-space:chat-recent-stickers";
-const favoriteStickerStorageKey = "couple-space:chat-favorite-stickers";
-const externalChatDraftKey = "couple-space:chat-draft";
-const CHAT_PAGE_SIZE = 80;
-const maxMediaSize = 25 * 1024 * 1024;
-const maxFileSize = 50 * 1024 * 1024;
-
-const stickerPacks: StickerPack[] = [
-  {
-    id: "love",
-    name: "Love",
-    icon: "💘",
-    stickers: [
-      { id: "love-1", name: "Влюбленность", emoji: "🥰", url: fluentEmojiUrl("🥰") },
-      { id: "love-2", name: "Сердца в глазах", emoji: "😍", url: fluentEmojiUrl("😍") },
-      { id: "love-3", name: "Поцелуй", emoji: "😘", url: fluentEmojiUrl("😘") },
-      { id: "love-4", name: "Сердце", emoji: "💖", url: fluentEmojiUrl("💖") },
-      { id: "love-5", name: "Письмо", emoji: "💌", url: fluentEmojiUrl("💌") },
-      { id: "love-6", name: "Два сердца", emoji: "💕", url: fluentEmojiUrl("💕") },
-    ],
-  },
-  {
-    id: "mood",
-    name: "Mood",
-    icon: "🥳",
-    stickers: [
-      { id: "mood-1", name: "Смех", emoji: "😂", url: fluentEmojiUrl("😂") },
-      { id: "mood-2", name: "Вечеринка", emoji: "🥳", url: fluentEmojiUrl("🥳") },
-      { id: "mood-3", name: "Круто", emoji: "😎", url: fluentEmojiUrl("😎") },
-      { id: "mood-4", name: "Ого", emoji: "😮", url: fluentEmojiUrl("😮") },
-      { id: "mood-5", name: "Сон", emoji: "😴", url: fluentEmojiUrl("😴") },
-      { id: "mood-6", name: "Плач", emoji: "😭", url: fluentEmojiUrl("😭") },
-    ],
-  },
-  {
-    id: "cute",
-    name: "Cute",
-    icon: "🧸",
-    stickers: [
-      { id: "cute-1", name: "Просьба", emoji: "🥺", url: fluentEmojiUrl("🥺") },
-      { id: "cute-2", name: "Обнимашки", emoji: "🤗", url: fluentEmojiUrl("🤗") },
-      { id: "cute-3", name: "Кот", emoji: "🐱", url: fluentEmojiUrl("🐱") },
-      { id: "cute-4", name: "Пёс", emoji: "🐶", url: fluentEmojiUrl("🐶") },
-      { id: "cute-5", name: "Единорог", emoji: "🦄", url: fluentEmojiUrl("🦄") },
-      { id: "cute-6", name: "Подарок", emoji: "🎁", url: fluentEmojiUrl("🎁") },
-    ],
-  },
-];
-
-const allStickers = stickerPacks.flatMap((pack) => pack.stickers.map((sticker) => ({ ...sticker, packId: pack.id })));
-
-function formatMessageTime(value: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-function formatDay(value: string) {
-  const date = new Date(value);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-
-  if (date.toDateString() === today.toDateString()) return "Сегодня";
-  if (date.toDateString() === yesterday.toDateString()) return "Вчера";
-
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-  }).format(date);
-}
-
-function getInitial(name: string) {
-  return name.trim().slice(0, 1).toUpperCase() || "♡";
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function getFileIcon(fileName: string, mimeType?: string) {
-  const extension = fileName.split(".").pop()?.toLowerCase();
-  if (mimeType?.includes("pdf") || extension === "pdf") return "PDF";
-  if (["doc", "docx"].includes(extension || "")) return "DOC";
-  if (["zip", "rar", "7z"].includes(extension || "")) return "ZIP";
-  if (["xls", "xlsx", "csv"].includes(extension || "")) return "XLS";
-  if (["ppt", "pptx"].includes(extension || "")) return "PPT";
-  return "FILE";
-}
-
-function extractFirstUrl(text: string) {
-  return text.match(/https?:\/\/[^\s<>"']+/i)?.[0] || null;
-}
-
-function getMessageAttachments(message: ChatMessage): ChatAttachment[] {
-  if (message.attachments?.length) {
-    return message.attachments.map((attachment) => ({
-      ...attachment,
-      url: toBrowserSupabaseUrl(attachment.url) || attachment.url,
-    }));
-  }
-  if (!message.attachment_url || !message.attachment_type) return [];
-
-  return [
-    {
-      id: message.id,
-      url: toBrowserSupabaseUrl(message.attachment_url) || message.attachment_url,
-      type: message.attachment_type === "audio" ? "audio" : "image",
-      name: message.attachment_name || "Вложение",
-      size: 0,
-      mime_type: message.attachment_type === "audio" ? "audio/webm" : "image/*",
-    },
-  ];
-}
-
-function isGifAttachment(attachment: ChatAttachment) {
-  return (
-    attachment.type === "image" &&
-    (attachment.mime_type.toLowerCase().includes("gif") ||
-      attachment.name.toLowerCase().endsWith(".gif"))
-  );
-}
-
-function formatAudioTime(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
-  const minutes = Math.floor(seconds / 60);
-  const rest = Math.floor(seconds % 60)
-    .toString()
-    .padStart(2, "0");
-  return `${minutes}:${rest}`;
-}
-
-function readStoredStringList(key: string) {
-  if (typeof window === "undefined") return [];
-  try {
-    const value = JSON.parse(localStorage.getItem(key) || "[]");
-    return Array.isArray(value)
-      ? value.filter((item): item is string => typeof item === "string")
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function isSingleEmojiText(text?: string | null) {
-  const value = text?.trim();
-  if (!value) return false;
-  return /^\p{Extended_Pictographic}\uFE0F?$/u.test(value);
-}
-
-function isMessageVisible(message: ChatMessage, currentUserId: string | null) {
-  if (!currentUserId) return false;
-  if (message.deleted_for_everyone) return false;
-  return !(message.deleted_for || []).includes(currentUserId);
-}
-
-function formatPartnerLastSeen(value?: string | null) {
-  if (!value) return "время посещения неизвестно";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "время посещения неизвестно";
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  const time = formatMessageTime(value);
-  if (date.toDateString() === today.toDateString()) return `был(а) в ${time}`;
-  if (date.toDateString() === yesterday.toDateString()) return `был(а) вчера в ${time}`;
-  const day = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(date);
-  return `был(а) ${day} в ${time}`;
-}
-
-function LinkPreviewCard({
-  url,
-  isMine,
-}: {
-  url: string;
-  isMine: boolean;
-}) {
-  const [preview, setPreview] = useState<LinkPreviewData | null>(null);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(true);
-
-  useEffect(() => {
-    let ignore = false;
-
-    async function loadPreview() {
-      setIsLoadingPreview(true);
-      try {
-        const response = await authorizedFetch(
-          `/api/link-preview?url=${encodeURIComponent(url)}`,
-        );
-        const data = (await response.json()) as LinkPreviewData;
-        if (!ignore) setPreview(data);
-      } catch {
-        if (!ignore) {
-          setPreview({
-            url,
-            title: url,
-            description: "",
-            image: null,
-            domain: new URL(url).hostname.replace(/^www\./, ""),
-          });
-        }
-      } finally {
-        if (!ignore) setIsLoadingPreview(false);
-      }
-    }
-
-    loadPreview();
-
-    return () => {
-      ignore = true;
-    };
-  }, [url]);
-
-  if (isLoadingPreview) {
-    return (
-      <div className="mt-2 overflow-hidden rounded-xl bg-white/12 p-2">
-        <div className="h-4 w-2/3 animate-pulse rounded bg-white/25" />
-        <div className="mt-2 h-3 w-full animate-pulse rounded bg-white/15" />
-      </div>
-    );
-  }
-
-  if (!preview) return null;
-
-  return (
-    <a
-      href={preview.url}
-      target="_blank"
-      rel="noreferrer"
-      className={`mt-2 block overflow-hidden rounded-xl border-l-4 text-left shadow-inner transition hover:scale-[1.01] ${
-        isMine
-          ? "border-white/70 bg-white/14"
-          : "border-sky-400 bg-white/8"
-      }`}
-    >
-      {preview.image && (
-        <div
-          className="h-36 w-full bg-cover bg-center"
-          style={{ backgroundImage: `url("${preview.image}")` }}
-          aria-label={preview.title}
-        />
-      )}
-      <div className="p-2">
-        <p className="truncate text-[11px] font-black uppercase opacity-50">
-          {preview.domain}
-        </p>
-        <p className="mt-1 line-clamp-2 text-sm font-black">{preview.title}</p>
-        {preview.description && (
-          <p className="mt-1 line-clamp-2 text-xs font-semibold opacity-60">
-            {preview.description}
-          </p>
-        )}
-      </div>
-    </a>
-  );
-}
 
 export default function ChatPage() {
   const router = useRouter();
@@ -678,74 +370,35 @@ export default function ChatPage() {
     async function loadChat() {
       setIsLoading(true);
       setErrorMessage("");
+      try {
+        const session = await fetchChatSession();
+        if (session.status === "unauthenticated") {
+          setNeedsLogin(true);
+          return;
+        }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        setNeedsLogin(false);
+        setCurrentUserId(session.userId);
+        if (session.status === "no-couple") {
+          setCouple(null);
+          setMessages([]);
+          setHasOlderMessages(false);
+          return;
+        }
 
-      if (!user) {
-        setNeedsLogin(true);
+        setCouple(session.couple);
+        setProfile(session.profile);
+        setMessages(session.messages);
+        setHasOlderMessages(session.hasOlderMessages);
+        setDraft(localStorage.getItem(`${draftStoragePrefix}${session.couple.id}`) || "");
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Не удалось загрузить чат");
+      } finally {
         setIsLoading(false);
-        return;
       }
-
-      setNeedsLogin(false);
-      setCurrentUserId(user.id);
-
-      const { data: coupleData, error: coupleError } = await supabase
-        .from("couples")
-        .select("id, partner_one_id, partner_two_id")
-        .or(`partner_one_id.eq.${user.id},partner_two_id.eq.${user.id}`)
-        .limit(1)
-        .maybeSingle<Couple>();
-
-      if (coupleError) {
-        setErrorMessage(coupleError.message);
-        setIsLoading(false);
-        return;
-      }
-
-      if (!coupleData) {
-        setCouple(null);
-        setMessages([]);
-        setHasOlderMessages(false);
-        setIsLoading(false);
-        return;
-      }
-
-      setCouple(coupleData);
-      setDraft(localStorage.getItem(`${draftStoragePrefix}${coupleData.id}`) || "");
-
-      const { data: profileData } = await supabase
-        .from("couple_profiles")
-        .select("partner_one, partner_two, avatar, avatar_one, avatar_two")
-        .eq("couple_id", coupleData.id)
-        .limit(1)
-        .maybeSingle<CoupleProfile>();
-
-      if (profileData) setProfile(profileData);
-
-      const { data: messageData, error: messagesError } = await supabase
-        .from("couple_chat_messages")
-        .select(chatSelect)
-        .eq("couple_id", coupleData.id)
-        .order("created_at", { ascending: false })
-        .limit(CHAT_PAGE_SIZE);
-
-      if (messagesError) {
-        setErrorMessage(
-          `${messagesError.message}. Запустите обновлённый supabase-chat-messages.sql в Supabase.`
-        );
-      } else {
-        const recentMessages = ((messageData || []) as ChatMessage[]).reverse();
-        setMessages(recentMessages);
-        setHasOlderMessages(recentMessages.length === CHAT_PAGE_SIZE);
-      }
-
-      setIsLoading(false);
     }
 
-    loadChat();
+    void loadChat();
   }, [router]);
 
   useEffect(() => {
@@ -764,91 +417,16 @@ export default function ChatPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isProfilePanelOpen]);
 
-  useEffect(() => {
-    if (!couple?.id || !currentUserId) return;
-
-    const lastSeenKey = partnerId ? `couple-space:last-seen:${couple.id}:${partnerId}` : null;
-    const cachedSeenFrame = lastSeenKey
-      ? window.requestAnimationFrame(() => setPartnerLastSeen(localStorage.getItem(lastSeenKey)))
-      : null;
-
-    const channel = supabase
-      .channel(`couple-chat:${couple.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "couple_chat_messages",
-          filter: `couple_id=eq.${couple.id}`,
-        },
-        (payload) => {
-          const nextMessage = payload.new as ChatMessage;
-          setMessages((current) => {
-            if (payload.eventType === "DELETE") {
-              return current.filter((message) => message.id !== payload.old.id);
-            }
-
-            const exists = current.some((message) => message.id === nextMessage.id);
-            const next = exists
-              ? current.map((message) =>
-                  message.id === nextMessage.id ? nextMessage : message
-                )
-              : [...current, nextMessage];
-
-            return next.sort(
-              (a, b) =>
-                new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-            );
-          });
-        }
-      )
-      .on("broadcast", { event: "typing" }, ({ payload }) => {
-        if (payload.userId !== currentUserId) {
-          setIsPartnerTyping(true);
-          if (partnerTypingTimeoutRef.current) {
-            window.clearTimeout(partnerTypingTimeoutRef.current);
-          }
-          partnerTypingTimeoutRef.current = window.setTimeout(() => {
-            setIsPartnerTyping(false);
-          }, 2200);
-        }
-      })
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState<{ user_id: string; online_at: string; active_at?: string }>();
-        const partnerPresence = Object.values(state)
-          .flat()
-          .find((presence) => presence.user_id === partnerId);
-
-        const seenAt = partnerPresence?.active_at || partnerPresence?.online_at;
-        if (seenAt) {
-          setPartnerLastSeen(seenAt);
-          if (lastSeenKey) localStorage.setItem(lastSeenKey, seenAt);
-        }
-      })
-      .on("presence", { event: "leave" }, ({ leftPresences }) => {
-        if (!leftPresences.some((presence) => (presence as { user_id?: string }).user_id === partnerId)) return;
-        const seenAt = new Date().toISOString();
-        setPartnerLastSeen(seenAt);
-        if (lastSeenKey) localStorage.setItem(lastSeenKey, seenAt);
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          chatChannelRef.current = channel;
-          await channel.track({
-            user_id: currentUserId,
-            online_at: new Date().toISOString(),
-            active_at: new Date().toISOString(),
-          });
-        }
-      });
-
-    return () => {
-      if (cachedSeenFrame) window.cancelAnimationFrame(cachedSeenFrame);
-      chatChannelRef.current = null;
-      supabase.removeChannel(channel);
-    };
-  }, [couple?.id, currentUserId, partnerId]);
+  useChatRealtime({
+    coupleId: couple?.id,
+    currentUserId,
+    partnerId,
+    channelRef: chatChannelRef,
+    typingTimeoutRef: partnerTypingTimeoutRef,
+    setMessages,
+    setIsPartnerTyping,
+    setPartnerLastSeen,
+  });
 
   useEffect(() => {
     if (!couple?.id || !currentUserId) return;
@@ -859,12 +437,7 @@ export default function ChatPage() {
 
     if (!unreadIds.length) return;
 
-    supabase
-      .from("couple_chat_messages")
-      .update({ read_at: new Date().toISOString() })
-      .in("id", unreadIds)
-      .eq("couple_id", couple.id)
-      .then();
+    void markChatMessagesRead(couple.id, unreadIds).catch(() => undefined);
   }, [couple?.id, currentUserId, messages]);
 
   useEffect(() => {
@@ -974,24 +547,16 @@ export default function ChatPage() {
       top: element.scrollTop,
     };
 
-    const { data, error } = await supabase
-      .from("couple_chat_messages")
-      .select(chatSelect)
-      .eq("couple_id", couple.id)
-      .lt("created_at", firstMessage.created_at)
-      .order("created_at", { ascending: false })
-      .limit(CHAT_PAGE_SIZE);
-
-    if (error) {
+    try {
+      const olderMessages = await fetchOlderChatMessages(couple.id, firstMessage.created_at);
+      setMessages((current) => [...olderMessages, ...current]);
+      setHasOlderMessages(olderMessages.length === CHAT_PAGE_SIZE);
+    } catch {
       prependScrollRef.current = null;
       setErrorMessage("Не удалось загрузить старые сообщения.");
       setIsLoadingOlder(false);
       return;
     }
-
-    const olderMessages = ((data || []) as ChatMessage[]).reverse();
-    setMessages((current) => [...olderMessages, ...current]);
-    setHasOlderMessages(olderMessages.length === CHAT_PAGE_SIZE);
     setIsLoadingOlder(false);
 
     window.requestAnimationFrame(() => {
@@ -2069,7 +1634,7 @@ export default function ChatPage() {
                               </p>
                             )}
                             {linkUrl && !isVoiceMessage && !isStickerMessage && !isBigEmojiMessage && (
-                              <LinkPreviewCard url={linkUrl} isMine={isMine} />
+                              <ChatLinkPreview url={linkUrl} isMine={isMine} />
                             )}
                           </>
                         {isVoiceMessage && (
@@ -2643,7 +2208,7 @@ export default function ChatPage() {
                     <div className="grid h-64 place-items-center rounded-3xl bg-white/55 text-center font-black shadow-inner dark:bg-white/8">Ссылок пока нет</div>
                   ) : profileItems.links.slice(0, profileTabLimit).map((item) => (
                     <div key={item.id} className="rounded-2xl bg-white/65 p-3 shadow-inner dark:bg-white/8">
-                      {item.url && <LinkPreviewCard url={item.url} isMine={false} />}
+                      {item.url && <ChatLinkPreview url={item.url} isMine={false} />}
                       <div className="mt-2 flex items-center justify-between text-xs font-black opacity-60">
                         <span>{formatDay(item.createdAt)}</span>
                         <button onClick={() => scrollToMessage(item.messageId)} className="rounded-full bg-sky-100 px-3 py-1.5 text-[#0284c7] dark:bg-white/10 dark:text-white">Перейти к сообщению</button>

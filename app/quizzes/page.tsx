@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { quizCategories, quizzes, type QuizCategory } from "@/lib/quizzes";
 import { supabase } from "@/lib/supabaseClient";
+import { clearLegacyQuizCache } from "@/lib/quizDrafts";
+import { fetchQuizProgress } from "@/lib/quizProgressRepository";
 
 type Couple = {
   id: string;
@@ -15,12 +17,6 @@ type QuizProgress = {
   mine: Set<string>;
   partner: Set<string>;
 };
-
-type StoredAnswers = Record<string, Record<string, string>>;
-
-function localAnswersKey(coupleId: string, quizId: string) {
-  return `couple-space:quiz-answers:${coupleId}:${quizId}`;
-}
 
 export default function QuizzesPage() {
   const [activeCategory, setActiveCategory] = useState<QuizCategory>(quizCategories[0]);
@@ -66,35 +62,10 @@ export default function QuizzesPage() {
       const myCompleted = new Set<string>();
       const partnerCompleted = new Set<string>();
 
-      quizzes.forEach((quiz) => {
-        const raw = localStorage.getItem(localAnswersKey(coupleData.id, quiz.id));
-        if (!raw) return;
+      quizzes.forEach((quiz) => clearLegacyQuizCache(coupleData.id, quiz.id));
 
-        try {
-          const stored = JSON.parse(raw) as StoredAnswers;
-          if (stored[user.id]) myCompleted.add(quiz.id);
-          if (partnerId && stored[partnerId]) partnerCompleted.add(quiz.id);
-        } catch {
-          return;
-        }
-      });
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const authHeaders: Record<string, string> = session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}` }
-        : {};
-      const response = await fetch(`/api/quizzes/progress?coupleId=${coupleData.id}`, {
-        headers: authHeaders,
-      });
-      const result = response.ok
-        ? ((await response.json()) as {
-            answers?: Array<{ quiz_id: string; user_id: string }>;
-          })
-        : { answers: [] };
-
-      result.answers?.forEach((answer) => {
+      const answers = await fetchQuizProgress(coupleData.id).catch(() => []);
+      answers.forEach((answer) => {
         if (answer.user_id === user.id) myCompleted.add(answer.quiz_id);
         if (partnerId && answer.user_id === partnerId) partnerCompleted.add(answer.quiz_id);
       });

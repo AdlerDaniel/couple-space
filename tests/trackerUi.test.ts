@@ -3,11 +3,16 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("tracker follows the calendar and selected-day reference hierarchy", async () => {
-  const source = await readFile(new URL("../app/tracker/page.tsx", import.meta.url), "utf8");
+  const [page, navigation] = await Promise.all([
+    readFile(new URL("../app/tracker/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/tracker/TrackerNavigation.tsx", import.meta.url), "utf8"),
+  ]);
+  const source = `${page}\n${navigation}`;
 
   assert.match(source, /<TrackerHeader/);
-  assert.match(source, /<DateNavigator/);
-  assert.match(source, /<PeriodTabs/);
+  assert.match(source, /<TrackerNavigation/);
+  assert.match(source, /aria-label="Предыдущий период"/);
+  assert.match(source, /role="tablist"/);
   assert.match(source, /className="tracker-content-grid"/);
   assert.match(source, /className="tracker-view"/);
   assert.match(source, /className="tracker-day space-y-3"/);

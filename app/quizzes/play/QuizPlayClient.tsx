@@ -5,6 +5,13 @@ import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import { createPartnerNotification } from "@/lib/notifications";
 import { compressImageFile } from "@/lib/imageCompression";
 import { getQuizById } from "@/lib/quizzes";
+import {
+  clearLegacyQuizCache,
+  clearQuizDraft,
+  readQuizDraft,
+  writeQuizDraft,
+} from "@/lib/quizDrafts";
+import { fetchQuizProgress, saveQuizProgress } from "@/lib/quizProgressRepository";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -14,12 +21,6 @@ type Couple = {
   partner_one_id: string;
   partner_two_id: string | null;
 };
-
-type StoredAnswers = Record<string, Record<string, string>>;
-
-function localAnswersKey(coupleId: string, quizId: string) {
-  return `couple-space:quiz-answers:${coupleId}:${quizId}`;
-}
 
 function getSafeQuizMediaPath(coupleId: string, quizId: string, userId: string, file: File) {
   const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -76,19 +77,45 @@ export default function QuizPlayClient() {
   useEffect(() => {
     if (!quiz || !couple || !currentUserId) return;
 
-    const raw = localStorage.getItem(localAnswersKey(couple.id, quiz.id));
-    if (!raw) return;
+    let isCancelled = false;
+    const coupleId = couple.id;
+    const activeQuizId = quiz.id;
+    const userId = currentUserId;
+    const draft = readQuizDraft(coupleId, activeQuizId, userId);
+    clearLegacyQuizCache(coupleId, activeQuizId);
 
-    try {
-      const stored = JSON.parse(raw) as StoredAnswers;
-      queueMicrotask(() => setAnswers(stored[currentUserId] || {}));
-    } catch {
-      queueMicrotask(() => setAnswers({}));
+    async function loadAnswers() {
+      try {
+        const remoteAnswers = await fetchQuizProgress(coupleId, activeQuizId);
+        const mine = remoteAnswers.find((item) => item.user_id === userId);
+        if (isCancelled) return;
+
+        if (mine?.answers) {
+          clearQuizDraft(coupleId, activeQuizId, userId);
+          setAnswers(mine.answers);
+          return;
+        }
+      } catch {
+        // A device-local draft remains editable while the server is temporarily unavailable.
+      }
+
+      if (!isCancelled && draft) setAnswers(draft);
     }
+
+    void loadAnswers();
+    return () => {
+      isCancelled = true;
+    };
   }, [couple, currentUserId, quiz]);
 
   function updateAnswer(questionId: string, value: string) {
-    setAnswers((current) => ({ ...current, [questionId]: value }));
+    setAnswers((current) => {
+      const next = { ...current, [questionId]: value };
+      if (quiz && couple && currentUserId) {
+        writeQuizDraft(couple.id, quiz.id, currentUserId, next);
+      }
+      return next;
+    });
   }
 
   async function uploadPhotoAnswer(questionId: string, file: File) {
@@ -136,42 +163,18 @@ export default function QuizPlayClient() {
     setIsSaving(true);
     setMessage("");
 
-    const key = localAnswersKey(couple.id, quiz.id);
-    const stored = (() => {
-      try {
-        return JSON.parse(localStorage.getItem(key) || "{}") as StoredAnswers;
-      } catch {
-        return {};
-      }
-    })();
-
-    stored[currentUserId] = answers;
-    localStorage.setItem(key, JSON.stringify(stored));
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const authHeaders: Record<string, string> = session?.access_token
-      ? { Authorization: `Bearer ${session.access_token}` }
-      : {};
-
-    const response = await fetch("/api/quizzes/progress", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeaders,
-      },
-      body: JSON.stringify({
+    try {
+      await saveQuizProgress({
         quizId: quiz.id,
         coupleId: couple.id,
         answers,
-      }),
-    });
-
-    if (!response.ok) {
-      const result = (await response.json()) as { error?: string };
+      });
+      clearQuizDraft(couple.id, quiz.id, currentUserId);
+    } catch (error) {
       setIsSaving(false);
-      setMessage(result.error || "Не удалось сохранить прогресс для партнёра");
+      setMessage(
+        `${error instanceof Error ? error.message : "Не удалось сохранить прогресс"}. Ответы остались в черновике на этом устройстве.`,
+      );
       return;
     }
 

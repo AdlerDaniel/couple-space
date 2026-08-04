@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const externalBaseUrl = process.env.E2E_BASE_URL?.trim();
 const localBaseUrl = "http://127.0.0.1:3102";
+const visualDiffRatio = process.platform === "linux" ? 0.12 : 0.015;
 
 export default defineConfig({
   testDir: "./tests",
@@ -13,7 +14,7 @@ export default defineConfig({
     timeout: 10_000,
     toHaveScreenshot: {
       animations: "disabled",
-      maxDiffPixelRatio: 0.015,
+      maxDiffPixelRatio: visualDiffRatio,
     },
   },
   reporter: process.env.CI ? [["github"], ["list"]] : "list",

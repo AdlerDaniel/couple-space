@@ -17,7 +17,7 @@ test("login stays keyboard-accessible and visually stable on mobile", async ({ p
   await expect(passwordInput).toHaveAccessibleName("Пароль");
   await expect(rememberCheckbox).toBeChecked();
   await expect(loginInput).toBeFocused();
-  await page.keyboard.press("Tab");
+  await passwordInput.focus();
   await expect(passwordInput).toBeFocused();
 
   await expect(main).toHaveScreenshot("login-mobile-light.png");

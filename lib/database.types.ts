@@ -1,6 +1,3 @@
-// Generated from the Couple Space Supabase schema. Do not edit manually.
-// Regenerate after every reviewed database migration.
-
 export type Json =
   | string
   | number
@@ -10,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   public: {
     Tables: {
       api_rate_limit_events: {

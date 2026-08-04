@@ -11,6 +11,9 @@ test("questions support image, audio upload and compatible voice recording", asy
   assert.match(source, /accept="image\/\*"/);
   assert.match(source, /accept="audio\/\*/);
   assert.match(source, /createCompatibleAudioRecorder/);
+  assert.match(source, /<Paperclip/);
+  assert.match(source, /Добавить вложение/);
+  assert.doesNotMatch(source, /Голосовой файл<\/span>|Фото-ответ<\/span>/);
   assert.doesNotMatch(source, /new MediaRecorder\(/);
 });
 

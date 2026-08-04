@@ -17,6 +17,7 @@ import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ImageIcon, Mic, Music2, Paperclip } from "lucide-react";
 
 const EDIT_WINDOW_MINUTES = 15;
 const EDIT_WINDOW_MS = EDIT_WINDOW_MINUTES * 60 * 1000;
@@ -51,6 +52,8 @@ export default function QuestionAnswerPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const discardRecordingRef = useRef(false);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioInputRef = useRef<HTMLInputElement | null>(null);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
   const [answerRecord, setAnswerRecord] = useState<Answer | null>(null);
   const [myAnswer, setMyAnswer] = useState("");
@@ -62,6 +65,7 @@ export default function QuestionAnswerPage() {
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isRecordingPaused, setIsRecordingPaused] = useState(false);
+  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [nowMs, setNowMs] = useState(0);
@@ -602,57 +606,84 @@ export default function QuestionAnswerPage() {
                 <span>{myAnswer.length}/{ANSWER_MAX_LENGTH}</span>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <input
+                ref={audioInputRef}
+                type="file"
+                accept="audio/*,.m4a,.mp3,.ogg,.wav,.webm"
+                disabled={isEditLocked || isUploadingMedia}
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadAnswerMedia(file, voiceField, "Голосовой ответ");
+                  event.target.value = "";
+                }}
+              />
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                disabled={isEditLocked || isUploadingMedia}
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadAnswerMedia(file, photoField, "Фото-ответ");
+                  event.target.value = "";
+                }}
+              />
+
+              <div className="relative mt-4 flex justify-end">
                 <button
                   type="button"
-                  onClick={toggleVoiceRecording}
+                  onClick={() => setIsAttachMenuOpen((current) => !current)}
                   disabled={isEditLocked || isUploadingMedia}
-                  className={`rounded-[1.2rem] border px-5 py-4 text-left font-black shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 ${
-                    isRecording
-                      ? "border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-300/20 dark:bg-rose-400/12 dark:text-rose-100"
-                      : "border-emerald-200/70 bg-white/70 text-emerald-700 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100"
+                  aria-label="Добавить вложение"
+                  aria-expanded={isAttachMenuOpen}
+                  className={`grid h-11 w-11 place-items-center rounded-full border shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
+                    isAttachMenuOpen || voiceUrl || photoUrl
+                      ? "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-300/20 dark:bg-emerald-500/18 dark:text-emerald-100"
+                      : "border-emerald-200/80 bg-white/76 text-emerald-700 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100"
                   }`}
                 >
-                  <span className="block text-sm uppercase opacity-70">
-                    Голосовой ответ
-                  </span>
-                  <span className="mt-1 block">
-                    {isRecording ? "Остановить запись" : "Записать голос"}
-                  </span>
+                  <Paperclip aria-hidden="true" size={20} />
                 </button>
 
-                <label className="cursor-pointer rounded-[1.2rem] border border-emerald-200/70 bg-white/70 px-5 py-4 text-left font-black text-emerald-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100 dark:hover:bg-emerald-500/15">
-                  <input
-                    type="file"
-                    accept="audio/*,.m4a,.mp3,.ogg,.wav,.webm"
-                    disabled={isEditLocked || isUploadingMedia}
-                    className="hidden"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) uploadAnswerMedia(file, voiceField, "Голосовой ответ");
-                      event.target.value = "";
-                    }}
-                  />
-                  <span className="block text-sm uppercase opacity-70">Голосовой файл</span>
-                  <span className="mt-1 block">Загрузить аудио</span>
-                </label>
-
-                <label className="cursor-pointer rounded-[1.2rem] border border-emerald-200/70 bg-white/70 px-5 py-4 text-left font-black text-emerald-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-emerald-50 dark:border-white/10 dark:bg-white/8 dark:text-emerald-100 dark:hover:bg-emerald-500/15">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={isEditLocked || isUploadingMedia}
-                    className="hidden"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (!file) return;
-                      uploadAnswerMedia(file, photoField, "Фото-ответ");
-                      event.target.value = "";
-                    }}
-                  />
-                  <span className="block text-sm uppercase opacity-70">Фото-ответ</span>
-                  <span className="mt-1 block">Загрузить фото</span>
-                </label>
+                {isAttachMenuOpen && (
+                  <div className="absolute bottom-[3.25rem] right-0 z-30 w-56 overflow-hidden rounded-2xl border border-emerald-200/80 bg-white/96 p-2 text-emerald-950 shadow-[0_20px_60px_rgba(5,150,105,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#071c13]/96 dark:text-white">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAttachMenuOpen(false);
+                        void toggleVoiceRecording();
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-emerald-50 dark:hover:bg-white/8"
+                    >
+                      <Mic aria-hidden="true" size={19} />
+                      {isRecording ? "Завершить запись" : "Записать голос"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAttachMenuOpen(false);
+                        audioInputRef.current?.click();
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-emerald-50 dark:hover:bg-white/8"
+                    >
+                      <Music2 aria-hidden="true" size={19} />
+                      Загрузить аудио
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAttachMenuOpen(false);
+                        photoInputRef.current?.click();
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-black transition hover:bg-emerald-50 dark:hover:bg-white/8"
+                    >
+                      <ImageIcon aria-hidden="true" size={19} />
+                      Загрузить фото
+                    </button>
+                  </div>
+                )}
               </div>
 
               {isRecording && (

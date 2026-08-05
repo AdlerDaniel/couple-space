@@ -112,7 +112,8 @@ test("daily answer attachments keep voice recording as a separate action", async
 
   assert.match(source, /pr-28/);
   assert.match(source, /aria-label=\{isRecording \? "Завершить запись" : "Записать голос"\}/);
-  assert.match(source, /firstSavedAt = answerRecord\?\.\[editedAtField\] \|\| answerRecord\?\.created_at/);
+  assert.match(source, /getQuestionAnswerEditWindowStart/);
+  assert.match(source, /hasOwnAnswer: hasOwnSavedAnswer/);
 });
 
 test("achievements no longer create notifications or navigation entries", async () => {

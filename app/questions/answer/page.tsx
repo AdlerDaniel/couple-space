@@ -12,6 +12,7 @@ import {
   validateMediaFile,
 } from "@/lib/mediaFiles";
 import { createPartnerNotification } from "@/lib/notifications";
+import { getQuestionAnswerEditWindowStart } from "@/lib/questionAnswerEdit";
 import { supabase } from "@/lib/supabaseClient";
 import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import Image from "next/image";
@@ -82,13 +83,19 @@ export default function QuestionAnswerPage() {
   const editedAtField = isPartnerOne ? "answer_one_edited_at" : "answer_two_edited_at";
   const voiceField = isPartnerOne ? "answer_one_voice_url" : "answer_two_voice_url";
   const photoField = isPartnerOne ? "answer_one_photo_url" : "answer_two_photo_url";
-  const firstSavedAt = answerRecord?.[editedAtField] || answerRecord?.created_at || null;
+  const voiceUrl = (answerRecord?.[voiceField] as string | null | undefined) || null;
+  const photoUrl = (answerRecord?.[photoField] as string | null | undefined) || null;
+  const savedText = (answerRecord?.[answerField] as string | null | undefined) || "";
+  const hasOwnSavedAnswer = Boolean(savedText.trim() || voiceUrl || photoUrl);
+  const firstSavedAt = getQuestionAnswerEditWindowStart({
+    editedAt: answerRecord?.[editedAtField] as string | null | undefined,
+    recordCreatedAt: answerRecord?.created_at,
+    hasOwnAnswer: hasOwnSavedAnswer,
+  });
   const isEditLocked =
     nowMs > 0 &&
     Boolean(firstSavedAt) &&
     new Date(firstSavedAt as string).getTime() + EDIT_WINDOW_MS < nowMs;
-  const voiceUrl = (answerRecord?.[voiceField] as string | null | undefined) || null;
-  const photoUrl = (answerRecord?.[photoField] as string | null | undefined) || null;
   const hasSavedAnswer = Boolean(lastSavedAnswer.trim() || voiceUrl || photoUrl);
 
   function openAnswers() {

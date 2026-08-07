@@ -3,6 +3,7 @@
 import EmptyState from "@/components/EmptyState";
 import EmojiPicker from "@/components/EmojiPicker";
 import { FluentEmoji } from "@/components/FluentEmoji";
+import { AppDialog } from "@/components/ui/AppDialog";
 import { getCountdownTimeParts, sortCountdowns, toLocalDateTimeValue } from "@/lib/countdowns";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
@@ -696,9 +697,18 @@ function CountdownEditor({
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-5">
-      <button type="button" className="absolute inset-0 bg-[#3b071e]/52 backdrop-blur-sm" onClick={onClose} aria-label="Закрыть редактор" />
-      <section role="dialog" aria-modal="true" aria-labelledby="countdown-editor-title" className="countdown-dialog-in relative max-h-[94dvh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] border border-pink-200/60 bg-[#fff9fc] p-5 text-[#831843] shadow-[0_30px_120px_rgba(80,7,36,0.36)] dark:border-pink-100/10 dark:bg-[#21101b] dark:text-pink-50 sm:rounded-[2rem] sm:p-7">
+    <AppDialog
+      open
+      onOpenChange={(open) => {
+        if (!open && !isSaving) onClose();
+      }}
+      ariaLabelledby="countdown-editor-title"
+      dismissOnBackdrop={!isSaving}
+      dismissOnEscape={!isSaving}
+      backdrop="rose"
+      className="items-end justify-center p-0 sm:items-center sm:p-5"
+    >
+      <section className="countdown-dialog-in relative max-h-[94dvh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] border border-pink-200/60 bg-[#fff9fc] p-5 text-[#831843] shadow-[0_30px_120px_rgba(80,7,36,0.36)] dark:border-pink-100/10 dark:bg-[#21101b] dark:text-pink-50 sm:rounded-[2rem] sm:p-7">
         <div className="mx-auto mb-3 h-1 w-12 rounded-full bg-pink-200 dark:bg-pink-300/20 sm:hidden" />
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -715,7 +725,7 @@ function CountdownEditor({
         <form onSubmit={onSubmit} className="mt-6 space-y-5">
           <div>
             <label htmlFor="countdown-title" className="text-sm font-black">Название</label>
-            <input id="countdown-title" autoFocus value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} maxLength={80} placeholder="Например, поездка в Петербург" className="mt-2 w-full rounded-2xl border border-pink-200/80 bg-white/82 px-4 py-3.5 font-semibold outline-none transition placeholder:text-[#831843]/30 focus:border-[#db2777] focus:ring-4 focus:ring-pink-300/18 dark:border-pink-100/10 dark:bg-white/7 dark:placeholder:text-pink-100/28" />
+            <input id="countdown-title" data-dialog-initial-focus value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} maxLength={80} placeholder="Например, поездка в Петербург" className="mt-2 w-full rounded-2xl border border-pink-200/80 bg-white/82 px-4 py-3.5 font-semibold outline-none transition placeholder:text-[#831843]/30 focus:border-[#db2777] focus:ring-4 focus:ring-pink-300/18 dark:border-pink-100/10 dark:bg-white/7 dark:placeholder:text-pink-100/28" />
           </div>
 
           <div>
@@ -764,26 +774,37 @@ function CountdownEditor({
           </div>
         </form>
       </section>
-    </div>
+    </AppDialog>
   );
 }
 
 function DeleteDialog({ countdown, isDeleting, onCancel, onConfirm }: { countdown: Countdown; isDeleting: boolean; onCancel: () => void; onConfirm: () => void }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-5">
-      <button type="button" className="absolute inset-0 bg-[#3b071e]/58 backdrop-blur-sm" onClick={onCancel} aria-label="Отменить удаление" />
-      <section role="alertdialog" aria-modal="true" aria-labelledby="delete-countdown-title" className="countdown-dialog-in relative w-full max-w-md rounded-[2rem] border border-pink-200/60 bg-[#fff9fc] p-6 text-center text-[#831843] shadow-[0_30px_120px_rgba(80,7,36,0.38)] dark:border-pink-100/10 dark:bg-[#21101b] dark:text-pink-50 sm:p-8">
+    <AppDialog
+      open
+      onOpenChange={(open) => {
+        if (!open && !isDeleting) onCancel();
+      }}
+      role="alertdialog"
+      ariaLabelledby="delete-countdown-title"
+      ariaDescribedby="delete-countdown-description"
+      dismissOnBackdrop={false}
+      dismissOnEscape={!isDeleting}
+      backdrop="rose"
+      className="items-center justify-center p-5"
+    >
+      <section className="countdown-dialog-in relative w-full max-w-md rounded-[2rem] border border-pink-200/60 bg-[#fff9fc] p-6 text-center text-[#831843] shadow-[0_30px_120px_rgba(80,7,36,0.38)] dark:border-pink-100/10 dark:bg-[#21101b] dark:text-pink-50 sm:p-8">
         <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-rose-100 text-3xl shadow-inner dark:bg-rose-400/10"><FluentEmoji emoji={countdown.icon} size={42} decorative /></span>
         <h2 id="delete-countdown-title" className="mt-5 text-2xl font-black text-[#831843] dark:text-white">Удалить «{countdown.title}»?</h2>
-        <p className="mt-3 font-semibold leading-6 opacity-60">Отсчёт исчезнет у обоих партнёров. Это действие нельзя отменить.</p>
+        <p id="delete-countdown-description" className="mt-3 font-semibold leading-6 opacity-60">Отсчёт исчезнет у обоих партнёров. Это действие нельзя отменить.</p>
         <div className="mt-6 grid gap-2 sm:grid-cols-2">
-          <button type="button" onClick={onCancel} disabled={isDeleting} className="min-h-12 rounded-full border border-pink-200/75 bg-white/75 px-5 font-black transition hover:bg-pink-50 disabled:opacity-45 dark:border-pink-100/10 dark:bg-white/7 dark:hover:bg-white/10">Оставить</button>
+          <button type="button" data-dialog-initial-focus onClick={onCancel} disabled={isDeleting} className="min-h-12 rounded-full border border-pink-200/75 bg-white/75 px-5 font-black transition hover:bg-pink-50 disabled:opacity-45 dark:border-pink-100/10 dark:bg-white/7 dark:hover:bg-white/10">Оставить</button>
           <button type="button" onClick={onConfirm} disabled={isDeleting} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-rose-600 to-pink-600 px-5 font-black text-white shadow-[0_16px_38px_rgba(225,29,72,0.28)] transition hover:-translate-y-0.5 disabled:opacity-55">
             <Trash2 className="h-4 w-4" aria-hidden="true" />
             {isDeleting ? "Удаляем..." : "Удалить"}
           </button>
         </div>
       </section>
-    </div>
+    </AppDialog>
   );
 }

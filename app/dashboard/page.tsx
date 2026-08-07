@@ -11,6 +11,7 @@ import {
 } from "@/lib/dashboardTheme";
 import EmojiPicker from "@/components/EmojiPicker";
 import { FluentEmoji } from "@/components/FluentEmoji";
+import { AppDialog } from "@/components/ui/AppDialog";
 import NextImage from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -640,8 +641,19 @@ export default function DashboardPage() {
 
 
       {croppingImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+        <AppDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setCroppingImage(null);
+          }}
+          ariaLabelledby="avatar-crop-title"
+          backdrop="default"
+          className="items-center justify-center p-4"
+        >
           <div className="relative w-full max-w-md rounded-3xl bg-white p-4 shadow-2xl dark:bg-gray-900">
+            <h2 id="avatar-crop-title" className="sr-only">
+              Настройка фотографии профиля
+            </h2>
             <div className="relative h-64 w-full overflow-hidden rounded-2xl">
               <Cropper
                 image={croppingImage}
@@ -671,6 +683,8 @@ export default function DashboardPage() {
 
             <div className="mt-4 flex justify-between">
               <button
+                type="button"
+                data-dialog-initial-focus
                 onClick={() => setCroppingImage(null)}
                 className="rounded-full bg-gray-300 px-4 py-2 font-semibold text-gray-800 transition hover:bg-gray-400"
               >
@@ -678,6 +692,7 @@ export default function DashboardPage() {
               </button>
 
               <button
+                type="button"
                 onClick={saveCroppedAvatar}
                 className="rounded-full bg-[#dc2626] px-4 py-2 font-semibold text-white transition hover:bg-[#ff5a6b]"
               >
@@ -685,7 +700,7 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
-        </div>
+        </AppDialog>
       )}
     </main>
   );

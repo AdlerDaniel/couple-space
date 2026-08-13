@@ -931,18 +931,16 @@ main textarea:not(.chat-composer-input) {
   }
 
   .memories-grid {
-    display: block !important;
-    columns: 2 !important;
-    column-gap: 0.6rem !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.6rem !important;
   }
 
   .memories-grid > .memory-card,
   .memories-grid > div {
-    display: inline-block;
+    display: block;
     width: 100%;
-    margin-bottom: 0.6rem !important;
-    break-inside: avoid;
-    vertical-align: top;
+    margin: 0 !important;
   }
 
   .memory-card-body > p {
@@ -2571,18 +2569,16 @@ main textarea:not(.chat-composer-input) {
 /* Screenshot-matched layouts must remain last: legacy mobile rules above are intentionally overridden. */
 @media (max-width: 640px) {
   .memories-grid {
-    display: block !important;
-    columns: 2 !important;
-    column-gap: 0.6rem !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.6rem !important;
   }
 
   .memories-grid > .memory-card,
   .memories-grid > div {
-    display: inline-block !important;
+    display: block !important;
     width: 100% !important;
-    margin: 0 0 0.6rem !important;
-    break-inside: avoid;
-    vertical-align: top;
+    margin: 0 !important;
   }
 
   .memory-card-body > p {

@@ -2,6 +2,7 @@
 
 import EmojiPicker from "@/components/EmojiPicker";
 import AccentAudioPlayer from "@/components/AccentAudioPlayer";
+import { handleClipboardFilePaste } from "@/lib/clipboardFiles";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
   createCompatibleAudioRecorder,
@@ -345,6 +346,7 @@ export default function MemoryComposer({
       <input
         value={title}
         onChange={(event) => setTitle(event.target.value)}
+        onPaste={(event) => handleClipboardFilePaste(event, addMemoryAttachments)}
         placeholder="Заголовок воспоминания"
         className="w-full rounded-2xl border border-blue-200/70 bg-white/75 px-5 py-4 font-bold text-blue-950 outline-none focus:border-blue-400 dark:border-white/10 dark:bg-white/8 dark:text-white"
       />
@@ -433,6 +435,7 @@ export default function MemoryComposer({
           <textarea
             value={caption}
             onChange={(event) => setCaption(event.target.value)}
+            onPaste={(event) => handleClipboardFilePaste(event, addMemoryAttachments)}
             placeholder="Описание"
             rows={1}
             className="max-h-40 min-h-11 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2.5 font-semibold leading-6 outline-none placeholder:text-blue-400/65 dark:placeholder:text-white/38"

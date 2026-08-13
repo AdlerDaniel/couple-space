@@ -405,11 +405,11 @@ export default function MemoriesPage() {
         </div>
 
         {isLoading ? (
-          <div className="memories-grid columns-1 gap-5 md:columns-2 xl:columns-3">
+          <div className="memories-grid grid grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
-                className="mb-5 h-80 break-inside-avoid rounded-[2rem] bg-white/50 shadow-xl backdrop-blur-xl dark:bg-white/8"
+                className="h-80 rounded-[2rem] bg-white/50 shadow-xl backdrop-blur-xl dark:bg-white/8"
               />
             ))}
           </div>
@@ -418,7 +418,7 @@ export default function MemoriesPage() {
             <p className="text-2xl font-black">Пока нет воспоминаний</p>
           </div>
         ) : (
-          <div className="memories-grid columns-1 gap-5 md:columns-2 xl:columns-3">
+          <div className="memories-grid grid grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
             {visibleMemories.map((memory, index) => {
               const media = decodeMemoryMedia(memory.image);
               const isLoaded = !media.photoUrl || loadedImages[memory.id];
@@ -442,7 +442,7 @@ export default function MemoriesPage() {
                       router.push(`/memories/${memory.id}`);
                     }
                   }}
-                  className={`memory-card performance-list-item group relative mb-5 break-inside-avoid overflow-visible rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/45 dark:border-white/10 dark:bg-white/8 ${reactionPickerMemoryId === memory.id ? "z-[70]" : ""}`}
+                  className={`memory-card performance-list-item group relative overflow-visible rounded-[1.8rem] border border-white/70 bg-white/72 p-3 shadow-[0_24px_80px_rgba(37,99,235,0.16)] backdrop-blur-xl transition hover:-translate-y-1 hover:shadow-[0_30px_110px_rgba(37,99,235,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/45 dark:border-white/10 dark:bg-white/8 ${reactionPickerMemoryId === memory.id ? "z-[70]" : ""}`}
                 >
                   {media.photoUrl && (
                     <div className="relative overflow-hidden rounded-[1.35rem] bg-blue-100 dark:bg-white/8">

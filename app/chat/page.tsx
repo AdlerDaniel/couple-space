@@ -4,6 +4,7 @@ import EmojiPicker from "@/components/EmojiPicker";
 import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import { FluentEmoji, FluentEmojiText } from "@/components/FluentEmoji";
 import { compressImageFile } from "@/lib/imageCompression";
+import { handleClipboardFilePaste } from "@/lib/clipboardFiles";
 import {
   createCompatibleAudioRecorder,
   createRecordedAudioFile,
@@ -1992,6 +1993,7 @@ export default function ChatPage() {
             <textarea
               ref={textareaRef}
               value={draft}
+              onPaste={(event) => handleClipboardFilePaste(event, addPendingFiles)}
               onChange={(event) => {
                 handleDraftChange(event.target.value);
                 setDraftSelection({

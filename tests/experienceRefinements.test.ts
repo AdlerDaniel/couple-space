@@ -55,8 +55,10 @@ test("memory cards omit empty fallback copy and keep the composer compact", asyn
   assert.ok(
     composer.lastIndexOf("Добавить воспоминание") > composer.lastIndexOf("memoryAttachments.length"),
   );
-  assert.match(mobileCss, /columns:\s*2 !important/);
-  assert.match(mobileCss, /break-inside:\s*avoid/);
+  assert.match(memories, /memories-grid grid grid-cols-1/);
+  assert.match(mobileCss, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\) !important/);
+  assert.doesNotMatch(memories, /columns-1/);
+  assert.doesNotMatch(mobileCss, /columns:\s*2 !important/);
   assert.match(mobileCss, /memory-reaction-option\.is-active/);
 });
 
@@ -114,6 +116,20 @@ test("daily answer attachments keep voice recording as a separate action", async
   assert.match(source, /aria-label=\{isRecording \? "Завершить запись" : "Записать голос"\}/);
   assert.match(source, /getQuestionAnswerEditWindowStart/);
   assert.match(source, /hasOwnAnswer: hasOwnSavedAnswer/);
+  assert.match(source, /handleClipboardFilePaste/);
+});
+
+test("attachment composers accept files pasted from the clipboard", async () => {
+  const sources = await Promise.all([
+    readSource("components/MemoryComposer.tsx"),
+    readSource("app/chat/page.tsx"),
+    readSource("app/questions/discussion/page.tsx"),
+  ]);
+
+  for (const source of sources) {
+    assert.match(source, /onPaste=/);
+    assert.match(source, /handleClipboardFilePaste/);
+  }
 });
 
 test("achievements no longer create notifications or navigation entries", async () => {

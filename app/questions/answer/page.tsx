@@ -2,10 +2,12 @@
 
 import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import AccentAudioPlayer from "@/components/AccentAudioPlayer";
+import { handleClipboardFilePaste } from "@/lib/clipboardFiles";
 import { compressImageFile } from "@/lib/imageCompression";
 import {
   createCompatibleAudioRecorder,
   createRecordedAudioFile,
+  getMediaKind,
   getSafeStoragePath,
   MAX_AUDIO_SIZE,
   MAX_IMAGE_SIZE,
@@ -597,6 +599,20 @@ export default function QuestionAnswerPage() {
                 <textarea
                   ref={textareaRef}
                   value={myAnswer}
+                  onPaste={(event) => {
+                    if (isEditLocked || isUploadingMedia) return;
+                    handleClipboardFilePaste(event, ([file]) => {
+                      if (!file) return;
+                      const kind = getMediaKind(file);
+                      if (kind === "image") {
+                        void uploadAnswerMedia(file, photoField, "Фото-ответ");
+                      } else if (kind === "audio") {
+                        void uploadAnswerMedia(file, voiceField, "Голосовой ответ");
+                      } else {
+                        setMessage("К ответу можно вставить только фото или аудиофайл.");
+                      }
+                    });
+                  }}
                   onChange={(event) => {
                     const nextAnswer = event.target.value.slice(0, ANSWER_MAX_LENGTH);
                     setMyAnswer(nextAnswer);

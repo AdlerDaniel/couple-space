@@ -5,6 +5,7 @@ import EmojiPicker from "@/components/EmojiPicker";
 
 import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import { compressImageFile } from "@/lib/imageCompression";
+import { handleClipboardFilePaste } from "@/lib/clipboardFiles";
 import {
   createCompatibleAudioRecorder,
   createRecordedAudioFile,
@@ -472,7 +473,7 @@ export default function QuestionDiscussionPage() {
               <button type="button" onPointerDown={(event) => event.preventDefault()} onClick={() => { setIsEmojiPickerOpen((current) => !current); setIsAttachMenuOpen(false); }} aria-label="Выбрать эмодзи" className="question-discussion-icon grid h-9 w-9 place-items-center rounded-full text-emerald-600 transition hover:bg-emerald-50 dark:text-emerald-100 dark:hover:bg-white/8"><Smile size={19} /></button>
               {isEmojiPickerOpen && <EmojiPicker tone="emerald" compact multiple onSelect={(emoji) => { setDraft((current) => `${current}${emoji}`); composerTextareaRef.current?.focus({ preventScroll: true }); }} className="question-discussion-emoji-picker fixed left-2 right-2 z-50 mx-auto max-w-sm sm:absolute sm:bottom-12 sm:left-0 sm:right-auto sm:w-80" />}
             </div>
-            <textarea ref={composerTextareaRef} value={draft} onChange={(event) => setDraft(event.target.value)} rows={1} maxLength={1000} placeholder="Сообщение" className="question-discussion-input min-h-9 min-w-0 flex-1 resize-none overflow-y-hidden bg-transparent px-1 py-2 text-sm font-semibold leading-5 outline-none placeholder:text-emerald-800/35 dark:placeholder:text-white/35" />
+            <textarea ref={composerTextareaRef} value={draft} onChange={(event) => setDraft(event.target.value)} onPaste={(event) => handleClipboardFilePaste(event, ([file]) => { if (file) selectMedia(file); })} rows={1} maxLength={1000} placeholder="Сообщение" className="question-discussion-input min-h-9 min-w-0 flex-1 resize-none overflow-y-hidden bg-transparent px-1 py-2 text-sm font-semibold leading-5 outline-none placeholder:text-emerald-800/35 dark:placeholder:text-white/35" />
           </div>
             {draft.trim() || pendingMedia ? (
               <button type="submit" disabled={isSending} aria-label="Отправить" className="question-discussion-action grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500 p-0 text-white shadow-md disabled:opacity-45"><Send size={18} /></button>

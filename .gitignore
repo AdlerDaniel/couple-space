@@ -30,6 +30,12 @@
 /.wrangler/
 /outputs/
 /work/
+/.tools/
+/.android-signing/
+/android-app/.gradle/
+/android-app/build/
+/android-app/app/build/
+/android-app/local.properties
 
 # misc
 .DS_Store

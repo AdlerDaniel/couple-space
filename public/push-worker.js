@@ -21,8 +21,8 @@ self.addEventListener("push", (event) => {
       data: {
         href: payload.href || "/notifications",
       },
-      icon: "/window.svg",
-      badge: "/window.svg",
+      icon: "/icons/couple-space-192.png",
+      badge: "/icons/couple-space-192.png",
     })
   );
 });

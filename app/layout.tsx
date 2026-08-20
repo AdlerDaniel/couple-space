@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
 import "./mobile-redesign.css";
@@ -23,6 +23,13 @@ export const metadata: Metadata = {
   description:
     "Личное пространство для пары: вопросы дня, воспоминания, викторины, чат и трекер совместных событий.",
   applicationName: "Couple Space",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f8f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#111827" },
+  ],
 };
 
 export default function RootLayout({

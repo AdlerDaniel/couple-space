@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.couplespace.mobile",
+      "sha256_cert_fingerprints": [
+        "53:2C:01:3B:BA:2A:4B:07:52:BE:D6:88:8D:2D:25:BE:0B:66:DF:92:00:B8:5A:E6:C0:C7:A9:B9:FF:B5:FC:67"
+      ]
+    }
+  }
+]

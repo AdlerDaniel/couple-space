@@ -30,7 +30,8 @@
     "supabase:lint": "npx --yes supabase@2.111.0 db lint --local --level warning",
     "test:e2e:public": "playwright test --config=playwright.public.config.ts",
     "test:e2e:archive-realtime": "playwright test --config=playwright.realtime.config.ts",
-    "screenshots:mobile": "playwright test tests/mobile-screenshots.spec.ts"
+    "screenshots:mobile": "playwright test tests/mobile-screenshots.spec.ts",
+    "android:build": "node scripts/build-android-app.mjs"
   },
   "dependencies": {
     "@lobehub/fluent-emoji-3d": "1.1.0",

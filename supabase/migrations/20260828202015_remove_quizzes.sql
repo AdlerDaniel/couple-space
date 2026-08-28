@@ -80,10 +80,6 @@ using (
   )
 );
 
--- Delete quiz uploads and the bucket after access policies no longer reference it.
-delete from storage.objects where bucket_id = 'quiz-media';
-delete from storage.buckets where id = 'quiz-media';
-
 drop table if exists public.quiz_comments;
 drop table if exists public.quiz_answers;
 

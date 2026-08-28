@@ -19,9 +19,6 @@ const baseInput = {
   hasUnread: false,
   hasMyAnswer: false,
   hasPartnerAnswer: false,
-  watchRemaining: 0,
-  hasGoal: false,
-  quizHref: "/quizzes/play?quiz=test",
 };
 
 test("today next step prioritizes onboarding before daily work", () => {

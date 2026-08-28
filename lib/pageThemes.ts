@@ -8,7 +8,6 @@ export type PageThemeKey =
   | "settings"
   | "memories"
   | "questions"
-  | "quizzes"
   | "watch"
   | "tracker"
   | "countdown"
@@ -93,16 +92,6 @@ export const pageThemes: Record<PageThemeKey, PageTheme> = {
       boxShadow: "0 16px 50px rgba(39, 174, 96, 0.2)",
     },
   },
-  quizzes: {
-    key: "quizzes",
-    accent: "#7c3aed",
-    soft: "#ede9fe",
-    nav: {
-      background: "linear-gradient(135deg, rgba(124, 58, 237, 0.24), rgba(168, 85, 247, 0.14))",
-      borderColor: "rgba(124, 58, 237, 0.34)",
-      boxShadow: "0 16px 50px rgba(124, 58, 237, 0.2)",
-    },
-  },
   watch: {
     key: "watch",
     accent: "#3f6212",
@@ -163,7 +152,6 @@ export function getPageThemeKey(pathname: string): PageThemeKey {
   if (pathname.startsWith("/settings")) return "settings";
   if (pathname.startsWith("/memories")) return "memories";
   if (pathname.startsWith("/questions")) return "questions";
-  if (pathname.startsWith("/quizzes")) return "quizzes";
   if (pathname.startsWith("/watch")) return "watch";
   if (pathname.startsWith("/tracker")) return "tracker";
   if (pathname.startsWith("/countdown")) return "countdown";

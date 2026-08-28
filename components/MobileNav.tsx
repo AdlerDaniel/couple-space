@@ -28,7 +28,6 @@ type CoupleNotification = {
 
 function getNotificationIcon(type: string): NavIconName {
   if (type.includes("question")) return "questions";
-  if (type.includes("quiz")) return "quizzes";
   if (type.includes("chat")) return "chat";
   if (type.includes("memory")) return "memories";
   if (type.includes("countdown")) return "countdown";

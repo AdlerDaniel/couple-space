@@ -85,7 +85,6 @@ insert into storage.buckets (id, name, public)
 values
   ('memory-images', 'memory-images', false),
   ('question-media', 'question-media', false),
-  ('quiz-media', 'quiz-media', false),
   ('watch-posters', 'watch-posters', false),
   ('chat-media', 'chat-media', false),
   ('profile-avatars', 'profile-avatars', false)

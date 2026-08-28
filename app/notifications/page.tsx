@@ -27,7 +27,6 @@ const filters = [
   { key: "all", label: "Все" },
   { key: "unread", label: "Новые" },
   { key: "questions", label: "Вопросы" },
-  { key: "quizzes", label: "Викторины" },
   { key: "chat", label: "Чат" },
   { key: "reactions", label: "Реакции" },
 ] as const;
@@ -35,7 +34,6 @@ const filters = [
 const defaultNotificationSettings = {
   chat: true,
   questions: true,
-  quizzes: true,
   goals: true,
   reactions: true,
 };
@@ -51,7 +49,6 @@ function formatTime(date: string) {
 
 function getIcon(type: string): NavIconName {
   if (type.includes("question")) return "questions";
-  if (type.includes("quiz")) return "quizzes";
   if (type.includes("chat")) return "chat";
   if (type.includes("memory")) return "memories";
   if (type.includes("tracker")) return "tracker";
@@ -62,7 +59,6 @@ function getTypeLabel(type: string) {
   if (type.includes("reaction")) return "Реакция";
   if (type.includes("comment")) return "Комментарий";
   if (type.includes("question")) return "Вопрос";
-  if (type.includes("quiz")) return "Викторина";
   if (type.includes("chat")) return "Чат";
   if (type.includes("memory")) return "Воспоминание";
   if (type.includes("tracker")) return "Трекер";
@@ -131,7 +127,6 @@ export default function NotificationsPage() {
     const categoryFiltered = items.filter((item) => {
       if (item.type.includes("chat")) return enabledCategories.chat !== false;
       if (item.type.includes("question")) return enabledCategories.questions !== false;
-      if (item.type.includes("quiz")) return enabledCategories.quizzes !== false;
       if (item.type.includes("tracker")) return enabledCategories.goals !== false;
       if (item.type.includes("reaction") || item.type.includes("comment")) {
         return enabledCategories.reactions !== false;
@@ -141,7 +136,6 @@ export default function NotificationsPage() {
 
     if (filter === "unread") return categoryFiltered.filter((item) => !item.read_at);
     if (filter === "questions") return categoryFiltered.filter((item) => item.type.includes("question"));
-    if (filter === "quizzes") return categoryFiltered.filter((item) => item.type.includes("quiz"));
     if (filter === "chat") return categoryFiltered.filter((item) => item.type.includes("chat"));
     if (filter === "reactions") {
       return categoryFiltered.filter((item) => item.type.includes("reaction") || item.type.includes("comment"));

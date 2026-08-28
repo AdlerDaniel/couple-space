@@ -2,7 +2,6 @@ export type NavIconName =
   | "home"
   | "today"
   | "questions"
-  | "quizzes"
   | "watch"
   | "chat"
   | "dashboard"
@@ -27,7 +26,6 @@ export type NavLinkItem = {
 export const primaryNavLinks: NavLinkItem[] = [
   { label: "Сегодня", href: "/today", icon: "today", description: "Лучший следующий шаг" },
   { label: "Вопрос дня", href: "/questions", icon: "questions", description: "Ответы и архив" },
-  { label: "Викторины", href: "/quizzes", icon: "quizzes", description: "Тесты для пары" },
   { label: "Фильмы", href: "/watch", icon: "watch", description: "Список и рулетка" },
   { label: "Воспоминания", href: "/memories", icon: "memories", description: "Фото и моменты" },
   { label: "Отсчёт", href: "/countdown", icon: "countdown", description: "Таймеры до важных событий" },
@@ -43,7 +41,6 @@ export const mobileMainLinks: NavLinkItem[] = [
 export const mobileMoreLinks: NavLinkItem[] = [
   { label: "Сегодня", href: "/today", icon: "today", description: "Лучший следующий шаг" },
   { label: "Кабинет", href: "/dashboard", icon: "dashboard", description: "Аналитика пары" },
-  { label: "Викторины", href: "/quizzes", icon: "quizzes", description: "Тесты для пары" },
   { label: "Чат", href: "/chat", icon: "chat", description: "Сообщения" },
   { label: "Отсчёт", href: "/countdown", icon: "countdown", description: "Таймеры до важных событий" },
 ];
@@ -94,11 +91,6 @@ export const routeMeta: Record<
     label: "Архив",
     description: "История ответов пары",
     icon: "questions",
-  },
-  "/quizzes": {
-    label: "Викторины",
-    description: "Совместные тесты и результаты",
-    icon: "quizzes",
   },
   "/watch": {
     label: "Фильмы",

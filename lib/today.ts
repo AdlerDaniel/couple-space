@@ -5,10 +5,7 @@ export type TodayNextStepId =
   | "unread"
   | "answer-question"
   | "open-partner-answer"
-  | "quick-reply"
-  | "watch"
-  | "goal"
-  | "quiz";
+  | "quick-reply";
 
 export type TodayNextStepInput = {
   isAuthenticated: boolean;
@@ -17,9 +14,6 @@ export type TodayNextStepInput = {
   hasUnread: boolean;
   hasMyAnswer: boolean;
   hasPartnerAnswer: boolean;
-  watchRemaining: number;
-  hasGoal: boolean;
-  quizHref: string;
   unreadHref?: string | null;
 };
 
@@ -154,50 +148,14 @@ export function getTodayNextStep(input: TodayNextStepInput): TodayNextStep {
     };
   }
 
-  if (input.hasMyAnswer) {
-    return {
-      id: "quick-reply",
-      label: "Связь",
-      title: "Напишите партнёру короткое сообщение",
-      text: "Ваш ответ сохранён. Можно мягко позвать партнёра в сегодняшний ритуал.",
-      href: "/today#quick-reply",
-      button: "Написать",
-      icon: "◌",
-    };
-  }
-
-  if (input.watchRemaining > 0) {
-    return {
-      id: "watch",
-      label: "Фильмы",
-      title: "Запустите рулетку просмотра",
-      text: `${input.watchRemaining} вариантов ждут выбора на вечер.`,
-      href: "/watch?spin=1",
-      button: "Крутить",
-      icon: "▥",
-    };
-  }
-
-  if (input.hasGoal) {
-    return {
-      id: "goal",
-      label: "Цель пары",
-      title: "Отметьте прогресс по цели",
-      text: "Один маленький шаг сегодня лучше большого плана на потом.",
-      href: "/tracker",
-      button: "Отметить",
-      icon: "◫",
-    };
-  }
-
   return {
-    id: "quiz",
-    label: "Идея на сегодня",
-    title: "Пройдите короткую викторину",
-    text: "Ответьте отдельно и сравните результаты.",
-    href: input.quizHref,
-    button: "Начать",
-    icon: "✦",
+    id: "quick-reply",
+    label: "Связь",
+    title: "Напишите партнёру короткое сообщение",
+    text: "Ваш ответ сохранён. Можно мягко позвать партнёра в сегодняшний ритуал.",
+    href: "/today#quick-reply",
+    button: "Написать",
+    icon: "◌",
   };
 }
 

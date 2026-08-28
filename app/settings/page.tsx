@@ -38,7 +38,6 @@ const sections: SettingsSection[] = [
 const notificationOptions = [
   ["chat", "Чат"],
   ["questions", "Вопросы"],
-  ["quizzes", "Викторины"],
   ["goals", "Цели"],
   ["reactions", "Реакции"],
 ] as const;

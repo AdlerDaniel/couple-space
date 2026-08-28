@@ -64,4 +64,3 @@ drop policy if exists "Allow public read memory images" on storage.objects;
 drop policy if exists "Anyone can read memory images" on storage.objects;
 drop policy if exists "Anyone can read profile avatars" on storage.objects;
 drop policy if exists "Anyone can read question media" on storage.objects;
-drop policy if exists "Anyone can read quiz media" on storage.objects;

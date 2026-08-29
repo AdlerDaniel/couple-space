@@ -97,6 +97,11 @@ export const routeMeta: Record<
     description: "Список фильмов и рулетка вечера",
     icon: "watch",
   },
+  "/watch/lab": {
+    label: "Кино-комната",
+    description: "Экспериментальная версия списка фильмов",
+    icon: "watch",
+  },
   "/chat": {
     label: "Чат",
     description: "Сообщения и реакции",

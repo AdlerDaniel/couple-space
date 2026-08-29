@@ -22,7 +22,7 @@ test("remaining primary mobile sections are available under More", () => {
   );
 });
 
-test("desktop sidebar exposes every section without a More menu", async () => {
+test("desktop sidebar keeps every section available and collapses overflow into More", async () => {
   assert.deepEqual(
     desktopNavLinks.map(({ href }) => href),
     ["/today", "/questions", "/watch", "/memories", "/countdown", "/dashboard", "/chat", "/tracker"],
@@ -31,8 +31,10 @@ test("desktop sidebar exposes every section without a More menu", async () => {
   assert.equal(desktopNavLinks.find(({ href }) => href === "/watch")?.label, "Фильмы");
 
   const source = await readFile(new URL("../components/Navbar.tsx", import.meta.url), "utf8");
-  assert.doesNotMatch(source, /isMoreOpen|setIsMoreOpen/);
-  assert.doesNotMatch(source, />Ещё</);
+  assert.match(source, /ResizeObserver/);
+  assert.match(source, /visibleNavCount/);
+  assert.match(source, /overflowNavLinks/);
+  assert.match(source, />Ещё</);
   assert.doesNotMatch(source, /isActionsOpen|quickNavActions|>Добавить</);
 });
 

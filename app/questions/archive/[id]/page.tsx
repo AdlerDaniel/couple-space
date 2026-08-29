@@ -1,7 +1,6 @@
 "use client";
 
 import AnswerSocialControls from "@/components/AnswerSocialControls";
-import QuestionComments from "@/components/QuestionComments";
 import { getDailyQuestionHistory } from "@/lib/dailyQuestions";
 import { createPartnerNotification } from "@/lib/notifications";
 import {
@@ -11,6 +10,7 @@ import {
   parseQuestionDate,
 } from "@/lib/questionArchive";
 import { supabase } from "@/lib/supabaseClient";
+import { MessageCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -49,7 +49,6 @@ export default function QuestionArchiveDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const [couple, setCouple] = useState<Couple | null>(null);
-  const [profile, setProfile] = useState<CoupleProfile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [answerRecord, setAnswerRecord] = useState<AnswerRow | null>(null);
   const [draftAnswer, setDraftAnswer] = useState("");
@@ -90,8 +89,6 @@ export default function QuestionArchiveDetailPage() {
         .eq("couple_id", coupleData.id)
         .limit(1)
         .maybeSingle<CoupleProfile>();
-
-      setProfile(profileData || null);
 
       const virtualDateKey = parseVirtualQuestionArchiveId(params.id);
       if (virtualDateKey) {
@@ -284,6 +281,19 @@ export default function QuestionArchiveDetailPage() {
           <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-black leading-tight text-[#15803d] dark:text-white md:text-6xl">
             {answerRecord.question}
           </h1>
+          <button
+            type="button"
+            disabled={!isStoredRecord}
+            onClick={() => {
+              if (isStoredRecord) {
+                router.push(`/questions/discussion?answerId=${answerRecord.id}`);
+              }
+            }}
+            className="question-summary-pill question-discussion-link mx-auto mt-5 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <MessageCircle aria-hidden="true" size={17} />
+            {isStoredRecord ? "Обсудить" : "Обсуждение после ответа"}
+          </button>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -385,18 +395,6 @@ export default function QuestionArchiveDetailPage() {
           </article>
         </div>
 
-        {isStoredRecord ? (
-          <QuestionComments
-            answerId={answerRecord.id}
-            couple={couple}
-            currentUserId={currentUserId}
-            profile={profile}
-          />
-        ) : (
-          <p className="mt-8 text-center text-sm font-semibold text-emerald-900/50 dark:text-white/42">
-            Комментарии появятся после сохранения ответа.
-          </p>
-        )}
       </section>
     </main>
   );

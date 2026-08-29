@@ -15,7 +15,7 @@ import type { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import NavIcon from "./NavIcon";
 import { showAppToast } from "./AppToast";
 import { FluentEmojiText } from "./FluentEmoji";
@@ -104,6 +104,9 @@ export default function Navbar() {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isDesktopMoreOpen, setIsDesktopMoreOpen] = useState(false);
+  const [visibleNavCount, setVisibleNavCount] = useState(desktopNavLinks.length);
+  const navItemsRef = useRef<HTMLDivElement | null>(null);
 
   const dashboardAccent = useDashboardAccent();
   const isLogin = pathname.startsWith("/login");
@@ -273,6 +276,33 @@ export default function Navbar() {
     };
   }, [accent, currentUserId]);
 
+  useEffect(() => {
+    const navItems = navItemsRef.current;
+    if (!navItems) return;
+
+    const updateVisibleCount = () => {
+      const availableHeight = navItems.clientHeight;
+      if (availableHeight <= 0) return;
+
+      const itemHeightWithGap = 52;
+      const availableSlots = Math.max(1, Math.floor((availableHeight + 4) / itemHeightWithGap));
+      const nextCount = availableSlots >= desktopNavLinks.length
+        ? desktopNavLinks.length
+        : Math.max(0, availableSlots - 1);
+      setVisibleNavCount((current) => current === nextCount ? current : nextCount);
+    };
+
+    updateVisibleCount();
+    const observer = new ResizeObserver(updateVisibleCount);
+    observer.observe(navItems);
+    window.addEventListener("resize", updateVisibleCount);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateVisibleCount);
+    };
+  }, []);
+
   async function logout() {
     setIsProfileOpen(false);
     setIsNotificationsOpen(false);
@@ -283,6 +313,7 @@ export default function Navbar() {
     const nextIsOpen = !isNotificationsOpen;
     setIsNotificationsOpen(nextIsOpen);
     setIsProfileOpen(false);
+    setIsDesktopMoreOpen(false);
 
     if (!nextIsOpen || !currentUserId) return;
 
@@ -313,6 +344,14 @@ export default function Navbar() {
   ).length;
 
   const navStyle = { "--desktop-nav-accent": accent } as CSSProperties;
+  const activeOverflowLink = desktopNavLinks.find(
+    (link, index) => index >= visibleNavCount && isActivePath(pathname, link.href),
+  );
+  const visibleNavLinks = activeOverflowLink && visibleNavCount > 0
+    ? [...desktopNavLinks.slice(0, visibleNavCount - 1), activeOverflowLink]
+    : desktopNavLinks.slice(0, visibleNavCount);
+  const visibleHrefs = new Set(visibleNavLinks.map((link) => link.href));
+  const overflowNavLinks = desktopNavLinks.filter((link) => !visibleHrefs.has(link.href));
 
   return (
     <header className="desktop-sidebar fixed inset-y-3 left-3 z-40 hidden w-[4.5rem] lg:block 2xl:w-[13.5rem]">
@@ -329,8 +368,9 @@ export default function Navbar() {
 
         <div className="desktop-rail-divider" />
 
-        <div className="grid gap-1">
-          {desktopNavLinks.map((link) => {
+        <div ref={navItemsRef} className="min-h-0 flex-1">
+          <div className="grid gap-1">
+          {visibleNavLinks.map((link) => {
             const isActive = isActivePath(pathname, link.href);
             return (
               <Link
@@ -346,9 +386,65 @@ export default function Navbar() {
             );
           })}
 
+          {overflowNavLinks.length > 0 && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDesktopMoreOpen((current) => !current);
+                  setIsProfileOpen(false);
+                  setIsNotificationsOpen(false);
+                }}
+                className={`desktop-rail-item group relative w-full ${
+                  isDesktopMoreOpen || overflowNavLinks.some((link) => isActivePath(pathname, link.href))
+                    ? "desktop-rail-item-active"
+                    : ""
+                }`}
+                aria-label="Ещё разделы"
+                aria-expanded={isDesktopMoreOpen}
+              >
+                <NavIcon name="more" className="h-8 w-8" />
+                <span className="desktop-rail-label">Ещё</span>
+                <span className="desktop-rail-tooltip" aria-hidden="true">Ещё</span>
+              </button>
+
+              {isDesktopMoreOpen && (
+                <div className="desktop-matte-popover absolute left-[calc(100%+0.75rem)] top-0 w-72 p-2">
+                  <p className="px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                    Остальные разделы
+                  </p>
+                  <div className="space-y-1">
+                    {overflowNavLinks.map((link) => {
+                      const isActive = isActivePath(pathname, link.href);
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          onClick={() => setIsDesktopMoreOpen(false)}
+                          aria-current={isActive ? "page" : undefined}
+                          className={`desktop-profile-action flex items-center gap-3 ${isActive ? "desktop-overflow-link-active" : ""}`}
+                        >
+                          <NavIcon name={link.icon} className="h-8 w-8" />
+                          <span className="min-w-0">
+                            <span className="block truncate font-black">{link.label}</span>
+                            {link.description && (
+                              <span className="mt-0.5 block truncate text-xs font-semibold opacity-55">
+                                {link.description}
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          </div>
         </div>
 
-        <div className="mt-auto grid gap-1">
+        <div className="grid shrink-0 gap-1">
           {isLoadingUser ? (
             <div className="desktop-rail-loading animate-pulse" />
           ) : profile ? (
@@ -426,6 +522,7 @@ export default function Navbar() {
                   onClick={() => {
                     setIsProfileOpen((current) => !current);
                     setIsNotificationsOpen(false);
+                    setIsDesktopMoreOpen(false);
                   }}
                   className={`desktop-rail-item group relative w-full ${isProfileOpen ? "desktop-rail-item-active" : ""}`}
                   aria-label="Профиль"

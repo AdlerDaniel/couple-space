@@ -3414,3 +3414,69 @@ main textarea:not(.chat-composer-input) {
 .dark .chat-voice-meta > span {
   color: rgba(191, 219, 254, 0.64) !important;
 }
+
+@media (max-width: 640px) {
+  .watch-page .watch-stats {
+    display: flex !important;
+    justify-content: center;
+    gap: 0.35rem 0.8rem !important;
+  }
+
+  .watch-page .watch-stats > div {
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .watch-page .watch-stats p:first-child {
+    font-size: 1rem !important;
+  }
+
+  .watch-page .watch-stats p:last-child {
+    font-size: 0.48rem !important;
+  }
+
+  .watch-page .watch-stat-inline + .watch-stat-inline::before {
+    height: 1rem;
+    margin-right: 0.8rem;
+  }
+
+  .watch-page .watch-roulette-stage {
+    display: grid !important;
+    gap: 1rem !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .watch-page .watch-roulette-stage .anime-roulette-wheel {
+    width: 12.5rem !important;
+    height: 12.5rem !important;
+    border-width: 0.55rem !important;
+    font-size: inherit !important;
+  }
+
+  .watch-page .watch-roulette-hub {
+    width: 4.6rem !important;
+    height: 4.6rem !important;
+  }
+
+  .watch-page .watch-roulette-copy h2 {
+    margin-top: 0.55rem !important;
+    font-size: 1.7rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .watch-page .watch-roulette-copy h2 + p {
+    margin-top: 0.45rem !important;
+    font-size: 0.78rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .watch-page .watch-roulette-copy > div {
+    margin-top: 0.8rem !important;
+  }
+}

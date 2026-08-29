@@ -466,14 +466,14 @@ export default function WatchPage() {
     setMessage(`${selectedItem.title} сохранено в список на просмотр.`);
   }
 
-  function renderCard(item: WatchItem) {
+  function renderCard(item: WatchItem, variant: "default" | "compact" = "default") {
     const isSelected = selectedItem?.id === item.id;
 
     return (
       <article
         key={item.id}
         data-anime-draggable={!item.is_watched ? "true" : undefined}
-        className={`watch-card ${item.is_watched ? "is-watched" : "is-wish"} performance-list-item group rounded-[1.4rem] border p-4 shadow-[0_18px_45px_rgba(77,124,15,0.12)] transition duration-300 hover:-translate-y-1 dark:shadow-black/20 ${
+        className={`watch-card ${variant === "compact" ? "watch-card-compact" : ""} ${item.is_watched ? "is-watched" : "is-wish"} performance-list-item group rounded-[1.4rem] border p-4 shadow-[0_18px_45px_rgba(77,124,15,0.12)] transition duration-300 hover:-translate-y-1 dark:shadow-black/20 ${
           item.is_watched
             ? "border-lime-200/60 bg-white/58 opacity-78 dark:border-lime-100/10 dark:bg-white/7"
             : "border-white/65 bg-white/68 dark:border-white/10 dark:bg-white/8"
@@ -590,7 +590,7 @@ export default function WatchPage() {
           </p>
         </div>
 
-        <div className="watch-stats mt-6 grid gap-3 md:grid-cols-3">
+        <div className="watch-stats mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
           {[
             ["Всего в списке", visibleItems.length],
             ["Осталось посмотреть", wishItems.length],
@@ -598,67 +598,68 @@ export default function WatchPage() {
           ].map(([label, value]) => (
             <div
               key={label}
-              className="rounded-[1.35rem] border border-white/60 bg-white/62 p-4 text-center shadow-inner backdrop-blur-xl dark:border-white/10 dark:bg-white/8"
+              className="watch-stat-inline flex items-baseline gap-2"
             >
-              <p className="text-3xl font-black text-lime-800 dark:text-white">
+              <p className="text-xl font-black text-lime-800 dark:text-white">
                 {typeof value === "number" ? <CountUp value={value} /> : value}
               </p>
-              <p className="mt-1 text-xs font-black uppercase tracking-wide text-lime-900/50 dark:text-white/45">
+              <p className="text-[11px] font-black uppercase tracking-[0.08em] text-lime-900/48 dark:text-white/45">
                 {label}
               </p>
             </div>
           ))}
         </div>
 
-        <section className="mt-6 overflow-hidden rounded-[2rem] border border-white/70 bg-white/68 p-5 text-center shadow-[0_28px_100px_rgba(77,124,15,0.18)] backdrop-blur-2xl dark:border-white/10 dark:bg-white/8 md:p-7">
-          <div className="mx-auto grid min-h-64 max-w-3xl place-items-center rounded-[1.7rem] border border-lime-200/70 bg-gradient-to-br from-lime-100 via-white to-emerald-100 p-6 shadow-inner dark:border-lime-100/10 dark:from-lime-500/12 dark:via-white/8 dark:to-emerald-500/12">
-            {wishItems.length === 0 ? (
-              <div>
-                <p className="text-5xl">✦</p>
-                <p className="mt-4 text-2xl font-black">Сначала добавьте что-нибудь в список</p>
-              </div>
-            ) : (
-              <div className="w-full">
-                <div
-                  ref={rouletteWheelRef}
-                  className="anime-roulette-wheel mx-auto grid h-36 w-36 place-items-center rounded-full border-[10px] border-lime-300 bg-white text-5xl shadow-[0_20px_70px_rgba(77,124,15,0.2)] transition dark:border-lime-400/35 dark:bg-white/10"
-                >
-                  ✦
-                </div>
-                <p className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-lime-800/55 dark:text-white/45">
-                  {isSpinning ? "Крутим..." : selectedItem ? "Сегодня выбираем" : "Рулетка вечера"}
-                </p>
-                <h2 ref={rouletteResultRef} className="anime-roulette-result mx-auto mt-2 max-w-xl break-words text-3xl font-black text-lime-900 dark:text-white md:text-4xl">
-                  <AnimatedText text={roulettePreview || selectedItem?.title || "Пусть решит случай"} />
-                </h2>
-                {selectedItem && (
-                  <p className="mt-2 font-black text-lime-700 dark:text-lime-100">
-                    {getContentTypeLabel(selectedItem.content_type)} · добавил {getAddedByName(selectedItem.added_by)}
-                  </p>
-                )}
-              </div>
-            )}
+        <section className="watch-roulette-stage mt-7 grid items-center gap-8 lg:grid-cols-[minmax(20rem,0.9fr)_minmax(22rem,1.1fr)] lg:text-left">
+          <div className="watch-roulette-visual relative mx-auto w-fit lg:mx-0 lg:justify-self-center">
+            <span className="watch-roulette-pointer" aria-hidden="true" />
+            <div
+              ref={rouletteWheelRef}
+              className="anime-roulette-wheel watch-roulette-wheel grid h-64 w-64 place-items-center rounded-full sm:h-72 sm:w-72"
+              aria-hidden="true"
+            >
+              <span className="watch-roulette-hub grid h-24 w-24 place-items-center rounded-full">
+                <Sparkles size={36} strokeWidth={2.4} />
+              </span>
+            </div>
           </div>
 
-          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
-            <button
-              type="button"
-              onClick={spinRoulette}
-              disabled={wishItems.length === 0 || isSpinning}
-              className="rounded-full bg-lime-600 px-7 py-3.5 text-base font-black text-white shadow-[0_18px_55px_rgba(77,124,15,0.24)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              Крутить рулетку
-            </button>
-            {selectedItem && (
+          <div className="watch-roulette-copy min-w-0 text-center lg:text-left">
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-lime-800/55 dark:text-white/45">
+              {isSpinning ? "Крутим..." : selectedItem ? "Сегодня выбираем" : "Рулетка вечера"}
+            </p>
+            <h2 ref={rouletteResultRef} className="anime-roulette-result mt-3 break-words text-4xl font-black leading-tight text-lime-900 dark:text-white md:text-5xl">
+              <AnimatedText
+                text={wishItems.length === 0
+                  ? "Сначала добавьте фильм"
+                  : roulettePreview || selectedItem?.title || "Пусть решит случай"}
+              />
+            </h2>
+            <p className="mt-3 max-w-xl text-base font-semibold leading-7 text-lime-950/58 dark:text-white/52 lg:max-w-lg">
+              {selectedItem
+                ? `${getContentTypeLabel(selectedItem.content_type)} · добавил ${getAddedByName(selectedItem.added_by)}`
+                : "Один поворот — и спор о выборе на вечер решён."}
+            </p>
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
               <button
                 type="button"
-                onClick={saveRoulettePick}
-                disabled={savedPickId === selectedItem.id}
-                className="rounded-full bg-white/82 px-7 py-3.5 text-base font-black text-lime-800 shadow-inner transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 dark:bg-white/10 dark:text-white"
+                onClick={spinRoulette}
+                disabled={wishItems.length === 0 || isSpinning}
+                className="rounded-full bg-lime-600 px-8 py-3.5 text-base font-black text-white shadow-[0_18px_55px_rgba(77,124,15,0.28)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
               >
-                {savedPickId === selectedItem.id ? "Сохранено" : "Сохранить"}
+                {isSpinning ? "Выбираем..." : "Крутить рулетку"}
               </button>
-            )}
+              {selectedItem && (
+                <button
+                  type="button"
+                  onClick={saveRoulettePick}
+                  disabled={savedPickId === selectedItem.id}
+                  className="rounded-full border border-lime-300/70 bg-white/65 px-7 py-3.5 text-base font-black text-lime-800 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 dark:border-white/12 dark:bg-white/8 dark:text-white"
+                >
+                  {savedPickId === selectedItem.id ? "Сохранено" : "Сохранить выбор"}
+                </button>
+              )}
+            </div>
           </div>
         </section>
 
@@ -807,7 +808,7 @@ export default function WatchPage() {
             </div>
             <div className="watch-card-grid mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               {wishItems.length ? (
-                wishItems.map(renderCard)
+                wishItems.map((item) => renderCard(item))
               ) : (
                 <div className="rounded-[1.4rem] bg-white/62 p-5 text-center font-black shadow-inner dark:bg-white/8 md:col-span-2 lg:col-span-1 xl:col-span-2">
                   Пока пусто. Добавьте первый вариант для вечера.
@@ -830,11 +831,11 @@ export default function WatchPage() {
                 {watchedItems.length}
               </span>
             </div>
-            <div className="watch-card-grid mt-4 grid gap-4">
+            <div className="watch-card-grid watch-archive-grid mt-4 grid grid-cols-2 gap-3">
               {watchedItems.length ? (
-                watchedItems.map(renderCard)
+                watchedItems.map((item) => renderCard(item, "compact"))
               ) : (
-                <div className="rounded-[1.4rem] bg-white/62 p-5 text-center font-black shadow-inner dark:bg-white/8">
+                <div className="col-span-2 rounded-[1.4rem] bg-white/62 p-5 text-center font-black shadow-inner dark:bg-white/8">
                   Здесь появится то, что вы уже посмотрели вместе.
                 </div>
               )}

@@ -14,7 +14,7 @@ import type { WatchSearchResult } from "@/lib/watchSearch";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, ExternalLink, Film, Info, Sparkles, Trash2, Tv } from "lucide-react";
+import { Check, Film, Shuffle, Sparkles, Trash2, Tv } from "lucide-react";
 
 type ContentType = "movie" | "series" | "cartoon" | "anime";
 
@@ -79,9 +79,8 @@ export default function WatchPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [roulettePreview, setRoulettePreview] = useState<string | null>(null);
+  const [rouletteTitle, setRouletteTitle] = useState("Готовы довериться случаю?");
   const [selectedItem, setSelectedItem] = useState<WatchItem | null>(null);
-  const [savedPickId, setSavedPickId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<WatchItem | null>(null);
   const [searchResults, setSearchResults] = useState<WatchSearchResult[]>([]);
   const [selectedSearchResult, setSelectedSearchResult] = useState<WatchSearchResult | null>(null);
@@ -92,8 +91,6 @@ export default function WatchPage() {
   const deleteTimerRef = useRef<number | null>(null);
   const autoSpinDoneRef = useRef(false);
   const autoAddDoneRef = useRef(false);
-  const rouletteWheelRef = useRef<HTMLDivElement | null>(null);
-  const rouletteResultRef = useRef<HTMLDivElement | null>(null);
 
   const visibleItems = useMemo(
     () => items.filter((item) => item.id !== pendingDelete?.id),
@@ -370,20 +367,19 @@ export default function WatchPage() {
 
     setIsSpinning(true);
     setSelectedItem(null);
-    setSavedPickId(null);
     setMessage("");
 
     let ticks = 0;
     const intervalId = window.setInterval(() => {
       const preview = getRandomWatchItem(wishItems);
-      setRoulettePreview(preview?.title || null);
+      setRouletteTitle(preview?.title || "Готовы довериться случаю?");
       ticks += 1;
 
       if (ticks >= 18) {
         window.clearInterval(intervalId);
         const winner = getRandomWatchItem(wishItems);
-        setRoulettePreview(null);
         setSelectedItem(winner);
+        setRouletteTitle(winner?.title || "Готовы довериться случаю?");
         setIsSpinning(false);
       }
     }, 90);
@@ -407,64 +403,6 @@ export default function WatchPage() {
     const timerId = window.setTimeout(() => setIsAddOpen(true), 0);
     return () => window.clearTimeout(timerId);
   }, [isLoading, searchParams]);
-
-  useEffect(() => {
-    if (!rouletteWheelRef.current || !isSpinning) return;
-
-    let ignore = false;
-    import("animejs").then(({ animate }) => {
-      if (ignore || !rouletteWheelRef.current) return;
-      animate(rouletteWheelRef.current, {
-        rotate: [0, 1440],
-        scale: [1, 1.08, 1],
-        duration: 1700,
-        ease: "out(3)",
-      });
-    });
-
-    return () => {
-      ignore = true;
-    };
-  }, [isSpinning]);
-
-  useEffect(() => {
-    if (!rouletteResultRef.current || !selectedItem) return;
-
-    let ignore = false;
-    import("animejs").then(({ animate }) => {
-      if (ignore || !rouletteResultRef.current) return;
-      animate(rouletteResultRef.current, {
-        opacity: [0, 1],
-        translateY: [18, 0],
-        scale: [0.92, 1],
-        duration: 620,
-        ease: "out(3)",
-      });
-    });
-
-    return () => {
-      ignore = true;
-    };
-  }, [selectedItem]);
-
-  async function saveRoulettePick() {
-    if (!selectedItem) return;
-
-    const updatedAt = new Date().toISOString();
-    setSavedPickId(selectedItem.id);
-    setItems((current) =>
-      current.map((item) =>
-        item.id === selectedItem.id ? { ...item, updated_at: updatedAt } : item,
-      ),
-    );
-
-    await supabase
-      .from("watch_items")
-      .update({ updated_at: updatedAt })
-      .eq("id", selectedItem.id);
-
-    setMessage(`${selectedItem.title} сохранено в список на просмотр.`);
-  }
 
   function renderCard(item: WatchItem, variant: "default" | "compact" = "default") {
     const isSelected = selectedItem?.id === item.id;
@@ -513,26 +451,17 @@ export default function WatchPage() {
           <span className="min-w-0 [overflow-wrap:anywhere]">Добавил: {getAddedByName(item.added_by)}</span>
         </div>
 
-        <div className="watch-card-actions mt-5 grid gap-2 sm:grid-cols-2">
-          <Link
-            href={`/watch/${item.id}`}
-            aria-label={`Подробнее о ${item.title}`}
-            title="Подробнее"
-            className="watch-delete-action min-w-0 rounded-full bg-lime-100/90 px-4 py-2.5 text-center text-sm font-black leading-tight text-lime-800 shadow-inner transition hover:-translate-y-0.5 hover:bg-lime-200 dark:bg-lime-500/16 dark:text-lime-100"
-          >
-            <Info aria-hidden="true" size={17} />
-            <span>Подробнее</span>
-          </Link>
+        <div className={`watch-card-actions mt-5 grid gap-2 ${item.is_watched ? "grid-cols-1" : "grid-cols-2"}`}>
           {!item.is_watched && (
             <button
               type="button"
               onClick={() => markWatched(item)}
               aria-label={`Отметить ${item.title} как просмотренное`}
               title="Отметить как просмотренное"
-              className="min-w-0 rounded-full bg-lime-600 px-4 py-2.5 text-center text-sm font-black leading-tight text-white shadow-lg transition hover:-translate-y-0.5"
+              className="watch-card-action min-w-0 rounded-full bg-lime-600 px-2.5 py-2.5 text-center text-xs font-black leading-none text-white shadow-lg transition hover:-translate-y-0.5"
             >
-              <Check aria-hidden="true" size={17} />
-              <span>Просмотрено</span>
+              <Check aria-hidden="true" size={16} />
+              <span className="min-w-0 truncate">Просмотрено</span>
             </button>
           )}
           <button
@@ -540,25 +469,12 @@ export default function WatchPage() {
             onClick={() => deleteItem(item)}
             aria-label={`Удалить ${item.title}`}
             title="Удалить"
-            className="min-w-0 rounded-full bg-white/75 px-4 py-2.5 text-center text-sm font-black leading-tight text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
+            className="watch-card-action min-w-0 rounded-full bg-white/75 px-2.5 py-2.5 text-center text-xs font-black leading-none text-lime-800 shadow-inner transition hover:-translate-y-0.5 dark:bg-white/10 dark:text-white"
           >
-            <Trash2 aria-hidden="true" size={17} />
-            <span>Удалить</span>
+            <Trash2 aria-hidden="true" size={16} />
+            <span className="min-w-0 truncate">Удалить</span>
           </button>
         </div>
-        {item.external_url && (
-          <a
-            href={item.external_url}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`Открыть внешнюю ссылку для ${item.title}`}
-            title="Открыть ссылку"
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-lime-300/70 bg-lime-100 px-3 py-2 text-sm font-black text-lime-800 shadow-sm transition hover:bg-lime-200 dark:border-lime-300/20 dark:bg-lime-500/18 dark:text-lime-100"
-          >
-            <ExternalLink aria-hidden="true" size={16} />
-            <span>Открыть ссылку</span>
-          </a>
-        )}
       </article>
     );
   }
@@ -610,58 +526,54 @@ export default function WatchPage() {
           ))}
         </div>
 
-        <section className="watch-roulette-stage mt-7 grid items-center gap-8 lg:grid-cols-[minmax(20rem,0.9fr)_minmax(22rem,1.1fr)] lg:text-left">
-          <div className="watch-roulette-visual relative mx-auto w-fit lg:mx-0 lg:justify-self-center">
-            <span className="watch-roulette-pointer" aria-hidden="true" />
-            <div
-              ref={rouletteWheelRef}
-              className="anime-roulette-wheel watch-roulette-wheel grid h-64 w-64 place-items-center rounded-full sm:h-72 sm:w-72"
-              aria-hidden="true"
-            >
-              <span className="watch-roulette-hub grid h-24 w-24 place-items-center rounded-full">
-                <Sparkles size={36} strokeWidth={2.4} />
-              </span>
-            </div>
-          </div>
-
-          <div className="watch-roulette-copy min-w-0 text-center lg:text-left">
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-lime-800/55 dark:text-white/45">
-              {isSpinning ? "Крутим..." : selectedItem ? "Сегодня выбираем" : "Рулетка вечера"}
-            </p>
-            <h2 ref={rouletteResultRef} className="anime-roulette-result mt-3 break-words text-4xl font-black leading-tight text-lime-900 dark:text-white md:text-5xl">
-              <AnimatedText
-                text={wishItems.length === 0
-                  ? "Сначала добавьте фильм"
-                  : roulettePreview || selectedItem?.title || "Пусть решит случай"}
-              />
-            </h2>
-            <p className="mt-3 max-w-xl text-base font-semibold leading-7 text-lime-950/58 dark:text-white/52 lg:max-w-lg">
-              {selectedItem
-                ? `${getContentTypeLabel(selectedItem.content_type)} · добавил ${getAddedByName(selectedItem.added_by)}`
-                : "Один поворот — и спор о выборе на вечер решён."}
-            </p>
-            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
-              <button
-                type="button"
-                onClick={spinRoulette}
-                disabled={wishItems.length === 0 || isSpinning}
-                className="rounded-full bg-lime-600 px-8 py-3.5 text-base font-black text-white shadow-[0_18px_55px_rgba(77,124,15,0.28)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
+        <article className="watch-roulette-stage watch-official-roulette mt-7 overflow-hidden rounded-[2rem] p-5 text-white sm:p-7">
+          <div className="grid items-center gap-7 md:grid-cols-[17rem_minmax(0,1fr)]">
+            <div className="watch-roulette-visual relative mx-auto">
+              <span className="watch-roulette-pointer" aria-hidden="true" />
+              <div
+                className={`watch-official-wheel grid h-64 w-64 place-items-center rounded-full ${isSpinning ? "is-spinning" : ""}`}
+                aria-hidden="true"
               >
-                {isSpinning ? "Выбираем..." : "Крутить рулетку"}
-              </button>
+                <span className="watch-official-hub grid h-20 w-20 place-items-center rounded-full">
+                  <Shuffle size={30} strokeWidth={2.4} />
+                </span>
+              </div>
+            </div>
+
+            <div className="watch-roulette-copy min-w-0 text-center md:text-left">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-lime-300">
+                Выбор вечера
+              </p>
+              <h2 className="mt-3 break-words text-3xl font-black leading-tight text-white sm:text-4xl">
+                <AnimatedText text={wishItems.length === 0 ? "Сначала добавьте фильм" : rouletteTitle} />
+              </h2>
               {selectedItem && (
+                <p className="mt-3 text-sm font-semibold text-white/58">
+                  {getContentTypeLabel(selectedItem.content_type)} · добавил {getAddedByName(selectedItem.added_by)}
+                </p>
+              )}
+              <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row md:justify-start">
                 <button
                   type="button"
-                  onClick={saveRoulettePick}
-                  disabled={savedPickId === selectedItem.id}
-                  className="rounded-full border border-lime-300/70 bg-white/65 px-7 py-3.5 text-base font-black text-lime-800 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 dark:border-white/12 dark:bg-white/8 dark:text-white"
+                  onClick={spinRoulette}
+                  disabled={wishItems.length === 0 || isSpinning}
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-lime-400 px-7 font-black text-lime-950 shadow-[0_16px_42px_rgba(132,204,22,0.28)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {savedPickId === selectedItem.id ? "Сохранено" : "Сохранить выбор"}
+                  <Sparkles size={18} aria-hidden="true" />
+                  {isSpinning ? "Выбираем…" : "Крутить"}
                 </button>
-              )}
+                {selectedItem && (
+                  <Link
+                    href={`/watch/${selectedItem.id}`}
+                    className="inline-flex min-h-12 items-center justify-center rounded-full border border-lime-200/20 px-5 font-black text-white/85 transition hover:-translate-y-0.5 hover:bg-white/8"
+                  >
+                    О выбранном фильме
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
-        </section>
+        </article>
 
         <Link href="/watch/new" className="watch-add-mobile">
           <span aria-hidden="true">+</span>

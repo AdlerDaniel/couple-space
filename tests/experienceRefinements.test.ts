@@ -109,6 +109,23 @@ test("Today movie actions open the dedicated add page and roulette", async () =>
   assert.match(addSource, /void addItem\(result\)/);
 });
 
+test("watch cards keep two compact actions and the official roulette uses the lab mechanic", async () => {
+  const watch = await readSource("app/watch/page.tsx");
+  const styles = await readSource("app/globals.css");
+  const actionsStart = watch.indexOf("watch-card-actions");
+  const actionsEnd = watch.indexOf("</article>", actionsStart);
+  const cardActions = watch.slice(actionsStart, actionsEnd);
+
+  assert.ok(actionsStart >= 0 && actionsEnd > actionsStart);
+  assert.match(cardActions, /Просмотрено/);
+  assert.match(cardActions, /Удалить/);
+  assert.doesNotMatch(cardActions, /Подробнее|Открыть ссылку|ExternalLink/);
+  assert.match(watch, /watch-official-wheel/);
+  assert.match(watch, /setRouletteTitle\(preview\?\.title/);
+  assert.doesNotMatch(watch, /Рулетка учитывает/);
+  assert.match(styles, /\.watch-official-wheel\.is-spinning/);
+});
+
 test("daily answer attachments keep voice recording as a separate action", async () => {
   const source = await readSource("app/questions/answer/page.tsx");
 

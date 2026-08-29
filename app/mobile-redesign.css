@@ -3446,22 +3446,19 @@ main textarea:not(.chat-composer-input) {
   .watch-page .watch-roulette-stage {
     display: grid !important;
     gap: 1rem !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
+    padding: 1.25rem !important;
   }
 
-  .watch-page .watch-roulette-stage .anime-roulette-wheel {
-    width: 12.5rem !important;
-    height: 12.5rem !important;
+  .watch-page .watch-roulette-stage .watch-official-wheel {
+    width: 15rem !important;
+    height: 15rem !important;
     border-width: 0.55rem !important;
     font-size: inherit !important;
   }
 
-  .watch-page .watch-roulette-hub {
-    width: 4.6rem !important;
-    height: 4.6rem !important;
+  .watch-page .watch-official-hub {
+    width: 4.5rem !important;
+    height: 4.5rem !important;
   }
 
   .watch-page .watch-roulette-copy h2 {

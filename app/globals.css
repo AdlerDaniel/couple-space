@@ -3116,33 +3116,41 @@ html.dark:has(.countdown-page) {
   background: color-mix(in srgb, currentColor 18%, transparent);
 }
 
-.watch-roulette-wheel {
-  position: relative;
-  border: 0.7rem solid rgba(255, 255, 255, 0.92);
-  color: #3f6212;
-  background:
-    radial-gradient(circle at center, transparent 0 59%, rgba(255, 255, 255, 0.58) 60% 61%, transparent 62%),
-    repeating-conic-gradient(from -22.5deg, #bef264 0deg 45deg, #65a30d 45deg 90deg);
-  box-shadow:
-    0 2rem 5rem rgba(77, 124, 15, 0.24),
-    inset 0 0 0 0.35rem rgba(54, 83, 20, 0.2),
-    inset 0 0 3rem rgba(255, 255, 255, 0.36);
+.watch-official-roulette {
+  background: linear-gradient(135deg, #1a2e05 0%, #27450a 58%, #18320c 100%);
+  box-shadow: 0 2rem 5rem rgba(54, 83, 20, 0.24);
 }
 
-.watch-roulette-wheel::before {
+.watch-official-wheel {
+  position: relative;
+  border: 0.65rem solid rgba(247, 254, 231, 0.94);
+  background:
+    radial-gradient(circle, transparent 0 58%, rgba(247, 254, 231, 0.2) 59% 60%, transparent 61%),
+    repeating-conic-gradient(from -22.5deg, #bef264 0 45deg, #4d7c0f 45deg 90deg);
+  box-shadow:
+    0 1.8rem 4rem rgba(0, 0, 0, 0.32),
+    inset 0 0 0 0.3rem rgba(247, 254, 231, 0.18);
+}
+
+.watch-official-wheel::after {
   content: "";
   position: absolute;
   inset: 9%;
-  border: 2px dashed rgba(54, 83, 20, 0.24);
+  border: 2px dashed rgba(247, 254, 231, 0.32);
   border-radius: 999px;
 }
 
-.watch-roulette-hub {
+.watch-official-wheel.is-spinning {
+  animation: watchOfficialSpin 1.55s cubic-bezier(0.16, 0.8, 0.24, 1) infinite;
+}
+
+.watch-official-hub {
   position: relative;
   z-index: 2;
-  border: 0.45rem solid rgba(255, 255, 255, 0.9);
-  background: linear-gradient(145deg, #f7fee7, #d9f99d);
-  box-shadow: 0 0.85rem 2rem rgba(54, 83, 20, 0.25), inset 0 1px 0 white;
+  color: #bef264;
+  background: #1a2e05;
+  box-shadow: 0 1rem 2.4rem rgba(0, 0, 0, 0.32);
+  outline: 0.5rem solid rgba(247, 254, 231, 0.12);
 }
 
 .watch-roulette-pointer {
@@ -3155,25 +3163,22 @@ html.dark:has(.countdown-page) {
   transform: translateX(-50%);
   border-left: 1.1rem solid transparent;
   border-right: 1.1rem solid transparent;
-  border-top: 2.4rem solid #365314;
-  filter: drop-shadow(0 0.45rem 0.5rem rgba(54, 83, 20, 0.28));
+  border-top: 2.2rem solid #d9f99d;
+  filter: drop-shadow(0 0.4rem 0.45rem rgba(0, 0, 0, 0.28));
 }
 
-.dark .watch-roulette-wheel {
-  border-color: rgba(236, 252, 203, 0.2);
-  color: #ecfccb;
-  background:
-    radial-gradient(circle at center, transparent 0 59%, rgba(255, 255, 255, 0.1) 60% 61%, transparent 62%),
-    repeating-conic-gradient(from -22.5deg, #84cc16 0deg 45deg, #365314 45deg 90deg);
-  box-shadow:
-    0 2rem 5rem rgba(0, 0, 0, 0.4),
-    inset 0 0 0 0.35rem rgba(236, 252, 203, 0.1),
-    inset 0 0 3rem rgba(190, 242, 100, 0.1);
+@keyframes watchOfficialSpin {
+  to { transform: rotate(1080deg); }
 }
 
-.dark .watch-roulette-hub {
-  border-color: rgba(236, 252, 203, 0.18);
-  background: linear-gradient(145deg, #1a2e05, #365314);
+.watch-card-action {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 @media (min-width: 641px) {
@@ -3337,5 +3342,6 @@ html.dark:has(.countdown-page) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .watch-official-wheel.is-spinning { animation: none; }
   .watch-lab-wheel.is-spinning { animation: none; }
 }

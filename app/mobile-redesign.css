@@ -1897,7 +1897,6 @@ main textarea {
     min-height: 2.8rem !important;
   }
 
-  /* Chat is a dedicated full-screen surface with a 56px header and roomy input. */
 
   /* Secondary pages inherit the same compact rhythm without losing their themes. */
   main:not(.mobile-fullscreen) .ui-section-title {

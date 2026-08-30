@@ -17,7 +17,7 @@ test("Sites loads database images directly and voice notes use the themed player
   assert.match(player, /type="range"/);
 });
 
-test("question results use avatars, a dedicated discussion chat, and an expiring inline editor", async () => {
+test("question results use avatars, a dedicated discussion, and an expiring inline editor", async () => {
   const source = await readSource("app/questions/today/page.tsx");
   const discussion = await readSource("app/questions/discussion/page.tsx");
 
@@ -28,7 +28,7 @@ test("question results use avatars, a dedicated discussion chat, and an expiring
   assert.match(source, /<Flame/);
   assert.match(source, /questions\/discussion\?answerId=/);
   assert.doesNotMatch(source, /<QuestionComments/);
-  assert.match(discussion, /question-discussion-chat-bg/);
+  assert.match(discussion, /question-discussion-feed-bg/);
   assert.match(discussion, /accept="image\/\*,video\/\*"/);
   assert.match(discussion, /accept="audio\/\*/);
   assert.match(discussion, /Аудиофайл/);
@@ -62,24 +62,18 @@ test("memory cards omit empty fallback copy and keep the composer compact", asyn
   assert.match(mobileCss, /memory-reaction-option\.is-active/);
 });
 
-test("chat uses a compact mobile profile header and integrated composer", async () => {
-  const chat = await readSource("app/chat/page.tsx");
-  const shell = await readSource("components/AppShell.tsx");
-  const css = await readSource("app/mobile-redesign.css");
+test("the retired chat is absent from routes, navigation and notification surfaces", async () => {
+  const [navigation, shell, notifications, settings] = await Promise.all([
+    readSource("lib/navigation.ts"),
+    readSource("components/AppShell.tsx"),
+    readSource("app/notifications/page.tsx"),
+    readSource("app/settings/page.tsx"),
+  ]);
 
-  assert.match(chat, /chat-partner-pill/);
-  assert.match(chat, /chat-mobile-more/);
-  assert.match(chat, /chat-composer/);
-  assert.match(chat, /placeholder="Сообщение"/);
-  assert.match(chat, /lineHeight \* 5/);
-  assert.match(chat, /overflow-y-hidden/);
-  assert.match(chat, /chat-messages-scroll/);
-  assert.match(chat, /isStickerMessage \|\| isVoiceMessage/);
-  assert.match(chat, /isBigEmojiMessage\s+\? "p-2"/);
-  assert.match(css, /\.chat-message-bubble:has\(\.chat-accent-audio\)/);
-  assert.match(css, /\.memories-grid > \.memory-card \{[\s\S]*?content-visibility: visible !important/);
-  assert.match(shell, /pathname === "\/chat"/);
-  assert.match(shell, /questions\/discussion/);
+  assert.doesNotMatch(navigation, /\/chat|label:\s*"Чат"|icon:\s*"chat"/);
+  assert.doesNotMatch(shell, /\/chat/);
+  assert.doesNotMatch(notifications, /label:\s*"Чат"|key:\s*"chat"/);
+  assert.doesNotMatch(settings, /\["chat",\s*"Чат"\]/);
 });
 
 test("archive and tracker keep dense two-column mobile lists", async () => {
@@ -139,7 +133,6 @@ test("daily answer attachments keep voice recording as a separate action", async
 test("attachment composers accept files pasted from the clipboard", async () => {
   const sources = await Promise.all([
     readSource("components/MemoryComposer.tsx"),
-    readSource("app/chat/page.tsx"),
     readSource("app/questions/discussion/page.tsx"),
   ]);
 
@@ -157,17 +150,4 @@ test("achievements no longer create notifications or navigation entries", async 
   assert.doesNotMatch(dashboard, /createOwnNotification/);
   assert.doesNotMatch(navigation, /icon:\s*"achievements"/);
   assert.match(notifications, /neq\("type", "achievement_unlocked"\)/);
-});
-
-test("either partner can hard-delete a chat message without a placeholder", async () => {
-  const chat = await readSource("app/chat/page.tsx");
-  const migration = await readSource(
-    "supabase/migrations/20260802120000_allow_couple_chat_hard_delete.sql",
-  );
-
-  assert.match(chat, /async function deleteForEveryone/);
-  assert.match(chat, /\.delete\(\)\s*\.eq\("id", message\.id\)/);
-  assert.doesNotMatch(chat, />Сообщение удалено</);
-  assert.match(migration, /for delete\s+to authenticated/);
-  assert.match(migration, /auth\.uid\(\)[\s\S]*partner_one_id/);
 });

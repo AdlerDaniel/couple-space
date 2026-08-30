@@ -24,21 +24,6 @@ test("global AnimeJS runtime is loaded on demand and skipped on phones", async (
   assert.match(source, /saveData/);
 });
 
-test("chat initially loads recent messages and paginates older history", async () => {
-  const [page, repository, utils] = await Promise.all([
-    readSource("app/chat/page.tsx"),
-    readSource("app/chat/chatRepository.ts"),
-    readSource("app/chat/chatUtils.ts"),
-  ]);
-  const source = `${page}\n${repository}\n${utils}`;
-
-  assert.match(source, /CHAT_PAGE_SIZE = 80/);
-  assert.match(source, /order\("created_at", \{ ascending: false \}\)/);
-  assert.match(source, /\.lt\("created_at", before\)/);
-  assert.match(source, /Показать предыдущие сообщения/);
-  assert.match(source, /preload="none"/);
-});
-
 test("memories defer offscreen cards and audio downloads", async () => {
   const source = await readSource("app/memories/page.tsx");
   const player = await readSource("components/AccentAudioPlayer.tsx");

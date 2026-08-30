@@ -2,6 +2,15 @@ import { supabase } from "@/lib/supabaseClient";
 
 export const notificationsUpdatedEventName = "couple-space:notifications-updated";
 
+type NotificationLike = {
+  type: string;
+  href?: string | null;
+};
+
+export function isVisibleNotification(notification: NotificationLike) {
+  return !notification.type.includes("chat") && !notification.href?.startsWith("/chat");
+}
+
 type CoupleLike = {
   id: string;
   partner_one_id: string;

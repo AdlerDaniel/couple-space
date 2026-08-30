@@ -31,9 +31,8 @@ export default function CouplePresenceTracker() {
         });
       };
 
-      // Presence is deliberately kept on its own topic. Reusing the chat topic
-      // can return an already subscribed channel, after which Realtime rejects
-      // any postgres_changes callbacks added by the chat screen.
+      // Presence is deliberately kept on its own topic so route-level Realtime
+      // subscriptions cannot disconnect the global presence tracker.
       channel = supabase.channel(`couple-presence:${couple.id}:${user.id}`);
       channel.subscribe((status) => {
         if (status === "SUBSCRIBED") void publish();

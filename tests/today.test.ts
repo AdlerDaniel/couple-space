@@ -45,11 +45,11 @@ test("today next step prioritizes unread before answering", () => {
   const step = getTodayNextStep({
     ...baseInput,
     hasUnread: true,
-    unreadHref: "/chat",
+    unreadHref: "/notifications",
   });
 
   assert.equal(step.id, "unread");
-  assert.equal(step.href, "/chat");
+  assert.equal(step.href, "/notifications");
 });
 
 test("today next step handles question states", () => {

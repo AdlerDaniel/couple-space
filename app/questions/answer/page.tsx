@@ -731,7 +731,7 @@ export default function QuestionAnswerPage() {
                           {Array.from({ length: 28 }).map((_, index) => (
                             <span
                               key={index}
-                              className={`w-1 rounded-full bg-white/75 ${isRecordingPaused ? "" : "chat-voice-wave"}`}
+                              className={`w-1 rounded-full bg-white/75 ${isRecordingPaused ? "" : "voice-recording-wave"}`}
                               style={{
                                 height: Math.max(5, 10 + Math.sin(index * 0.8) * 8),
                                 animationDelay: `${index * 0.04}s`,

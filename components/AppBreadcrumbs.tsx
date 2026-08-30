@@ -14,7 +14,7 @@ export default function AppBreadcrumbs() {
   const breadcrumbs = getBreadcrumbs(pathname);
   const meta = getRouteMeta(pathname);
 
-  if (breadcrumbs.length === 0 || pathname === "/today" || pathname.startsWith("/chat")) {
+  if (breadcrumbs.length === 0 || pathname === "/today") {
     return null;
   }
 

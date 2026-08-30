@@ -81,7 +81,7 @@ export function getTodayNextStep(input: TodayNextStepInput): TodayNextStep {
       id: "login",
       label: "Первый шаг",
       title: "Войдите, чтобы открыть день пары",
-      text: "После входа здесь появится вопрос дня, чат и лучший следующий шаг.",
+      text: "После входа здесь появится вопрос дня и лучший следующий шаг.",
       href: "/login",
       button: "Войти",
       icon: "↗",

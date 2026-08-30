@@ -17,15 +17,6 @@ test("questions support image, audio upload and compatible voice recording", asy
   assert.doesNotMatch(source, /new MediaRecorder\(/);
 });
 
-test("chat exposes separate media and audio pickers and does not use storage upsert", async () => {
-  const source = await readSource("app/chat/page.tsx");
-  assert.match(source, /accept="image\/\*,video\/\*"/);
-  assert.match(source, /accept="audio\/\*/);
-  assert.match(source, /Аудиофайл/);
-  assert.match(source, /upload\(filePath, uploadFile, \{ upsert: false \}\)/);
-  assert.doesNotMatch(source, /Р—Р°|РРґ|\?\?\?\?/);
-});
-
 test("memories support photo, video, files, uploaded audio and recorded voice", async () => {
   const source = await readSource("components/MemoryComposer.tsx");
   assert.match(source, /accept="image\/\*,video\/\*"/);

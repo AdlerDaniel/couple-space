@@ -38,7 +38,7 @@ test("question answers use integrated partner-only reactions and compact discuss
   assert.doesNotMatch(reactions, /Короткий комментарий/);
 });
 
-test("textareas size to their content outside the chat composer", async () => {
+test("textareas size to their content", async () => {
   const css = await readFile(new URL("../app/mobile-redesign.css", import.meta.url), "utf8");
-  assert.match(css, /textarea:not\(\.chat-composer-input\)[\s\S]*field-sizing:\s*content/);
+  assert.match(css, /main textarea[\s\S]*field-sizing:\s*content/);
 });

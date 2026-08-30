@@ -391,7 +391,6 @@ export default function TodayPage() {
               {isMoreOpen && (
                 <div className="today-more-list mt-2 grid gap-1 p-2 sm:grid-cols-3">
                   {[
-                    { label: "Чат", text: "Написать партнёру", href: "/chat", icon: "chat" as const },
                     { label: "Трекер", text: "Отметить прогресс", href: "/tracker", icon: "tracker" as const },
                     { label: "Кабинет", text: "Посмотреть итоги", href: "/dashboard", icon: "dashboard" as const },
                   ].map((item) => (

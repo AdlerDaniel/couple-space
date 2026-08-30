@@ -3,7 +3,6 @@ export type NavIconName =
   | "today"
   | "questions"
   | "watch"
-  | "chat"
   | "dashboard"
   | "memories"
   | "tracker"
@@ -41,13 +40,11 @@ export const mobileMainLinks: NavLinkItem[] = [
 export const mobileMoreLinks: NavLinkItem[] = [
   { label: "Сегодня", href: "/today", icon: "today", description: "Лучший следующий шаг" },
   { label: "Кабинет", href: "/dashboard", icon: "dashboard", description: "Аналитика пары" },
-  { label: "Чат", href: "/chat", icon: "chat", description: "Сообщения" },
   { label: "Отсчёт", href: "/countdown", icon: "countdown", description: "Таймеры до важных событий" },
 ];
 
 export const secondaryNavLinks: NavLinkItem[] = [
   { label: "Кабинет", href: "/dashboard", icon: "dashboard", description: "Аналитика пары" },
-  { label: "Чат", href: "/chat", icon: "chat", description: "Сообщения" },
   { label: "Трекер", href: "/tracker", icon: "tracker", description: "Цели и привычки" },
 ];
 
@@ -101,11 +98,6 @@ export const routeMeta: Record<
     label: "Кино-комната",
     description: "Экспериментальная версия списка фильмов",
     icon: "watch",
-  },
-  "/chat": {
-    label: "Чат",
-    description: "Сообщения и реакции",
-    icon: "chat",
   },
   "/dashboard": {
     label: "Кабинет",

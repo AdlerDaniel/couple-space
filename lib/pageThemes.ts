@@ -11,7 +11,6 @@ export type PageThemeKey =
   | "watch"
   | "tracker"
   | "countdown"
-  | "chat"
   | "login"
   | "default";
 
@@ -122,16 +121,6 @@ export const pageThemes: Record<PageThemeKey, PageTheme> = {
       boxShadow: "0 16px 50px rgba(219, 39, 119, 0.2)",
     },
   },
-  chat: {
-    key: "chat",
-    accent: "#0284c7",
-    soft: "#e0f2fe",
-    nav: {
-      background: "linear-gradient(135deg, rgba(2, 132, 199, 0.24), rgba(14, 165, 233, 0.14))",
-      borderColor: "rgba(2, 132, 199, 0.34)",
-      boxShadow: "0 16px 50px rgba(2, 132, 199, 0.2)",
-    },
-  },
   login: {
     key: "login",
     accent: "#be123c",
@@ -155,7 +144,6 @@ export function getPageThemeKey(pathname: string): PageThemeKey {
   if (pathname.startsWith("/watch")) return "watch";
   if (pathname.startsWith("/tracker")) return "tracker";
   if (pathname.startsWith("/countdown")) return "countdown";
-  if (pathname.startsWith("/chat")) return "chat";
   if (pathname.startsWith("/login")) return "login";
   return "default";
 }

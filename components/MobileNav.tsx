@@ -1,6 +1,6 @@
 "use client";
 
-import { notificationsUpdatedEventName } from "@/lib/notifications";
+import { isVisibleNotification, notificationsUpdatedEventName } from "@/lib/notifications";
 import {
   accountNavLinks,
   isActivePath,
@@ -28,7 +28,6 @@ type CoupleNotification = {
 
 function getNotificationIcon(type: string): NavIconName {
   if (type.includes("question")) return "questions";
-  if (type.includes("chat")) return "chat";
   if (type.includes("memory")) return "memories";
   if (type.includes("countdown")) return "countdown";
   return "notifications";
@@ -79,7 +78,7 @@ export default function MobileNav() {
         .limit(12);
 
       if (!ignore) {
-        setNotifications((data || []) as CoupleNotification[]);
+        setNotifications(((data || []) as CoupleNotification[]).filter(isVisibleNotification));
       }
     }
 
@@ -147,7 +146,7 @@ export default function MobileNav() {
             .order("created_at", { ascending: false })
             .limit(12);
 
-          setNotifications((data || []) as CoupleNotification[]);
+          setNotifications(((data || []) as CoupleNotification[]).filter(isVisibleNotification));
         }
       )
       .subscribe();
@@ -157,11 +156,7 @@ export default function MobileNav() {
     };
   }, [currentUserId]);
 
-  if (
-    pathname.startsWith("/chat") ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/logout")
-  ) {
+  if (pathname.startsWith("/login") || pathname.startsWith("/logout")) {
     return null;
   }
 

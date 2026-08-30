@@ -147,7 +147,7 @@ export default function AnimeRuntime() {
 
     const handleClick = async (event: MouseEvent) => {
       const target = (event.target as HTMLElement).closest<HTMLElement>(
-        "[data-anime-press], [data-anime-burst], .ui-button, .ui-button-secondary, .chat-reaction-pill",
+        "[data-anime-press], [data-anime-burst], .ui-button, .ui-button-secondary",
       );
       if (!target) return;
 
@@ -160,7 +160,7 @@ export default function AnimeRuntime() {
         ease: "out(3)",
       });
 
-      if (target.matches("[data-anime-burst], .chat-reaction-pill")) {
+      if (target.matches("[data-anime-burst]")) {
         const glyph = target.dataset.animeBurst || target.textContent?.trim().slice(0, 4) || "*";
         createBurst(event.clientX, event.clientY, glyph, anime);
       }

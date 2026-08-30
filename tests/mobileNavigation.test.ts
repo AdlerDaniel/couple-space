@@ -18,14 +18,14 @@ test("mobile dock keeps the four requested sections in the requested order", () 
 test("remaining primary mobile sections are available under More", () => {
   assert.deepEqual(
     mobileMoreLinks.map(({ href }) => href),
-    ["/today", "/dashboard", "/chat", "/countdown"]
+    ["/today", "/dashboard", "/countdown"]
   );
 });
 
 test("desktop sidebar keeps every section available and collapses overflow into More", async () => {
   assert.deepEqual(
     desktopNavLinks.map(({ href }) => href),
-    ["/today", "/questions", "/watch", "/memories", "/countdown", "/dashboard", "/chat", "/tracker"],
+    ["/today", "/questions", "/watch", "/memories", "/countdown", "/dashboard", "/tracker"],
   );
   assert.equal(desktopNavLinks.find(({ href }) => href === "/questions")?.label, "Вопрос дня");
   assert.equal(desktopNavLinks.find(({ href }) => href === "/watch")?.label, "Фильмы");

@@ -391,7 +391,7 @@ export default function QuestionDiscussionPage() {
           </div>
         </header>
 
-        <div className="question-discussion-chat-bg min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
+        <div className="question-discussion-feed-bg min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
           {isLoading ? (
             <div className="space-y-3 animate-pulse">
               <div className="h-14 w-3/5 rounded-3xl bg-emerald-100/80 dark:bg-white/8" />

@@ -5,7 +5,6 @@ const routes = [
   { name: "login", path: "/login" },
   { name: "questions", path: "/questions" },
   { name: "questions-today", path: "/questions/today" },
-  { name: "chat", path: "/chat" },
   { name: "memories", path: "/memories" },
   { name: "dashboard", path: "/dashboard" },
   { name: "profile", path: "/profile" },

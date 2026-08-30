@@ -21,7 +21,6 @@ test("emoji picker uses the complete local Microsoft Fluent Emoji catalog", asyn
 test("all user-facing emoji insertion points use the shared Fluent picker", async () => {
   const files = await Promise.all(
     [
-      "../app/chat/page.tsx",
       "../app/countdown/page.tsx",
       "../app/dashboard/page.tsx",
       "../components/MemoryComposer.tsx",

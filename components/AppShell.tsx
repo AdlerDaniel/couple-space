@@ -15,17 +15,17 @@ import VisualViewportInsets from "./VisualViewportInsets";
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/logout");
-  const isFullScreenChat = pathname === "/chat" || pathname.startsWith("/questions/discussion");
-  const hideAppChrome = isAuthPage || isFullScreenChat;
+  const isDiscussionPage = pathname.startsWith("/questions/discussion");
+  const hideAppChrome = isAuthPage || isDiscussionPage;
 
   return (
     <>
-      {!isFullScreenChat && <ThemeToggle />}
+      {!isDiscussionPage && <ThemeToggle />}
       <VisualViewportInsets />
       {!isAuthPage && <CouplePresenceTracker />}
-      {!isAuthPage && (!isFullScreenChat || pathname === "/chat") && <div className="hidden lg:block"><Navbar /></div>}
+      {!isAuthPage && !isDiscussionPage && <div className="hidden lg:block"><Navbar /></div>}
       {!hideAppChrome && <AppBreadcrumbs />}
-      <div className={isAuthPage || isFullScreenChat ? `min-w-0 flex-1 ${pathname === "/chat" ? "lg:pl-[5.25rem] 2xl:pl-[14.25rem]" : ""}` : "app-desktop-content min-w-0 flex-1"}>
+      <div className={isAuthPage || isDiscussionPage ? "min-w-0 flex-1" : "app-desktop-content min-w-0 flex-1"}>
         {children}
       </div>
       {!hideAppChrome && <MobileNav />}

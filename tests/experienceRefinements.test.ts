@@ -62,6 +62,26 @@ test("memory cards omit empty fallback copy and keep the composer compact", asyn
   assert.match(mobileCss, /memory-reaction-option\.is-active/);
 });
 
+test("memory lab keeps the full memory workflow while staying hidden from navigation", async () => {
+  const [lab, navigation, styles] = await Promise.all([
+    readSource("app/memories/lab/page.tsx"),
+    readSource("lib/navigation.ts"),
+    readSource("app/globals.css"),
+  ]);
+
+  assert.doesNotMatch(navigation, /\/memories\/lab/);
+  assert.match(lab, /from\("memories"\)/);
+  assert.match(lab, /from\("memory_comments"\)/);
+  assert.match(lab, /\/memories\/new\?edit=/);
+  assert.match(lab, /togglePinned/);
+  assert.match(lab, /deleteMemory/);
+  assert.match(lab, /toggleReaction/);
+  assert.match(lab, /AccentAudioPlayer/);
+  assert.match(lab, /attachment\.type === "video"/);
+  assert.match(lab, /postgres_changes/);
+  assert.match(styles, /\.memory-lab-page/);
+});
+
 test("the retired chat is absent from routes, navigation and notification surfaces", async () => {
   const [navigation, shell, notifications, settings] = await Promise.all([
     readSource("lib/navigation.ts"),

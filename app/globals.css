@@ -2964,3 +2964,951 @@ html.dark:has(.countdown-page) {
 @media (prefers-reduced-motion: reduce) {
   .watch-official-wheel.is-spinning { animation: none; }
 }
+
+/* Hidden memory laboratory: editorial archive with the regular memories data model. */
+.memory-lab-page {
+  --memory-lab-ink: #172033;
+  --memory-lab-muted: #68718a;
+  --memory-lab-paper: rgba(255, 255, 255, 0.82);
+  --memory-lab-line: rgba(79, 70, 229, 0.14);
+  --memory-lab-accent: #4f46e5;
+  --memory-lab-warm: #f97360;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 12% 5%, rgba(249, 115, 96, 0.18), transparent 24rem),
+    radial-gradient(circle at 92% 12%, rgba(79, 70, 229, 0.19), transparent 28rem),
+    linear-gradient(145deg, #f7f7ff 0%, #f8fafc 48%, #fff7f4 100%);
+}
+
+.dark .memory-lab-page {
+  --memory-lab-ink: #f8fafc;
+  --memory-lab-muted: #a9b0c2;
+  --memory-lab-paper: rgba(15, 23, 42, 0.82);
+  --memory-lab-line: rgba(165, 180, 252, 0.15);
+  --memory-lab-accent: #818cf8;
+  --memory-lab-warm: #fb8b78;
+  background:
+    radial-gradient(circle at 12% 5%, rgba(249, 115, 96, 0.12), transparent 24rem),
+    radial-gradient(circle at 92% 12%, rgba(99, 102, 241, 0.22), transparent 30rem),
+    linear-gradient(145deg, #090c16 0%, #101527 52%, #11101d 100%);
+}
+
+.memory-lab-shell {
+  position: relative;
+}
+
+.memory-lab-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(19rem, 0.7fr);
+  align-items: end;
+  gap: 2rem;
+  margin-bottom: 1.2rem;
+  padding: clamp(1.2rem, 3vw, 2.6rem);
+  border: 1px solid var(--memory-lab-line);
+  border-radius: clamp(1.7rem, 3vw, 3rem);
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.42)),
+    repeating-linear-gradient(90deg, transparent 0 3rem, rgba(79, 70, 229, 0.035) 3rem calc(3rem + 1px));
+  box-shadow: 0 2rem 6rem rgba(49, 46, 129, 0.13);
+  backdrop-filter: blur(22px);
+}
+
+.dark .memory-lab-hero {
+  background:
+    linear-gradient(115deg, rgba(24, 31, 55, 0.94), rgba(19, 24, 43, 0.7)),
+    repeating-linear-gradient(90deg, transparent 0 3rem, rgba(165, 180, 252, 0.04) 3rem calc(3rem + 1px));
+  box-shadow: 0 2rem 7rem rgba(0, 0, 0, 0.32);
+}
+
+.memory-lab-hero-copy > p {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--memory-lab-muted);
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.memory-lab-hero-copy > p > span {
+  width: 1.8rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--memory-lab-warm);
+}
+
+.memory-lab-hero h1 {
+  margin-top: 0.75rem;
+  color: var(--memory-lab-ink);
+  font-size: clamp(2.8rem, 6vw, 6.8rem);
+  font-weight: 950;
+  letter-spacing: -0.065em;
+  line-height: 0.82;
+}
+
+.memory-lab-hero h1 em {
+  color: var(--memory-lab-accent);
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+}
+
+.memory-lab-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.5rem;
+}
+
+.memory-lab-primary,
+.memory-lab-secondary {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 999px;
+  padding: 0.75rem 1.15rem;
+  font-size: 0.82rem;
+  font-weight: 900;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.memory-lab-primary {
+  background: var(--memory-lab-accent);
+  color: white;
+  box-shadow: 0 1rem 2.4rem rgba(79, 70, 229, 0.26);
+}
+
+.memory-lab-secondary {
+  border: 1px solid var(--memory-lab-line);
+  background: var(--memory-lab-paper);
+  color: var(--memory-lab-ink);
+}
+
+.memory-lab-primary:hover,
+.memory-lab-secondary:hover {
+  transform: translateY(-2px);
+}
+
+.memory-lab-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.memory-lab-overview > div {
+  min-height: 7rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--memory-lab-line);
+  border-radius: 1.45rem;
+  padding: 1rem;
+  background: var(--memory-lab-paper);
+}
+
+.memory-lab-overview strong {
+  color: var(--memory-lab-accent);
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+  font-weight: 950;
+  line-height: 1;
+}
+
+.memory-lab-overview span {
+  color: var(--memory-lab-muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.memory-lab-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1rem 0;
+  border: 1px solid rgba(249, 115, 96, 0.25);
+  border-radius: 1.2rem;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 237, 232, 0.86);
+  color: #9f3228;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.dark .memory-lab-message {
+  background: rgba(127, 29, 29, 0.25);
+  color: #fecaca;
+}
+
+.memory-lab-toolbar {
+  position: sticky;
+  z-index: 30;
+  top: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.1rem 0 2rem;
+  border: 1px solid var(--memory-lab-line);
+  border-radius: 1.7rem;
+  padding: 0.8rem;
+  background: color-mix(in srgb, var(--memory-lab-paper) 92%, transparent);
+  box-shadow: 0 1.1rem 3rem rgba(49, 46, 129, 0.09);
+  backdrop-filter: blur(22px);
+}
+
+.memory-lab-search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 3rem;
+  border: 1px solid var(--memory-lab-line);
+  border-radius: 1.1rem;
+  padding: 0 0.8rem;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--memory-lab-muted);
+}
+
+.dark .memory-lab-search {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.memory-lab-search input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--memory-lab-ink);
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.memory-lab-search kbd {
+  border: 1px solid var(--memory-lab-line);
+  border-radius: 0.45rem;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.65rem;
+}
+
+.memory-lab-toolbar-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.memory-lab-filter-row,
+.memory-lab-years {
+  display: flex;
+  min-width: 0;
+  gap: 0.45rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.memory-lab-filter-row::-webkit-scrollbar,
+.memory-lab-years::-webkit-scrollbar {
+  display: none;
+}
+
+.memory-lab-filter-row button,
+.memory-lab-years button,
+.memory-lab-view-controls button,
+.memory-lab-view-controls select {
+  flex: 0 0 auto;
+  border: 1px solid var(--memory-lab-line);
+  background: transparent;
+  color: var(--memory-lab-muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.memory-lab-filter-row button,
+.memory-lab-years button {
+  display: inline-flex;
+  min-height: 2.3rem;
+  align-items: center;
+  gap: 0.38rem;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+}
+
+.memory-lab-filter-row button.is-active,
+.memory-lab-years button.is-active,
+.memory-lab-view-controls button.is-active {
+  border-color: var(--memory-lab-accent);
+  background: var(--memory-lab-accent);
+  color: white;
+}
+
+.memory-lab-years {
+  padding-top: 0.15rem;
+}
+
+.memory-lab-years button span {
+  display: grid;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.1);
+  padding: 0 0.25rem;
+  font-size: 0.58rem;
+}
+
+.memory-lab-years button.is-active span {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.memory-lab-view-controls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.35rem;
+}
+
+.memory-lab-view-controls select,
+.memory-lab-view-controls button {
+  min-height: 2.35rem;
+  border-radius: 0.85rem;
+  padding: 0 0.65rem;
+}
+
+.memory-lab-view-controls button {
+  display: grid;
+  width: 2.35rem;
+  place-items: center;
+  padding: 0;
+}
+
+.memory-lab-results-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.memory-lab-results-head p {
+  color: var(--memory-lab-warm);
+  font-size: 0.65rem;
+  font-weight: 950;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.memory-lab-results-head h2 {
+  color: var(--memory-lab-ink);
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.memory-lab-results-head > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--memory-lab-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.memory-lab-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(0.65rem, 1.5vw, 1.15rem);
+}
+
+.memory-lab-card {
+  position: relative;
+  min-width: 0;
+  overflow: visible;
+  border: 1px solid var(--memory-lab-line);
+  border-radius: 1.5rem;
+  background: var(--memory-lab-paper);
+  box-shadow: 0 1.1rem 3rem rgba(49, 46, 129, 0.09);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.memory-lab-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 1.5rem 3.8rem rgba(49, 46, 129, 0.16);
+}
+
+.memory-lab-card:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--memory-lab-accent) 44%, transparent);
+  outline-offset: 3px;
+}
+
+.memory-lab-card.is-featured {
+  grid-column: span 2;
+}
+
+.memory-lab-card.is-picker-open {
+  z-index: 80;
+}
+
+.memory-lab-card-media {
+  position: relative;
+  aspect-ratio: 1 / 0.82;
+  overflow: hidden;
+  border-radius: 1.4rem 1.4rem 0.85rem 0.85rem;
+  background: #e7e8ff;
+}
+
+.dark .memory-lab-card-media {
+  background: #171d35;
+}
+
+.memory-lab-card.is-featured .memory-lab-card-media {
+  aspect-ratio: 2 / 0.88;
+}
+
+.memory-lab-card-media img {
+  cursor: zoom-in;
+}
+
+.memory-lab-card-placeholder {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.9), transparent 40%),
+    repeating-linear-gradient(135deg, rgba(79, 70, 229, 0.09) 0 1px, transparent 1px 1rem);
+  color: var(--memory-lab-accent);
+  font-weight: 900;
+}
+
+.dark .memory-lab-card-placeholder {
+  background:
+    radial-gradient(circle at center, rgba(79, 70, 229, 0.18), transparent 40%),
+    repeating-linear-gradient(135deg, rgba(165, 180, 252, 0.07) 0 1px, transparent 1px 1rem);
+}
+
+.memory-lab-card-topline {
+  position: absolute;
+  inset: 0.65rem 0.65rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.memory-lab-card-topline span,
+.memory-lab-card-topline button {
+  display: inline-flex;
+  min-height: 1.9rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.62);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 900;
+  backdrop-filter: blur(10px);
+}
+
+.memory-lab-card-topline span {
+  padding: 0.3rem 0.6rem;
+}
+
+.memory-lab-card-topline button {
+  width: 1.9rem;
+}
+
+.memory-lab-card-body {
+  padding: 0.9rem;
+}
+
+.memory-lab-author-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--memory-lab-muted);
+}
+
+.memory-lab-avatar {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--memory-lab-accent);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.memory-lab-card-body > h2 {
+  margin-top: 0.8rem;
+  overflow-wrap: anywhere;
+  color: var(--memory-lab-ink);
+  font-size: clamp(1rem, 1.6vw, 1.35rem);
+  font-weight: 950;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+
+.memory-lab-description {
+  display: -webkit-box;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  color: var(--memory-lab-muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.memory-lab-attachments {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.memory-lab-file {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--memory-lab-line);
+  border-radius: 0.85rem;
+  padding: 0.55rem 0.65rem;
+  background: rgba(79, 70, 229, 0.06);
+  color: var(--memory-lab-accent);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.memory-lab-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.8rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--memory-lab-line);
+}
+
+.memory-lab-reactions {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.memory-lab-reactions > button,
+.memory-lab-comment,
+.memory-lab-menu > summary {
+  display: inline-flex;
+  min-width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  border: 1px solid var(--memory-lab-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.64);
+  color: var(--memory-lab-muted);
+}
+
+.dark .memory-lab-reactions > button,
+.dark .memory-lab-comment,
+.dark .memory-lab-menu > summary {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.memory-lab-reactions > button.is-active {
+  border-color: var(--memory-lab-accent);
+  background: color-mix(in srgb, var(--memory-lab-accent) 16%, transparent);
+}
+
+.memory-lab-reactions b,
+.memory-lab-comment span {
+  font-size: 0.62rem;
+  font-weight: 950;
+}
+
+.memory-lab-menu {
+  position: relative;
+  z-index: 20;
+}
+
+.memory-lab-menu > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.memory-lab-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.memory-lab-menu > div {
+  position: absolute;
+  z-index: 30;
+  right: 0;
+  bottom: calc(100% + 0.45rem);
+  display: grid;
+  width: 11.5rem;
+  gap: 0.2rem;
+  border: 1px solid var(--memory-lab-line);
+  border-radius: 1rem;
+  padding: 0.35rem;
+  background: var(--memory-lab-paper);
+  box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.22);
+  backdrop-filter: blur(18px);
+}
+
+.memory-lab-menu > div > * {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.7rem;
+  padding: 0.6rem;
+  color: var(--memory-lab-ink);
+  font-size: 0.7rem;
+  font-weight: 850;
+  text-align: left;
+}
+
+.memory-lab-menu .is-danger,
+.memory-lab-viewer-links .is-danger {
+  color: #e11d48;
+}
+
+.memory-lab-timeline {
+  display: grid;
+  gap: 2rem;
+}
+
+.memory-lab-timeline-group {
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr);
+  gap: 1rem;
+  border-top: 1px solid var(--memory-lab-line);
+  padding-top: 1rem;
+}
+
+.memory-lab-timeline-group > header {
+  position: sticky;
+  top: 12rem;
+  display: flex;
+  height: max-content;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.memory-lab-timeline-group > header > span {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--memory-lab-accent);
+  color: white;
+}
+
+.memory-lab-timeline-group h2 {
+  color: var(--memory-lab-ink);
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.memory-lab-timeline-group p {
+  color: var(--memory-lab-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.memory-lab-timeline-group > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.8rem;
+}
+
+.memory-lab-skeleton {
+  aspect-ratio: 0.82;
+  border: 1px solid var(--memory-lab-line);
+  border-radius: 1.5rem;
+  background: linear-gradient(110deg, rgba(255,255,255,0.45) 25%, rgba(99,102,241,0.1) 40%, rgba(255,255,255,0.45) 55%);
+  background-size: 250% 100%;
+  animation: memoryLabSkeleton 1.6s ease infinite;
+}
+
+@keyframes memoryLabSkeleton {
+  to { background-position: -180% 0; }
+}
+
+.memory-lab-empty {
+  display: grid;
+  min-height: 22rem;
+  place-items: center;
+  align-content: center;
+  gap: 0.8rem;
+  border: 1px dashed var(--memory-lab-line);
+  border-radius: 2rem;
+  padding: 2rem;
+  background: var(--memory-lab-paper);
+  text-align: center;
+}
+
+.memory-lab-empty > span {
+  display: grid;
+  width: 4rem;
+  height: 4rem;
+  place-items: center;
+  border-radius: 1.4rem;
+  background: var(--memory-lab-accent);
+  color: white;
+  transform: rotate(-5deg);
+}
+
+.memory-lab-empty h2 {
+  color: var(--memory-lab-ink);
+  font-size: 1.8rem;
+  font-weight: 950;
+}
+
+.memory-lab-empty p {
+  max-width: 34rem;
+  color: var(--memory-lab-muted);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.memory-lab-empty button {
+  border-radius: 999px;
+  padding: 0.75rem 1rem;
+  background: var(--memory-lab-accent);
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.memory-lab-viewer {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(4, 6, 14, 0.91);
+  backdrop-filter: blur(18px);
+}
+
+.memory-lab-viewer-card {
+  display: grid;
+  width: min(76rem, calc(100vw - 5rem));
+  max-height: min(50rem, calc(100dvh - 3rem));
+  grid-template-columns: minmax(0, 1.5fr) minmax(18rem, 0.6fr);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 2rem;
+  background: #0d1222;
+  box-shadow: 0 2rem 7rem rgba(0, 0, 0, 0.5);
+}
+
+.memory-lab-viewer-media {
+  display: grid;
+  min-height: 30rem;
+  place-items: center;
+  overflow: hidden;
+  background: #05070d;
+}
+
+.memory-lab-viewer-media > div {
+  display: grid;
+  place-items: center;
+  gap: 0.8rem;
+  color: rgba(255, 255, 255, 0.58);
+  font-weight: 850;
+}
+
+.memory-lab-viewer-copy {
+  overflow-y: auto;
+  padding: 1.5rem;
+  color: white;
+}
+
+.memory-lab-viewer-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #a5b4fc;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.memory-lab-viewer-copy > h2 {
+  margin-top: 0.8rem;
+  overflow-wrap: anywhere;
+  font-size: clamp(1.7rem, 3vw, 3rem);
+  font-weight: 950;
+  letter-spacing: -0.045em;
+  line-height: 0.96;
+}
+
+.memory-lab-viewer-copy > p {
+  margin-top: 0.9rem;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.84rem;
+  font-weight: 650;
+  line-height: 1.65;
+}
+
+.memory-lab-viewer-links {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+
+.memory-lab-viewer-links > * {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.9rem;
+  padding: 0.7rem;
+  background: rgba(255, 255, 255, 0.055);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.memory-lab-viewer-progress {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.65rem;
+  font-weight: 850;
+}
+
+.memory-lab-viewer-progress i {
+  display: block;
+  max-width: 100%;
+  height: 2px;
+  background: #818cf8;
+}
+
+.memory-lab-viewer-close,
+.memory-lab-viewer-arrow {
+  position: fixed;
+  z-index: 3;
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: white;
+  backdrop-filter: blur(12px);
+}
+
+.memory-lab-viewer-close {
+  top: 1rem;
+  right: 1rem;
+}
+
+.memory-lab-viewer-arrow {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.memory-lab-viewer-arrow.is-left { left: 0.7rem; }
+.memory-lab-viewer-arrow.is-right { right: 0.7rem; }
+
+.memory-lab-fab {
+  position: fixed;
+  z-index: 40;
+  right: 1.1rem;
+  bottom: 1.1rem;
+  display: none;
+  min-height: 3.1rem;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  background: var(--memory-lab-accent);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 900;
+  box-shadow: 0 1rem 2.8rem rgba(79, 70, 229, 0.35);
+}
+
+@media (max-width: 1100px) {
+  .memory-lab-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .memory-lab-timeline-group > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767px) {
+  .memory-lab-page { padding-top: 4.5rem !important; }
+  .memory-lab-hero { grid-template-columns: 1fr; gap: 1.1rem; padding: 1.1rem; border-radius: 1.6rem; }
+  .memory-lab-hero h1 { font-size: clamp(2.55rem, 14vw, 4.5rem); }
+  .memory-lab-overview { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem; }
+  .memory-lab-overview > div { min-height: 4.8rem; border-radius: 1rem; padding: 0.6rem; }
+  .memory-lab-overview strong { font-size: 1.25rem; }
+  .memory-lab-overview span { font-size: 0.52rem; line-height: 1.15; }
+  .memory-lab-toolbar { top: 0.4rem; margin-bottom: 1.4rem; border-radius: 1.3rem; padding: 0.55rem; }
+  .memory-lab-toolbar-row { display: grid; }
+  .memory-lab-filter-row { width: 100%; }
+  .memory-lab-view-controls { width: 100%; }
+  .memory-lab-view-controls select { min-width: 0; flex: 1; }
+  .memory-lab-results-head > span { display: none; }
+  .memory-lab-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
+  .memory-lab-card.is-featured { grid-column: span 2; }
+  .memory-lab-card { border-radius: 1.05rem; }
+  .memory-lab-card-media { border-radius: 1rem 1rem 0.65rem 0.65rem; }
+  .memory-lab-card-body { padding: 0.62rem; }
+  .memory-lab-author-row img,
+  .memory-lab-avatar { width: 1.55rem !important; height: 1.55rem !important; }
+  .memory-lab-card-body > h2 { margin-top: 0.55rem; font-size: 0.92rem; }
+  .memory-lab-description { font-size: 0.65rem; -webkit-line-clamp: 2; }
+  .memory-lab-actions { gap: 0.2rem; }
+  .memory-lab-reactions { gap: 0.2rem; }
+  .memory-lab-reactions > button,
+  .memory-lab-comment,
+  .memory-lab-menu > summary { min-width: 1.8rem; height: 1.8rem; }
+  .memory-lab-timeline-group { grid-template-columns: 1fr; }
+  .memory-lab-timeline-group > header { position: static; }
+  .memory-lab-timeline-group > div { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
+  .memory-lab-viewer { padding: 0; }
+  .memory-lab-viewer-card { width: 100vw; height: 100dvh; max-height: none; grid-template-columns: 1fr; grid-template-rows: minmax(40dvh, 1fr) auto; border: 0; border-radius: 0; }
+  .memory-lab-viewer-media { min-height: 0; }
+  .memory-lab-viewer-copy { max-height: 46dvh; padding: 1rem 1rem 5.5rem; }
+  .memory-lab-viewer-arrow { display: none; }
+  .memory-lab-viewer-close { top: 0.7rem; right: 0.7rem; }
+  .memory-lab-fab { display: inline-flex; bottom: 5.8rem; }
+  .memory-lab-hero-actions .memory-lab-primary { display: none; }
+}
+
+@media (max-width: 390px) {
+  .memory-lab-hero-actions { display: grid; grid-template-columns: 1fr; }
+  .memory-lab-primary,
+  .memory-lab-secondary { width: 100%; }
+  .memory-lab-card-topline span { font-size: 0; width: 1.9rem; padding: 0; }
+  .memory-lab-card-topline span svg { width: 13px; height: 13px; }
+  .memory-lab-attachments .accent-audio-player { min-width: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memory-lab-card,
+  .memory-lab-primary,
+  .memory-lab-secondary { transition: none; }
+  .memory-lab-skeleton { animation: none; }
+}

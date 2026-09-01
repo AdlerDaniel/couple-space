@@ -4114,7 +4114,7 @@ html.dark:has(.countdown-page) {
   .memory-lab-story-rail button > span { width: 3.8rem; }
   .memory-lab-story-rail button > span { height: 3.8rem; border-radius: 1.05rem; }
   .memory-lab-story-rail img { border-radius: 0.95rem; }
-  .memory-lab-toolbar { top: 0.4rem; margin-bottom: 1.4rem; border-radius: 1.3rem; padding: 0.55rem; }
+  .memory-lab-toolbar { position: relative; top: auto; margin-bottom: 1.4rem; border-radius: 1.3rem; padding: 0.55rem; }
   .memory-lab-toolbar-row { display: grid; }
   .memory-lab-filter-row { width: 100%; }
   .memory-lab-view-controls { width: 100%; }
@@ -4128,6 +4128,12 @@ html.dark:has(.countdown-page) {
   .memory-lab-author-row img,
   .memory-lab-avatar { width: 1.55rem !important; height: 1.55rem !important; }
   .memory-lab-card-body > h2 { margin-top: 0.55rem; font-size: 0.92rem; }
+  .memory-lab-card:not(.is-featured) .memory-lab-card-body > h2 {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
   .memory-lab-description { font-size: 0.65rem; -webkit-line-clamp: 2; }
   .memory-lab-audio-note { border-radius: 0.82rem; padding: 0.38rem; }
   .memory-lab-audio-note > div:first-child { gap: 0.3rem; margin-bottom: 0.3rem; }
@@ -4168,6 +4174,8 @@ html.dark:has(.countdown-page) {
   .memory-lab-card-topline span svg { width: 13px; height: 13px; }
   .memory-lab-attachments .accent-audio-player { min-width: 0; }
   .memory-lab-comment-peek > svg { display: none; }
+  .memory-lab-fab { width: 3.15rem; min-height: 3.15rem; justify-content: center; padding: 0; }
+  .memory-lab-fab span { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

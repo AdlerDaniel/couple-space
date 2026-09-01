@@ -79,7 +79,12 @@ test("memory lab keeps the full memory workflow while staying hidden from naviga
   assert.match(lab, /AccentAudioPlayer/);
   assert.match(lab, /attachment\.type === "video"/);
   assert.match(lab, /postgres_changes/);
+  assert.match(lab, /memory-lab-story-strip/);
+  assert.match(lab, /memory-lab-comment-peek/);
+  assert.match(lab, /memory-lab-audio-note/);
+  assert.match(lab, /accent="#2563eb"/);
   assert.match(styles, /\.memory-lab-page/);
+  assert.match(styles, /--memory-lab-accent: #2563eb/);
 });
 
 test("the retired chat is absent from routes, navigation and notification surfaces", async () => {

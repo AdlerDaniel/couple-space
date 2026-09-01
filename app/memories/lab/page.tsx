@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  ChevronRight,
   Clock3,
   FileText,
   Grid2X2,
@@ -17,6 +18,7 @@ import {
   Images,
   ListTree,
   MessageCircle,
+  Mic2,
   MoreHorizontal,
   Pencil,
   Pin,
@@ -290,6 +292,10 @@ export default function MemoriesLabPage() {
     years: years.length,
   }), [memories, years.length]);
 
+  const storyMemories = useMemo(() => memories
+    .filter((memory) => Boolean(decodeMemoryMedia(memory.image).photoUrl))
+    .slice(0, 8), [memories]);
+
   const getMemoryUserMeta = useCallback((userId: string) => {
     if (!couple) return { name: "?", avatar: null as string | null, initial: "?" };
     if (userId === couple.partner_one_id) {
@@ -421,13 +427,27 @@ export default function MemoriesLabPage() {
     if (!media.voiceUrl && attachments.length === 0) return null;
     return (
       <div className="memory-lab-attachments">
-        {media.voiceUrl && <AccentAudioPlayer src={media.voiceUrl} accent="#4f46e5" label="Голосовое воспоминание" className="memory-voice-player" />}
+        {media.voiceUrl && (
+          <div className="memory-lab-audio-note">
+            <div><span><Mic2 size={14} aria-hidden="true" /></span><strong>Голосовой момент</strong></div>
+            <AccentAudioPlayer src={media.voiceUrl} accent="#2563eb" label="Голосовое воспоминание" className="memory-voice-player" />
+          </div>
+        )}
         {attachments.map((attachment, index) => attachment.type === "image" ? (
-          <Image key={`${attachment.url}-${index}`} src={attachment.url} alt={attachment.name} width={720} height={520} sizes="(max-width: 768px) 45vw, 420px" className="max-h-72 w-full rounded-2xl object-cover" unoptimized />
+          <div key={`${attachment.url}-${index}`} className="memory-lab-attachment-media is-image">
+            <Image src={attachment.url} alt={attachment.name} width={720} height={520} sizes="(max-width: 768px) 45vw, 420px" unoptimized />
+            <span>Фото</span>
+          </div>
         ) : attachment.type === "video" ? (
-          <video key={`${attachment.url}-${index}`} src={attachment.url} controls playsInline preload="metadata" className="max-h-72 w-full rounded-2xl bg-black" />
+          <div key={`${attachment.url}-${index}`} className="memory-lab-attachment-media is-video">
+            <video src={attachment.url} controls playsInline preload="metadata" />
+            <span>Видео</span>
+          </div>
         ) : attachment.type === "audio" ? (
-          <AccentAudioPlayer key={`${attachment.url}-${index}`} src={attachment.url} accent="#4f46e5" label={attachment.name} />
+          <div key={`${attachment.url}-${index}`} className="memory-lab-audio-note">
+            <div><span><Mic2 size={14} aria-hidden="true" /></span><strong>{attachment.name || "Аудиозапись"}</strong></div>
+            <AccentAudioPlayer src={attachment.url} accent="#2563eb" label={attachment.name} />
+          </div>
         ) : (
           <a key={`${attachment.url}-${index}`} href={attachment.url} target="_blank" rel="noreferrer" className="memory-lab-file" onClick={(event) => event.stopPropagation()}>
             <FileText size={16} aria-hidden="true" />
@@ -447,6 +467,9 @@ export default function MemoriesLabPage() {
     const isLoaded = !media.photoUrl || loadedImages[memory.id];
     const reactionValues = Array.from(new Set(Object.values(memory.reactions || {}).filter((value): value is string => Boolean(value))));
     const isFeatured = view === "mosaic" && index % 9 === 0 && Boolean(media.photoUrl);
+    const memoryComments = comments[memory.id] || [];
+    const latestComment = memoryComments.at(-1);
+    const latestCommentAuthor = latestComment ? getMemoryUserMeta(latestComment.user_id) : null;
 
     return (
       <article
@@ -492,7 +515,10 @@ export default function MemoriesLabPage() {
             </div>
           )}
           <div className="memory-lab-card-topline">
-            {memory.is_pinned && <span><Pin size={12} aria-hidden="true" /> Закреплено</span>}
+            <span className={memory.is_pinned ? "is-pinned" : ""}>
+              {memory.is_pinned ? <Pin size={12} aria-hidden="true" /> : <CalendarDays size={12} aria-hidden="true" />}
+              {memory.is_pinned ? "Закреплено" : formatDate(memory.created_at, { day: "numeric", month: "short" })}
+            </span>
             <button type="button" onClick={(event) => { event.stopPropagation(); setSelectedMemoryId(memory.id); }} aria-label="Открыть просмотр">
               <Images size={16} aria-hidden="true" />
             </button>
@@ -511,6 +537,17 @@ export default function MemoriesLabPage() {
           {title && <h2><FluentEmojiText>{title}</FluentEmojiText></h2>}
           {description && <p className="memory-lab-description"><FluentEmojiText>{description}</FluentEmojiText></p>}
           {renderMediaAttachments(media, memory.id)}
+
+          {latestComment && (
+            <Link href={`/memories/${memory.id}`} className="memory-lab-comment-peek" onClick={(event) => event.stopPropagation()}>
+              <span><MessageCircle size={15} aria-hidden="true" /></span>
+              <span>
+                <strong>{latestCommentAuthor?.name || "Комментарий"}{memoryComments.length > 1 ? ` · ${memoryComments.length}` : ""}</strong>
+                <small>{latestComment.text}</small>
+              </span>
+              <ChevronRight size={15} aria-hidden="true" />
+            </Link>
+          )}
 
           <div className="memory-lab-actions">
             <div className="memory-lab-reactions">
@@ -568,9 +605,10 @@ export default function MemoriesLabPage() {
   ];
 
   return (
-    <main className="memory-lab-page mobile-redesign-page min-h-screen px-3 pb-32 pt-20 text-slate-950 dark:text-white sm:px-6 md:pt-28" style={{ ["--scroll-accent" as string]: "#4f46e5" }}>
+    <main className="memory-lab-page mobile-redesign-page min-h-screen px-3 pb-32 pt-20 text-slate-950 dark:text-white sm:px-6 md:pt-28" style={{ ["--scroll-accent" as string]: "#2563eb" }}>
       <section className="memory-lab-shell mx-auto max-w-[90rem]">
         <header className="memory-lab-hero">
+          <div className="memory-lab-hero-orbit" aria-hidden="true"><i /><i /><i /></div>
           <div className="memory-lab-hero-copy">
             <p><span /> Лаборатория воспоминаний</p>
             <h1>Карта наших<br /><em>моментов</em></h1>
@@ -586,6 +624,26 @@ export default function MemoriesLabPage() {
             <div><strong>{stats.pinned}</strong><span>особенно важных</span></div>
             <div><strong>{stats.years}</strong><span>лет в архиве</span></div>
           </div>
+
+          {storyMemories.length > 0 && (
+            <div className="memory-lab-story-strip">
+              <div className="memory-lab-story-heading">
+                <span><Images size={16} aria-hidden="true" /></span>
+                <div><strong>Быстрый альбом</strong><small>Нажмите, чтобы открыть момент</small></div>
+              </div>
+              <div className="memory-lab-story-rail">
+                {storyMemories.map((memory, index) => {
+                  const photoUrl = decodeMemoryMedia(memory.image).photoUrl;
+                  return (
+                    <button key={memory.id} type="button" onClick={() => setSelectedMemoryId(memory.id)} aria-label={`Открыть: ${getMemoryTitle(memory.title) || formatDate(memory.created_at)}`}>
+                      <span><Image src={photoUrl || ""} alt="" fill sizes="88px" unoptimized /></span>
+                      <small>{index === 0 ? "Новое" : formatDate(memory.created_at, { day: "numeric", month: "short" })}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </header>
 
         {message && <div className="memory-lab-message" role="status">{message}<button type="button" onClick={() => setMessage("")} aria-label="Закрыть"><X size={16} /></button></div>}

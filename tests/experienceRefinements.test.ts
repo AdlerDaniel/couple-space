@@ -103,11 +103,12 @@ test("Today movie actions open the dedicated add page and roulette", async () =>
   assert.match(addSource, /void addItem\(result\)/);
 });
 
-test("watch keeps the official roulette and no experimental movie route", async () => {
-  const [watch, styles, navigation] = await Promise.all([
+test("watch keeps the official roulette and retires the experimental movie page", async () => {
+  const [watch, styles, navigation, retiredPage] = await Promise.all([
     readSource("app/watch/page.tsx"),
     readSource("app/globals.css"),
     readSource("lib/navigation.ts"),
+    readSource("app/watch/lab/page.tsx"),
   ]);
   const actionsStart = watch.indexOf("watch-card-actions");
   const actionsEnd = watch.indexOf("</article>", actionsStart);
@@ -123,6 +124,8 @@ test("watch keeps the official roulette and no experimental movie route", async 
   assert.match(styles, /\.watch-official-wheel\.is-spinning/);
   assert.doesNotMatch(styles, /watch-lab|watchLabSpin/);
   assert.doesNotMatch(navigation, /\/watch\/lab|Кино-комната|Экспериментальная версия/);
+  assert.match(retiredPage, /notFound\(\)/);
+  assert.doesNotMatch(retiredPage, /supabase|watch-lab|Кино-комната/);
 });
 
 test("daily answer attachments keep voice recording as a separate action", async () => {

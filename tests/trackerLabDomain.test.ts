@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  applyTrackerOccurrenceOverrides,
   buildTrackerPlanIcs,
   expandTrackerPlanOccurrences,
   findFreeSlots,
@@ -126,4 +127,39 @@ test("ICS export includes recurrence, alarm and escaped user text", () => {
   assert.match(ics, /RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,FR;UNTIL=20261002T235959Z/);
   assert.match(ics, /TRIGGER:-PT30M/);
   assert.match(ics, /END:VCALENDAR\r\n$/);
+});
+
+
+test("single occurrence override moves or cancels only the selected repetition", () => {
+  const recurring = plan({
+    repeat_mode: "daily",
+    repeat_until: "2026-09-09",
+  });
+  const expanded = expandTrackerPlanOccurrences([recurring], "2026-09-07", "2026-09-09");
+  const moved = applyTrackerOccurrenceOverrides(expanded, [{
+    id: "override-1",
+    plan_id: recurring.id,
+    couple_id: recurring.couple_id,
+    occurrence_date: "2026-09-08",
+    override_start_date: "2026-09-10",
+    override_starts_at: "2026-09-10T17:00:00.000Z",
+    override_ends_at: "2026-09-10T19:00:00.000Z",
+    status: "planned",
+    updated_by: "user-1",
+    updated_at: "2026-09-02T10:00:00.000Z",
+  }, {
+    id: "override-2",
+    plan_id: recurring.id,
+    couple_id: recurring.couple_id,
+    occurrence_date: "2026-09-09",
+    override_start_date: null,
+    override_starts_at: null,
+    override_ends_at: null,
+    status: "cancelled",
+    updated_by: "user-1",
+    updated_at: "2026-09-02T10:00:00.000Z",
+  }]);
+
+  assert.deepEqual(moved.map((item) => item.dateKey), ["2026-09-07", "2026-09-10"]);
+  assert.equal(moved[1]?.startsAt, "2026-09-10T17:00:00.000Z");
 });

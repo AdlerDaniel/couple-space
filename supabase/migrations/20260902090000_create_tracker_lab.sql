@@ -262,19 +262,19 @@ returns uuid
 language plpgsql
 immutable
 set search_path = ''
-as $
+as $$
 begin
   return p_value::uuid;
 exception when invalid_text_representation then
   return null;
 end;
-$;
+$$;
 
 create or replace function public.protect_tracker_plan_identity()
 returns trigger
 language plpgsql
 set search_path = ''
-as $
+as $$
 begin
   if new.couple_id <> old.couple_id or new.created_by <> old.created_by then
     raise exception 'Plan identity cannot be changed' using errcode = '42501';
@@ -283,7 +283,7 @@ begin
   new.updated_by := auth.uid();
   return new;
 end;
-$;
+$$;
 
 create trigger tracker_plans_protect_identity
 before update on public.tracker_plans
@@ -294,7 +294,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   expected_couple_id uuid;
 begin
@@ -307,15 +307,30 @@ begin
   if expected_couple_id is null or expected_couple_id <> new.couple_id then
     raise exception 'Plan and child row must belong to the same couple' using errcode = '23514';
   end if;
-  if tg_table_name = 'tracker_plan_memory_links' and not exists (
-    select 1 from public.memories m
-    where m.id = new.memory_id and m.couple_id = new.couple_id
+  return new;
+end;
+$$;
+
+create or replace function public.enforce_tracker_memory_link_couple()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (
+    select 1
+    from public.tracker_plans p
+    join public.memories m on m.id = new.memory_id
+    where p.id = new.plan_id
+      and p.couple_id = new.couple_id
+      and m.couple_id = new.couple_id
   ) then
     raise exception 'Memory and plan must belong to the same couple' using errcode = '23514';
   end if;
   return new;
 end;
-$;
+$$;
 
 create trigger tracker_participants_enforce_couple
 before insert or update on public.tracker_plan_participants
@@ -335,6 +350,9 @@ for each row execute function public.enforce_tracker_child_couple();
 create trigger tracker_memory_links_enforce_couple
 before insert or update on public.tracker_plan_memory_links
 for each row execute function public.enforce_tracker_child_couple();
+create trigger tracker_memory_links_validate_memory
+before insert or update on public.tracker_plan_memory_links
+for each row execute function public.enforce_tracker_memory_link_couple();
 create trigger tracker_activity_enforce_couple
 before insert or update on public.tracker_plan_activity
 for each row execute function public.enforce_tracker_child_couple();

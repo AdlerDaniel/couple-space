@@ -241,7 +241,7 @@ language sql
 stable
 security definer
 set search_path = ''
-as $
+as $$
   select exists (
     select 1
     from public.tracker_plans p
@@ -255,7 +255,7 @@ as $
         )
       )
   );
-$;
+$$;
 
 create or replace function public.tracker_safe_uuid(p_value text)
 returns uuid

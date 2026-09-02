@@ -479,7 +479,7 @@ export default function TrackerLabClient() {
       opacity: [0, 1],
       translateY: [12, 0],
       duration: 420,
-      delay: (_element, index) => index * 45,
+      delay: (_element: unknown, index: number) => index * 45,
       ease: "out(3)",
     });
     return () => {

@@ -12,7 +12,7 @@ revoke all on function public.list_tracker_plan_occurrences(uuid, date, date) fr
 revoke all on function public.find_tracker_common_free_slots(uuid, date, integer, time, time) from public, anon;
 revoke all on function public.enforce_tracker_child_couple() from public, anon, authenticated;
 revoke all on function public.enforce_tracker_memory_link_couple() from public, anon, authenticated;
-revoke all on function public.enforce_tracker_plan_identity() from public, anon, authenticated;
+revoke all on function public.protect_tracker_plan_identity() from public, anon, authenticated;
 
 -- These functions form the authenticated tracker API or are evaluated by RLS.
 grant execute on function public.is_tracker_couple_member(uuid, uuid) to authenticated;

@@ -585,6 +585,113 @@ export type Database = {
         }
         Relationships: []
       }
+      tracker_category_preferences: {
+        Row: {
+          category_id: string
+          color: string | null
+          couple_id: string
+          hidden: boolean
+          icon: string | null
+          id: string
+          label: string | null
+          sort_order: number | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          category_id: string
+          color?: string | null
+          couple_id: string
+          hidden?: boolean
+          icon?: string | null
+          id?: string
+          label?: string | null
+          sort_order?: number | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          category_id?: string
+          color?: string | null
+          couple_id?: string
+          hidden?: boolean
+          icon?: string | null
+          id?: string
+          label?: string | null
+          sort_order?: number | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_category_preferences_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_category_preferences_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_checkins: {
+        Row: {
+          couple_id: string
+          created_at: string
+          date: string
+          energy: number | null
+          id: string
+          mood: string
+          note: string | null
+          relationship: number | null
+          reveal_after_both: boolean
+          updated_at: string
+          user_id: string
+          visibility: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          date: string
+          energy?: number | null
+          id?: string
+          mood: string
+          note?: string | null
+          relationship?: number | null
+          reveal_after_both?: boolean
+          updated_at?: string
+          user_id: string
+          visibility?: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          date?: string
+          energy?: number | null
+          id?: string
+          mood?: string
+          note?: string | null
+          relationship?: number | null
+          reveal_after_both?: boolean
+          updated_at?: string
+          user_id?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_checkins_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tracker_events: {
         Row: {
           category_id: string
@@ -650,34 +757,46 @@ export type Database = {
       }
       tracker_goals: {
         Row: {
+          archived_at: string | null
           category_id: string | null
+          completed_at: string | null
           couple_id: string
           created_at: string
           created_by: string
           id: string
           period: string
+          status: string
           target_count: number
           title: string
+          updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           category_id?: string | null
+          completed_at?: string | null
           couple_id: string
           created_at?: string
           created_by: string
           id?: string
           period?: string
+          status?: string
           target_count?: number
           title: string
+          updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           category_id?: string | null
+          completed_at?: string | null
           couple_id?: string
           created_at?: string
           created_by?: string
           id?: string
           period?: string
+          status?: string
           target_count?: number
           title?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -689,6 +808,467 @@ export type Database = {
           },
           {
             foreignKeyName: "tracker_goals_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_plan_activity: {
+        Row: {
+          activity_type: string
+          actor_id: string
+          couple_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          plan_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          actor_id: string
+          couple_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          plan_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          actor_id?: string
+          couple_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          plan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_plan_activity_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_plan_activity_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_plan_attachments: {
+        Row: {
+          comment_id: string | null
+          couple_id: string
+          created_at: string
+          id: string
+          media_type: string
+          mime_type: string | null
+          name: string
+          owner_id: string
+          plan_id: string
+          size_bytes: number | null
+          storage_path: string
+          url: string
+        }
+        Insert: {
+          comment_id?: string | null
+          couple_id: string
+          created_at?: string
+          id?: string
+          media_type: string
+          mime_type?: string | null
+          name: string
+          owner_id: string
+          plan_id: string
+          size_bytes?: number | null
+          storage_path: string
+          url: string
+        }
+        Update: {
+          comment_id?: string | null
+          couple_id?: string
+          created_at?: string
+          id?: string
+          media_type?: string
+          mime_type?: string | null
+          name?: string
+          owner_id?: string
+          plan_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_plan_attachments_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_plan_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_plan_attachments_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_plan_attachments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_plan_comments: {
+        Row: {
+          attachment_name: string | null
+          attachment_type: string | null
+          attachment_url: string | null
+          couple_id: string
+          created_at: string
+          id: string
+          mime_type: string | null
+          plan_id: string
+          text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
+          couple_id: string
+          created_at?: string
+          id?: string
+          mime_type?: string | null
+          plan_id: string
+          text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
+          couple_id?: string
+          created_at?: string
+          id?: string
+          mime_type?: string | null
+          plan_id?: string
+          text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_plan_comments_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_plan_comments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_plan_memory_links: {
+        Row: {
+          couple_id: string
+          created_at: string
+          created_by: string
+          id: string
+          memory_id: string
+          plan_id: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          memory_id: string
+          plan_id: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          memory_id?: string
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_plan_memory_links_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_plan_memory_links_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_plan_memory_links_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_plan_occurrence_overrides: {
+        Row: {
+          couple_id: string
+          id: string
+          occurrence_date: string
+          override_ends_at: string | null
+          override_start_date: string | null
+          override_starts_at: string | null
+          plan_id: string
+          status: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          couple_id: string
+          id?: string
+          occurrence_date: string
+          override_ends_at?: string | null
+          override_start_date?: string | null
+          override_starts_at?: string | null
+          plan_id: string
+          status?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          couple_id?: string
+          id?: string
+          occurrence_date?: string
+          override_ends_at?: string | null
+          override_start_date?: string | null
+          override_starts_at?: string | null
+          plan_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_plan_occurrence_overrides_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_plan_occurrence_overrides_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_plan_participants: {
+        Row: {
+          couple_id: string
+          created_at: string
+          id: string
+          plan_id: string
+          response: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          id?: string
+          plan_id: string
+          response?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          id?: string
+          plan_id?: string
+          response?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_plan_participants_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_plan_participants_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_plan_reminders: {
+        Row: {
+          couple_id: string
+          created_at: string
+          delivery: string
+          id: string
+          last_sent_at: string | null
+          offset_minutes: number
+          plan_id: string
+          user_id: string
+        }
+        Insert: {
+          couple_id: string
+          created_at?: string
+          delivery?: string
+          id?: string
+          last_sent_at?: string | null
+          offset_minutes?: number
+          plan_id: string
+          user_id: string
+        }
+        Update: {
+          couple_id?: string
+          created_at?: string
+          delivery?: string
+          id?: string
+          last_sent_at?: string | null
+          offset_minutes?: number
+          plan_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_plan_reminders_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_plan_reminders_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_plans: {
+        Row: {
+          all_day: boolean
+          assignee_id: string | null
+          category_id: string | null
+          color: string | null
+          couple_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          edit_scope: string
+          ends_at: string | null
+          id: string
+          kind: string
+          participant_scope: string
+          repeat_interval: number
+          repeat_mode: string
+          repeat_until: string | null
+          repeat_weekdays: number[]
+          start_date: string | null
+          starts_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          visibility: string
+        }
+        Insert: {
+          all_day?: boolean
+          assignee_id?: string | null
+          category_id?: string | null
+          color?: string | null
+          couple_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          edit_scope?: string
+          ends_at?: string | null
+          id?: string
+          kind?: string
+          participant_scope?: string
+          repeat_interval?: number
+          repeat_mode?: string
+          repeat_until?: string | null
+          repeat_weekdays?: number[]
+          start_date?: string | null
+          starts_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          visibility?: string
+        }
+        Update: {
+          all_day?: boolean
+          assignee_id?: string | null
+          category_id?: string | null
+          color?: string | null
+          couple_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          edit_scope?: string
+          ends_at?: string | null
+          id?: string
+          kind?: string
+          participant_scope?: string
+          repeat_interval?: number
+          repeat_mode?: string
+          repeat_until?: string | null
+          repeat_weekdays?: number[]
+          start_date?: string | null
+          starts_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_plans_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_plans_couple_id_fkey"
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
@@ -786,6 +1366,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_tracker_event_count: {
+        Args: {
+          p_category_id: string
+          p_couple_id: string
+          p_date: string
+          p_delta: number
+        }
+        Returns: {
+          category_id: string
+          count: number
+          couple_id: string
+          created_at: string
+          created_by: string
+          date: string
+          duration_minutes: number
+          id: string
+          mood: string
+          note: string | null
+          participants: string
+          time: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tracker_events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      can_edit_tracker_plan: {
+        Args: { p_plan_id: string; p_user_id?: string }
+        Returns: boolean
+      }
+      can_view_tracker_plan: {
+        Args: { p_plan_id: string; p_user_id?: string }
+        Returns: boolean
+      }
       consume_api_rate_limit: {
         Args: {
           p_identity_hash: string
@@ -810,6 +1427,90 @@ export type Database = {
         }
         Returns: string
       }
+      find_tracker_common_free_slots: {
+        Args: {
+          p_couple_id: string
+          p_date: string
+          p_day_end?: string
+          p_day_start?: string
+          p_duration_minutes?: number
+        }
+        Returns: {
+          ends_at: string
+          starts_at: string
+        }[]
+      }
+      get_tracker_checkins: {
+        Args: { p_couple_id: string; p_from: string; p_to: string }
+        Returns: {
+          couple_id: string
+          created_at: string
+          date: string
+          energy: number
+          id: string
+          is_own: boolean
+          mood: string
+          note: string
+          relationship: number
+          reveal_after_both: boolean
+          updated_at: string
+          user_id: string
+          visibility: string
+        }[]
+      }
+      is_tracker_couple_member: {
+        Args: { p_couple_id: string; p_user_id?: string }
+        Returns: boolean
+      }
+      list_tracker_plan_occurrences: {
+        Args: { p_couple_id: string; p_from: string; p_to: string }
+        Returns: {
+          all_day: boolean
+          created_by: string
+          ends_at: string
+          kind: string
+          occurrence_date: string
+          participant_scope: string
+          plan_id: string
+          starts_at: string
+          status: string
+          title: string
+          visibility: string
+        }[]
+      }
+      save_tracker_checkin: {
+        Args: {
+          p_couple_id: string
+          p_date: string
+          p_energy?: number
+          p_mood: string
+          p_note?: string
+          p_relationship?: number
+          p_reveal_after_both?: boolean
+          p_visibility?: string
+        }
+        Returns: {
+          couple_id: string
+          created_at: string
+          date: string
+          energy: number | null
+          id: string
+          mood: string
+          note: string | null
+          relationship: number | null
+          reveal_after_both: boolean
+          updated_at: string
+          user_id: string
+          visibility: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tracker_checkins"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      tracker_safe_uuid: { Args: { p_value: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
@@ -828,12 +1529,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -857,11 +1558,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -882,11 +1583,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -907,11 +1608,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -924,11 +1625,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

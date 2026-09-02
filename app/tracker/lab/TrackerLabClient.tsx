@@ -585,6 +585,12 @@ export default function TrackerLabClient() {
   const selectedParticipant = participants.find((item) =>
     item.plan_id === selectedPlanId && item.user_id === currentUserId,
   ) || null;
+  const canEditSelectedPlan = Boolean(
+    selectedPlan && currentUserId && (
+      selectedPlan.created_by === currentUserId ||
+      (selectedPlan.edit_scope === "participants" && selectedParticipant?.response === "accepted")
+    ),
+  );
   const selectedComments = comments.filter((item) => item.plan_id === selectedPlanId);
   const week = useMemo(() => getWeekStrip(selectedDate), [selectedDate]);
   const cells = useMemo(() => monthCells(selectedDate), [selectedDate]);
@@ -1265,6 +1271,9 @@ export default function TrackerLabClient() {
     const plan = occurrence.plan;
     const person = getPersonMeta(plan.created_by);
     const scope = currentUserId ? relativeScope(plan, currentUserId) : "both";
+    const participant = participants.find((item) => item.plan_id === plan.id && item.user_id === currentUserId);
+    const canAct = plan.created_by === currentUserId ||
+      (plan.edit_scope === "participants" && participant?.response === "accepted");
     return (
       <article
         key={`${plan.id}-${occurrence.dateKey}`}
@@ -1289,7 +1298,7 @@ export default function TrackerLabClient() {
           </span>
         </button>
         <div className="tracker-lab-plan-actions">
-          {plan.status !== "done" && (
+          {plan.status !== "done" && canAct && (
             <button type="button" onClick={() => void updatePlanStatus(plan, "done")}><Check size={15} />Готово</button>
           )}
           <button type="button" onClick={() => downloadCalendar(plan)}><Download size={15} />В календарь</button>
@@ -1672,16 +1681,16 @@ export default function TrackerLabClient() {
               <div className="tracker-lab-privacy-note"><EyeOff />Вы отклонили участие. План остаётся видимым в общем календаре.</div>
             )}
             <div className="tracker-lab-detail-actions">
-              {(selectedPlan.created_by === currentUserId || selectedPlan.edit_scope === "participants") && (
+              {canEditSelectedPlan && (
                 <button type="button" onClick={() => openPlanEditor(selectedPlan)}><Pencil />Изменить всю серию</button>
               )}
-              {selectedPlan.repeat_mode !== "none" && selectedOccurrenceDate && (
+              {canEditSelectedPlan && selectedPlan.repeat_mode !== "none" && selectedOccurrenceDate && (
                 <button type="button" onClick={() => openOccurrenceEditor(selectedPlan)}><CalendarRange />Перенести этот день</button>
               )}
-              {selectedPlan.repeat_mode !== "none" && selectedOccurrenceDate && (
+              {canEditSelectedPlan && selectedPlan.repeat_mode !== "none" && selectedOccurrenceDate && (
                 <button type="button" onClick={() => void cancelOccurrence(selectedPlan)}><X />Отменить этот день</button>
               )}
-              {selectedPlan.status !== "done" && <button type="button" onClick={() => void updatePlanStatus(selectedPlan, "done")}><Check />Завершить</button>}
+              {selectedPlan.status !== "done" && canEditSelectedPlan && <button type="button" onClick={() => void updatePlanStatus(selectedPlan, "done")}><Check />Завершить</button>}
               <button type="button" onClick={() => downloadCalendar(selectedPlan)}><Download />Добавить в календарь</button>
               {selectedPlan.status === "done" && <button type="button" onClick={() => openMemoryComposer(selectedPlan)}><Sparkles />Сделать воспоминанием</button>}
               {selectedPlan.created_by === currentUserId && <button type="button" className="is-danger" onClick={() => void deletePlan(selectedPlan)}><Trash2 />Удалить</button>}

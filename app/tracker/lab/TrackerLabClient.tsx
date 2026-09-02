@@ -956,6 +956,21 @@ export default function TrackerLabClient() {
       setMessage(`Не удалось сохранить ответ: ${error.message}`);
     } else {
       setMessage(response === "accepted" ? "План принят" : "План отклонён");
+      if (selectedPlan && couple) {
+        await supabase.from("tracker_plan_activity").insert({
+          plan_id: selectedPlan.id,
+          couple_id: couple.id,
+          actor_id: currentUserId,
+          activity_type: "responded",
+          metadata: { response },
+        });
+        await createPartnerNotification(couple, currentUserId, {
+          type: "tracker_plan_response",
+          title: response === "accepted" ? "План принят" : "План отклонён",
+          body: selectedPlan.title,
+          href: "/tracker/lab",
+        });
+      }
     }
   }
 

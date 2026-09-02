@@ -7,6 +7,11 @@ const page = readFileSync(new URL("../app/tracker/lab/page.tsx", import.meta.url
 const layout = readFileSync(new URL("../app/tracker/lab/layout.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../app/tracker/lab/trackerLab.css", import.meta.url), "utf8");
 const navigation = readFileSync(new URL("../lib/navigation.ts", import.meta.url), "utf8");
+const repository = readFileSync(new URL("../lib/trackerRepository.ts", import.meta.url), "utf8");
+const hook = readFileSync(new URL("../app/tracker/useTrackerData.ts", import.meta.url), "utf8");
+const originalTracker = readFileSync(new URL("../app/tracker/page.tsx", import.meta.url), "utf8");
+const dailyDigest = readFileSync(new URL("../lib/trackerDailyDigest.ts", import.meta.url), "utf8");
+const trackerSource = [client, repository, hook, dailyDigest].join("\n");
 
 test("tracker lab stays hidden from global navigation and search indexing", () => {
   assert.doesNotMatch(navigation, /href:\s*["']\/tracker\/lab["']/);
@@ -30,8 +35,12 @@ test("tracker lab exposes the complete collaborative flow", () => {
     "tracker_plan_comments",
     "tracker_plan_attachments",
     "buildTrackerPlanIcs",
+    "tracker_plan_participants",
+    "tracker_plan_occurrence_overrides",
+    "Перенести этот день",
+    "Принять",
   ]) {
-    assert.match(client, new RegExp(marker));
+    assert.match(trackerSource, new RegExp(marker));
   }
 });
 
@@ -52,4 +61,15 @@ test("responsive styling covers required mobile and desktop widths and reduced m
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /grid-template-columns:\s*minmax\(14rem/);
   assert.match(css, /safe-area-inset-bottom/);
+});
+
+
+test("shared repository powers both tracker versions and the daily free-tier digest", () => {
+  assert.match(client, /useTrackerData/);
+  assert.match(client, /adjustTrackerEventCount/);
+  assert.match(originalTracker, /adjustTrackerEventCount/);
+  assert.match(originalTracker, /subscribeTrackerData/);
+  assert.match(originalTracker, /tracker_category_preferences/);
+  assert.match(dailyDigest, /expandTrackerPlanOccurrences/);
+  assert.match(dailyDigest, /tracker-digest-/);
 });

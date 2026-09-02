@@ -241,7 +241,7 @@ language sql
 stable
 security definer
 set search_path = ''
-as $$
+as $
   select exists (
     select 1
     from public.tracker_plans p
@@ -255,7 +255,89 @@ as $$
         )
       )
   );
-$$;
+$;
+
+create or replace function public.tracker_safe_uuid(p_value text)
+returns uuid
+language plpgsql
+immutable
+set search_path = ''
+as $
+begin
+  return p_value::uuid;
+exception when invalid_text_representation then
+  return null;
+end;
+$;
+
+create or replace function public.protect_tracker_plan_identity()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+begin
+  if new.couple_id <> old.couple_id or new.created_by <> old.created_by then
+    raise exception 'Plan identity cannot be changed' using errcode = '42501';
+  end if;
+  new.updated_at := now();
+  new.updated_by := auth.uid();
+  return new;
+end;
+$;
+
+create trigger tracker_plans_protect_identity
+before update on public.tracker_plans
+for each row execute function public.protect_tracker_plan_identity();
+
+create or replace function public.enforce_tracker_child_couple()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  expected_couple_id uuid;
+begin
+  if new.plan_id is null then
+    return new;
+  end if;
+  select p.couple_id into expected_couple_id
+  from public.tracker_plans p
+  where p.id = new.plan_id;
+  if expected_couple_id is null or expected_couple_id <> new.couple_id then
+    raise exception 'Plan and child row must belong to the same couple' using errcode = '23514';
+  end if;
+  if tg_table_name = 'tracker_plan_memory_links' and not exists (
+    select 1 from public.memories m
+    where m.id = new.memory_id and m.couple_id = new.couple_id
+  ) then
+    raise exception 'Memory and plan must belong to the same couple' using errcode = '23514';
+  end if;
+  return new;
+end;
+$;
+
+create trigger tracker_participants_enforce_couple
+before insert or update on public.tracker_plan_participants
+for each row execute function public.enforce_tracker_child_couple();
+create trigger tracker_occurrences_enforce_couple
+before insert or update on public.tracker_plan_occurrence_overrides
+for each row execute function public.enforce_tracker_child_couple();
+create trigger tracker_reminders_enforce_couple
+before insert or update on public.tracker_plan_reminders
+for each row execute function public.enforce_tracker_child_couple();
+create trigger tracker_comments_enforce_couple
+before insert or update on public.tracker_plan_comments
+for each row execute function public.enforce_tracker_child_couple();
+create trigger tracker_attachments_enforce_couple
+before insert or update on public.tracker_plan_attachments
+for each row execute function public.enforce_tracker_child_couple();
+create trigger tracker_memory_links_enforce_couple
+before insert or update on public.tracker_plan_memory_links
+for each row execute function public.enforce_tracker_child_couple();
+create trigger tracker_activity_enforce_couple
+before insert or update on public.tracker_plan_activity
+for each row execute function public.enforce_tracker_child_couple();
 
 alter table public.tracker_plans enable row level security;
 alter table public.tracker_plan_participants enable row level security;
@@ -354,11 +436,11 @@ create policy tracker_attachments_select on public.tracker_plan_attachments
 for select to authenticated using (public.can_view_tracker_plan(plan_id, (select auth.uid())));
 create policy tracker_attachments_insert on public.tracker_plan_attachments
 for insert to authenticated with check (
-  owner_id = (select auth.uid())
+  (storage.foldername(name))[3] = (select auth.uid())::text
   and public.can_view_tracker_plan(plan_id, (select auth.uid()))
 );
 create policy tracker_attachments_delete_own on public.tracker_plan_attachments
-for delete to authenticated using (owner_id = (select auth.uid()));
+for delete to authenticated using ((storage.foldername(name))[3] = (select auth.uid())::text);
 
 create policy tracker_checkins_own on public.tracker_checkins
 for all to authenticated
@@ -748,8 +830,18 @@ as $$
     e.kind,
     coalesce(o.status, e.status),
     e.all_day,
-    coalesce(o.override_starts_at, e.starts_at),
-    coalesce(o.override_ends_at, e.ends_at),
+    coalesce(
+      o.override_starts_at,
+      e.starts_at + pg_catalog.make_interval(
+        days => e.occurrence_date - coalesce(e.start_date, (e.starts_at at time zone 'Europe/Moscow')::date)
+      )
+    ),
+    coalesce(
+      o.override_ends_at,
+      e.ends_at + pg_catalog.make_interval(
+        days => e.occurrence_date - coalesce(e.start_date, (e.starts_at at time zone 'Europe/Moscow')::date)
+      )
+    ),
     e.participant_scope,
     e.visibility,
     e.created_by
@@ -782,24 +874,73 @@ as $$
       (p_date + p_day_end) at time zone 'Europe/Moscow' - pg_catalog.make_interval(mins => p_duration_minutes),
       interval '30 minutes'
     ) slot_start
+  ),
+  busy as (
+    select
+      p.all_day,
+      case
+        when p.all_day then null
+        else (p_date + (p.starts_at at time zone 'Europe/Moscow')::time) at time zone 'Europe/Moscow'
+      end as occurrence_start,
+      case
+        when p.all_day then null
+        else (
+          (p_date + (p.starts_at at time zone 'Europe/Moscow')::time) at time zone 'Europe/Moscow'
+          + coalesce(p.ends_at - p.starts_at, interval '1 hour')
+        )
+      end as occurrence_end
+    from public.tracker_plans p
+    cross join lateral (
+      select coalesce(p.start_date, (p.starts_at at time zone 'Europe/Moscow')::date) as base_date
+    ) base
+    where p.couple_id = p_couple_id
+      and p.status not in ('cancelled','done')
+      and p_date >= base.base_date
+      and (p.repeat_until is null or p_date <= p.repeat_until)
+      and (
+        (p.repeat_mode = 'none' and p_date = base.base_date)
+        or (
+          p.repeat_mode = 'daily'
+          and (p_date - base.base_date) % p.repeat_interval = 0
+        )
+        or (
+          p.repeat_mode = 'weekly'
+          and extract(isodow from p_date)::smallint = any(
+            case when cardinality(p.repeat_weekdays) = 0
+              then array[extract(isodow from base.base_date)::smallint]
+              else p.repeat_weekdays end
+          )
+          and floor((p_date - base.base_date) / 7.0)::integer % p.repeat_interval = 0
+        )
+        or (
+          p.repeat_mode = 'monthly'
+          and extract(day from p_date) = extract(day from base.base_date)
+          and (
+            extract(year from age(p_date, base.base_date))::integer * 12
+            + extract(month from age(p_date, base.base_date))::integer
+          ) % p.repeat_interval = 0
+        )
+        or (
+          p.repeat_mode = 'yearly'
+          and extract(month from p_date) = extract(month from base.base_date)
+          and extract(day from p_date) = extract(day from base.base_date)
+          and (
+            extract(year from p_date)::integer - extract(year from base.base_date)::integer
+          ) % p.repeat_interval = 0
+        )
+      )
   )
   select c.slot_start, c.slot_end
   from candidates c
   where p_duration_minutes between 15 and 720
+    and p_day_start < p_day_end
     and public.is_tracker_couple_member(p_couple_id, auth.uid())
     and not exists (
       select 1
-      from public.tracker_plans p
-      where p.couple_id = p_couple_id
-        and p.status not in ('cancelled','done')
-        and (
-          (p.all_day and p.start_date = p_date)
-          or (
-            not p.all_day
-            and tstzrange(p.starts_at, coalesce(p.ends_at, p.starts_at + interval '1 hour'), '[)')
-              && tstzrange(c.slot_start, c.slot_end, '[)')
-          )
-        )
+      from busy b
+      where b.all_day
+        or tstzrange(b.occurrence_start, b.occurrence_end, '[)')
+          && tstzrange(c.slot_start, c.slot_end, '[)')
     )
   order by c.slot_start;
 $$;
@@ -812,35 +953,36 @@ create policy tracker_media_select on storage.objects
 for select to authenticated
 using (
   bucket_id = 'tracker-media'
-  and public.can_view_tracker_plan((storage.foldername(name))[2]::uuid, (select auth.uid()))
+  and public.can_view_tracker_plan(public.tracker_safe_uuid((storage.foldername(name))[2]), (select auth.uid()))
 );
 create policy tracker_media_insert on storage.objects
 for insert to authenticated
 with check (
   bucket_id = 'tracker-media'
-  and owner_id = (select auth.uid())
-  and public.can_view_tracker_plan((storage.foldername(name))[2]::uuid, (select auth.uid()))
+  and (storage.foldername(name))[3] = (select auth.uid())::text
+  and public.can_view_tracker_plan(public.tracker_safe_uuid((storage.foldername(name))[2]), (select auth.uid()))
 );
 create policy tracker_media_update on storage.objects
 for update to authenticated
 using (
   bucket_id = 'tracker-media'
-  and owner_id = (select auth.uid())
+  and (storage.foldername(name))[3] = (select auth.uid())::text
 )
 with check (
   bucket_id = 'tracker-media'
-  and owner_id = (select auth.uid())
+  and (storage.foldername(name))[3] = (select auth.uid())::text
 );
 create policy tracker_media_delete on storage.objects
 for delete to authenticated
 using (
   bucket_id = 'tracker-media'
-  and owner_id = (select auth.uid())
+  and (storage.foldername(name))[3] = (select auth.uid())::text
 );
 
 grant execute on function public.is_tracker_couple_member(uuid, uuid) to authenticated;
 grant execute on function public.can_view_tracker_plan(uuid, uuid) to authenticated;
 grant execute on function public.can_edit_tracker_plan(uuid, uuid) to authenticated;
+grant execute on function public.tracker_safe_uuid(text) to authenticated;
 grant execute on function public.adjust_tracker_event_count(uuid, uuid, date, integer) to authenticated;
 grant execute on function public.save_tracker_checkin(uuid, date, text, integer, integer, text, text, boolean) to authenticated;
 grant execute on function public.get_tracker_checkins(uuid, date, date) to authenticated;

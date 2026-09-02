@@ -67,6 +67,7 @@ import {
 } from "react";
 import {
   addTrackerDays,
+  applyTrackerOccurrenceOverrides,
   buildTrackerPlanIcs,
   expandTrackerPlanOccurrences,
   formatTrackerDate,
@@ -76,6 +77,7 @@ import {
   parseTrackerDateKey,
   toTrackerDateKey,
   type TrackerOccurrence,
+  type TrackerOccurrenceOverride,
   type TrackerParticipantScope,
   type TrackerPlan,
   type TrackerPlanKind,
@@ -182,19 +184,6 @@ type TrackerParticipant = {
   role: "participant" | "responsible";
   response: "pending" | "accepted" | "declined";
   created_at: string;
-};
-
-type TrackerOccurrenceOverride = {
-  id: string;
-  plan_id: string;
-  couple_id: string;
-  occurrence_date: string;
-  override_start_date: string | null;
-  override_starts_at: string | null;
-  override_ends_at: string | null;
-  status: "planned" | "cancelled" | "done";
-  updated_by: string;
-  updated_at: string;
 };
 
 type LocalTab = "today" | "calendar" | "activity";
@@ -569,25 +558,13 @@ export default function TrackerLabClient() {
     () => getTrackerViewRange(selectedDate, calendarMode),
     [calendarMode, selectedDate],
   );
-  const occurrences = useMemo(() => {
-    const base = expandTrackerPlanOccurrences(plans, `${selectedYear}-01-01`, `${selectedYear}-12-31`);
-    return base.flatMap((occurrence) => {
-      const override = occurrenceOverrides.find((item) =>
-        item.plan_id === occurrence.plan.id && item.occurrence_date === occurrence.dateKey,
-      );
-      if (!override) return [occurrence];
-      if (override.status === "cancelled") return [];
-      return [{
-        ...occurrence,
-        dateKey: override.override_start_date || occurrence.dateKey,
-        startsAt: override.override_starts_at || occurrence.startsAt,
-        endsAt: override.override_ends_at || occurrence.endsAt,
-      }];
-    }).sort((first, second) =>
-      first.dateKey.localeCompare(second.dateKey) ||
-      (first.startsAt || "").localeCompare(second.startsAt || ""),
-    );
-  }, [occurrenceOverrides, plans, selectedYear]);
+  const occurrences = useMemo(
+    () => applyTrackerOccurrenceOverrides(
+      expandTrackerPlanOccurrences(plans, `${selectedYear}-01-01`, `${selectedYear}-12-31`),
+      occurrenceOverrides,
+    ),
+    [occurrenceOverrides, plans, selectedYear],
+  );
   const filteredOccurrences = useMemo(() => occurrences.filter((occurrence) => {
     const scope = currentUserId ? relativeScope(occurrence.plan, currentUserId) : "both";
     const matchesScope = scopeFilter === "all" || scope === scopeFilter;

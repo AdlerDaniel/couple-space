@@ -3,6 +3,7 @@ import { getDailyQuestion, getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { sendPushToUser } from "@/lib/pushServer";
 import { getAdminClient } from "@/lib/supabaseAdmin";
 import { getDailyQuestionReminderRecipients } from "@/lib/today";
+import { sendTrackerDailyDigest } from "@/lib/trackerDailyDigest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -92,11 +93,14 @@ export async function GET(request: Request) {
     }
   }
 
+  const trackerDigest = await sendTrackerDailyDigest(now);
+
   return Response.json({
     ok: true,
     couplesChecked: couples?.length || 0,
     targetedUsers,
     sentSubscriptions,
     skippedUsers,
+    trackerDigest,
   });
 }

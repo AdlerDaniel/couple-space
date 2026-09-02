@@ -2,10 +2,11 @@
 
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
+import { adjustTrackerEventCount, subscribeTrackerData } from "@/lib/trackerRepository";
 import { trackerDefaultCategories } from "@/lib/trackerCategories";
 import { FluentEmoji } from "@/components/FluentEmoji";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { TrackerNavigation } from "./TrackerNavigation";
 import { TrackerSummaryCards } from "./TrackerSummaryCards";
 import {
@@ -237,7 +238,7 @@ export default function TrackerPage() {
     loadTracker();
   }, []);
 
-  async function reloadEvents() {
+  const reloadEvents = useCallback(async () => {
     if (!couple) return;
     const yearRange = getDateRange(viewDate, "year");
     const { data } = await supabase
@@ -250,9 +251,9 @@ export default function TrackerPage() {
       .order("created_at", { ascending: false });
 
     setEvents((data || []) as TrackerEvent[]);
-  }
+  }, [couple, viewDate]);
 
-  async function reloadGoals() {
+  const reloadGoals = useCallback(async () => {
     if (!couple) return;
 
     const { data, error } = await supabase
@@ -264,7 +265,15 @@ export default function TrackerPage() {
     if (!error) {
       setGoals((data || []) as TrackerGoal[]);
     }
-  }
+  }, [couple]);
+
+  useEffect(() => {
+    if (!couple) return;
+    return subscribeTrackerData(couple.id, () => {
+      void reloadEvents();
+      void reloadGoals();
+    });
+  }, [couple, reloadEvents, reloadGoals]);
 
   async function createGoal() {
     const category = categories.find((item) => item.id === goalCategoryId);
@@ -341,76 +350,35 @@ export default function TrackerPage() {
     if (!couple || !currentUserId || isSaving) return;
     setIsSaving(true);
 
-    const existing = mySelectedDayEvents.find((event) => event.category_id === category.id);
+    const previousEvents = events;
+    const existing = mySelectedDayEvents.find((event) =>
+      event.category_id === category.id && !hasDayMood(event),
+    );
+    const isFirstForDay = selectedDayEvents.filter((event) => !hasDayMood(event)).length === 0;
 
-    if (!existing && delta === 1) {
-      const isFirstForDay = selectedDayEvents.length === 0;
-      const { data, error } = await supabase
-        .from("tracker_events")
-        .insert([
-          {
-            couple_id: couple.id,
-            category_id: category.id,
-            date: selectedDate,
-            time: null,
-            count: 1,
-            duration_minutes: category.slug === "games" ? 60 : 0,
-            note: null,
-            mood: "good",
-            participants: "me",
-            created_by: currentUserId,
-          },
-        ])
-        .select("*")
-        .single<TrackerEvent>();
-
-      if (!error && data) {
-        setEvents((current) => [data, ...current]);
-        if (isFirstForDay) {
-          setShowSpark(true);
-          window.setTimeout(() => setShowSpark(false), 1200);
-        }
-      } else {
-        setMessage(error?.message || "Не удалось поставить отметку.");
-      }
-      setIsSaving(false);
-      return;
+    if (existing) {
+      const nextCount = existing.count + delta;
+      setEvents((current) => nextCount <= 0
+        ? current.filter((event) => event.id !== existing.id)
+        : current.map((event) => event.id === existing.id ? { ...event, count: nextCount } : event));
     }
 
-    if (!existing) {
-      setIsSaving(false);
-      return;
-    }
+    const { error } = await adjustTrackerEventCount({
+      coupleId: couple.id,
+      categoryId: category.id,
+      date: selectedDate,
+      delta,
+    });
 
-    const nextCount = Math.max(0, existing.count + delta);
-
-    if (nextCount === 0 && !hasDayMood(existing)) {
-      const { error } = await supabase
-        .from("tracker_events")
-        .delete()
-        .eq("id", existing.id)
-        .eq("created_by", currentUserId);
-      if (!error) {
-        setEvents((current) => current.filter((event) => event.id !== existing.id));
-      } else {
-        setMessage(error.message);
-      }
-      setIsSaving(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("tracker_events")
-      .update({ count: nextCount, updated_at: new Date().toISOString() })
-      .eq("id", existing.id)
-      .eq("created_by", currentUserId)
-      .select("*")
-      .single<TrackerEvent>();
-
-    if (!error && data) {
-      setEvents((current) => current.map((event) => (event.id === data.id ? data : event)));
+    if (error) {
+      setEvents(previousEvents);
+      setMessage(error.message || "Не удалось изменить отметку.");
     } else {
-      setMessage(error?.message || "Не удалось обновить отметку.");
+      await reloadEvents();
+      if (delta === 1 && isFirstForDay) {
+        setShowSpark(true);
+        window.setTimeout(() => setShowSpark(false), 1200);
+      }
     }
 
     setIsSaving(false);

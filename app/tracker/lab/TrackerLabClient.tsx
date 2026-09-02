@@ -80,7 +80,7 @@ import {
   type TrackerPlan,
   type TrackerPlanKind,
   type TrackerPlanRepeat,
-} from "./trackerLabDomain";
+} from "@/lib/trackerPlanDomain";
 
 type Couple = {
   id: string;

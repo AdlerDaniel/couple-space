@@ -202,6 +202,27 @@ export default function TrackerPage() {
         nextCategories = (insertedCategories || []) as TrackerCategory[];
       }
 
+      const { data: categoryPreferences } = await supabase
+        .from("tracker_category_preferences")
+        .select("category_id,label,color,icon,sort_order,hidden")
+        .eq("couple_id", coupleData.id);
+      const preferencesByCategory = new Map(
+        (categoryPreferences || []).map((preference) => [preference.category_id, preference]),
+      );
+      nextCategories = nextCategories
+        .map((category) => {
+          const preference = preferencesByCategory.get(category.id);
+          return {
+            ...category,
+            name: preference?.label || category.name,
+            color: preference?.color || category.color,
+            icon: preference?.icon || category.icon,
+            sort_order: preference?.sort_order ?? category.sort_order,
+          };
+        })
+        .filter((category) => !preferencesByCategory.get(category.id)?.hidden)
+        .sort((first, second) => first.sort_order - second.sort_order);
+
       setCategories(nextCategories);
       setEditingNames(
         nextCategories.reduce<Record<string, string>>((result, category) => {
@@ -437,23 +458,26 @@ export default function TrackerPage() {
 
   async function saveCategoryName(category: TrackerCategory) {
     const name = editingNames[category.id]?.trim();
-    if (!name || name === category.name) return;
+    if (!name || name === category.name || !couple || !currentUserId) return;
 
-    const { data, error } = await supabase
-      .from("tracker_categories")
-      .update({ name })
-      .eq("id", category.id)
-      .select("*")
-      .single<TrackerCategory>();
+    const { error } = await supabase
+      .from("tracker_category_preferences")
+      .upsert({
+        couple_id: couple.id,
+        category_id: category.id,
+        label: name,
+        updated_by: currentUserId,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "couple_id,category_id" });
 
-    if (!error && data) {
+    if (!error) {
       setCategories((current) =>
-        current.map((item) => (item.id === data.id ? data : item)).sort((a, b) => a.sort_order - b.sort_order)
+        current.map((item) => item.id === category.id ? { ...item, name } : item)
       );
-      setMessage("Категория переименована");
+      setMessage("Название изменено только для вашей пары");
       window.setTimeout(() => setMessage(""), 1800);
     } else {
-      setMessage(error?.message || "Не удалось переименовать категорию.");
+      setMessage(error.message || "Не удалось переименовать категорию.");
     }
   }
 

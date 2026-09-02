@@ -2436,3 +2436,60 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+
+.tracker-lab-invitation {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.85rem 0;
+  padding: 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--lab-accent) 32%, transparent);
+  border-radius: 0.95rem;
+  background: color-mix(in srgb, var(--lab-accent-soft) 65%, var(--lab-surface-solid));
+}
+
+.dark .tracker-lab-invitation {
+  background: rgba(120, 73, 10, 0.22);
+}
+
+.tracker-lab-invitation > span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--lab-accent);
+  font-size: 0.75rem;
+}
+
+.tracker-lab-invitation > span svg {
+  width: 1rem;
+}
+
+.tracker-lab-invitation > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.tracker-lab-invitation button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.65rem;
+  border: 1px solid var(--lab-line);
+  border-radius: 0.78rem;
+  background: var(--lab-surface);
+  font-size: 0.7rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tracker-lab-invitation button:first-child {
+  color: #fff;
+  border-color: transparent;
+  background: var(--lab-accent);
+}
+
+.tracker-lab-invitation button svg {
+  width: 0.95rem;
+}

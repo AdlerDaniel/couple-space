@@ -2,7 +2,7 @@ begin;
 
 set local search_path = public, extensions;
 
-select plan(25);
+select plan(28);
 
 insert into public.tracker_plans (
   id, couple_id, title, start_date, visibility, edit_scope, created_by

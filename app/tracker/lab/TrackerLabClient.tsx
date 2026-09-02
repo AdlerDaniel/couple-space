@@ -15,6 +15,11 @@ import {
 import { encodeMemoryMedia, type MemoryAttachment } from "@/lib/memoryMedia";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  adjustTrackerEventCount,
+  saveTrackerCheckin,
+  type TrackerLabSnapshot,
+} from "@/lib/trackerRepository";
 import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
 import { animate } from "animejs";
 import {
@@ -83,6 +88,7 @@ import {
   type TrackerPlanKind,
   type TrackerPlanRepeat,
 } from "@/lib/trackerPlanDomain";
+import { useTrackerData } from "../useTrackerData";
 
 type Couple = {
   id: string;
@@ -298,9 +304,7 @@ export default function TrackerLabClient() {
   const [selectedOccurrenceDate, setSelectedOccurrenceDate] = useState<string | null>(null);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [composerMode, setComposerMode] = useState<ComposerMode | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [reloadVersion, setReloadVersion] = useState(0);
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
 
@@ -356,35 +360,9 @@ export default function TrackerLabClient() {
     return { name, avatar: avatar || null, initial: name.trim().slice(0, 1).toUpperCase() || "П" };
   }, [couple, currentUserId, profile]);
 
-  const loadData = useCallback(async (coupleId: string, year: number) => {
-    const from = `${year}-01-01`;
-    const to = `${year}-12-31`;
-    const [
-      categoryResult,
-      preferenceResult,
-      eventResult,
-      goalResult,
-      planResult,
-      participantResult,
-      overrideResult,
-      checkinResult,
-      profileResult,
-      commentResult,
-    ] = await Promise.all([
-      supabase.from("tracker_categories").select("*").order("sort_order"),
-      supabase.from("tracker_category_preferences").select("*").eq("couple_id", coupleId),
-      supabase.from("tracker_events").select("*").eq("couple_id", coupleId).gte("date", from).lte("date", to).order("date"),
-      supabase.from("tracker_goals").select("*").eq("couple_id", coupleId).order("created_at", { ascending: false }),
-      supabase.from("tracker_plans").select("*").eq("couple_id", coupleId).order("created_at", { ascending: false }),
-      supabase.from("tracker_plan_participants").select("*").eq("couple_id", coupleId),
-      supabase.from("tracker_plan_occurrence_overrides").select("*").eq("couple_id", coupleId),
-      supabase.rpc("get_tracker_checkins", { p_couple_id: coupleId, p_from: from, p_to: to }),
-      supabase.from("couple_profiles").select("partner_one,partner_two,avatar,avatar_one,avatar_two,time_zone").eq("couple_id", coupleId).limit(1).maybeSingle(),
-      supabase.from("tracker_plan_comments").select("*").eq("couple_id", coupleId).order("created_at"),
-    ]);
-
-    const rawCategories = (categoryResult.data || []) as TrackerCategory[];
-    const preferences = (preferenceResult.data || []) as TrackerCategoryPreference[];
+  const applyTrackerSnapshot = useCallback((snapshot: TrackerLabSnapshot) => {
+    const rawCategories = snapshot.categories as TrackerCategory[];
+    const preferences = snapshot.preferences as TrackerCategoryPreference[];
     const byCategory = new Map(preferences.map((item) => [item.category_id, item]));
     const mergedCategories = rawCategories
       .map((category) => {
@@ -400,39 +378,32 @@ export default function TrackerLabClient() {
       .filter((category) => !category.hidden)
       .sort((first, second) => first.sort_order - second.sort_order);
 
-    const rawComments = (commentResult.data || []) as TrackerComment[];
-    const signedComments = await Promise.all(rawComments.map(async (comment) => {
-      if (!comment.attachment_url) return comment;
-      const { data } = await supabase.storage.from("tracker-media").createSignedUrl(comment.attachment_url, 3600);
-      return { ...comment, attachment_signed_url: data?.signedUrl || null };
-    }));
-
     setCategories(mergedCategories);
     setCategoryDrafts(Object.fromEntries(mergedCategories.map((item) => [item.id, item.name])));
-    setEvents((eventResult.data || []) as TrackerEvent[]);
-    setGoals((goalResult.data || []) as TrackerGoal[]);
-    setPlans((planResult.data || []) as TrackerPlan[]);
-    setParticipants((participantResult.data || []) as TrackerParticipant[]);
-    setOccurrenceOverrides((overrideResult.data || []) as TrackerOccurrenceOverride[]);
-    setCheckins((checkinResult.data || []) as TrackerCheckin[]);
-    setProfile((profileResult.data || null) as Profile | null);
-    setComments(signedComments);
+    setEvents(snapshot.events as TrackerEvent[]);
+    setGoals(snapshot.goals as TrackerGoal[]);
+    setPlans(snapshot.plans as TrackerPlan[]);
+    setParticipants(snapshot.participants as TrackerParticipant[]);
+    setOccurrenceOverrides(snapshot.occurrenceOverrides as TrackerOccurrenceOverride[]);
+    setCheckins(snapshot.checkins as TrackerCheckin[]);
+    setProfile(snapshot.profile as Profile | null);
+    setComments(snapshot.comments as TrackerComment[]);
     setGoalCategoryId((current) => current || mergedCategories[0]?.id || "");
-
-    const firstError = [
-      categoryResult.error,
-      preferenceResult.error,
-      eventResult.error,
-      goalResult.error,
-      planResult.error,
-      participantResult.error,
-      overrideResult.error,
-      checkinResult.error,
-      profileResult.error,
-      commentResult.error,
-    ].find(Boolean);
-    if (firstError) setMessage(`Не всё удалось загрузить: ${firstError.message}`);
   }, []);
+
+  const {
+    isLoading,
+    error: trackerLoadError,
+    reload: reloadTrackerData,
+  } = useTrackerData({
+    coupleId: couple?.id || null,
+    year: selectedYear,
+    onData: applyTrackerSnapshot,
+  });
+
+  useEffect(() => {
+    if (trackerLoadError) setMessage(`Не всё удалось загрузить: ${trackerLoadError}`);
+  }, [trackerLoadError]);
 
   useEffect(() => {
     let ignore = false;
@@ -460,31 +431,7 @@ export default function TrackerLabClient() {
     return () => { ignore = true; };
   }, [router]);
 
-  useEffect(() => {
-    if (!couple) return;
-    let ignore = false;
-    setIsLoading(true);
-    void loadData(couple.id, selectedYear).finally(() => {
-      if (!ignore) setIsLoading(false);
-    });
-    return () => { ignore = true; };
-  }, [couple, loadData, reloadVersion, selectedYear]);
 
-  useEffect(() => {
-    if (!couple) return;
-    const refresh = () => setReloadVersion((value) => value + 1);
-    const channel = supabase
-      .channel(`tracker-lab:${couple.id}:${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tracker_events", filter: `couple_id=eq.${couple.id}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tracker_goals", filter: `couple_id=eq.${couple.id}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plans", filter: `couple_id=eq.${couple.id}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_participants", filter: `couple_id=eq.${couple.id}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_occurrence_overrides", filter: `couple_id=eq.${couple.id}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tracker_checkins", filter: `couple_id=eq.${couple.id}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_comments", filter: `couple_id=eq.${couple.id}` }, refresh)
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [couple]);
 
   useEffect(() => {
     const own = checkins.find((item) => item.date === selectedDate && item.is_own);
@@ -669,14 +616,14 @@ export default function TrackerLabClient() {
         : items.map((item) => item.id === own.id ? { ...item, count: nextCount } : item));
     }
     try {
-      const { error } = await supabase.rpc("adjust_tracker_event_count", {
-        p_couple_id: couple.id,
-        p_category_id: category.id,
-        p_date: selectedDate,
-        p_delta: delta,
+      const { error } = await adjustTrackerEventCount({
+        coupleId: couple.id,
+        categoryId: category.id,
+        date: selectedDate,
+        delta,
       });
       if (error) throw error;
-      setReloadVersion((value) => value + 1);
+      reloadTrackerData();
     } catch (error) {
       setEvents(previous);
       setMessage(`Не удалось изменить отметку: ${getErrorMessage(error, "повторите ещё раз")}`);
@@ -688,21 +635,21 @@ export default function TrackerLabClient() {
   async function saveCheckin() {
     if (!couple) return;
     setIsSaving(true);
-    const { error } = await supabase.rpc("save_tracker_checkin", {
-      p_couple_id: couple.id,
-      p_date: selectedDate,
-      p_mood: checkinMood,
-      p_energy: checkinEnergy,
-      p_relationship: checkinRelationship,
-      p_visibility: checkinVisibility,
-      p_note: checkinNote.trim() || null,
-      p_reveal_after_both: checkinReveal,
+    const { error } = await saveTrackerCheckin({
+      coupleId: couple.id,
+      date: selectedDate,
+      mood: checkinMood,
+      energy: checkinEnergy,
+      relationship: checkinRelationship,
+      visibility: checkinVisibility,
+      note: checkinNote.trim() || null,
+      revealAfterBoth: checkinReveal,
     });
     if (error) setMessage(`Не удалось сохранить check-in: ${error.message}`);
     else {
       setMessage("Состояние дня сохранено");
       setComposerMode(null);
-      setReloadVersion((value) => value + 1);
+      reloadTrackerData();
     }
     setIsSaving(false);
   }
@@ -768,7 +715,7 @@ export default function TrackerLabClient() {
         resetPlanComposer();
         setComposerMode(null);
         setSelectedPlanId(existing.id);
-        setReloadVersion((value) => value + 1);
+        reloadTrackerData();
       }
       setIsSaving(false);
       return;
@@ -912,7 +859,7 @@ export default function TrackerLabClient() {
       setComposerMode(null);
       setSelectedPlanId(null);
       setSelectedOccurrenceDate(null);
-      setReloadVersion((value) => value + 1);
+      reloadTrackerData();
     }
     setIsSaving(false);
   }
@@ -937,7 +884,7 @@ export default function TrackerLabClient() {
     else {
       setSelectedPlanId(null);
       setSelectedOccurrenceDate(null);
-      setReloadVersion((value) => value + 1);
+      reloadTrackerData();
     }
   }
 
@@ -1025,7 +972,7 @@ export default function TrackerLabClient() {
     if (error) setMessage(`Не удалось сохранить цель: ${error.message}`);
     else {
       setComposerMode(null);
-      setReloadVersion((value) => value + 1);
+      reloadTrackerData();
       await createPartnerNotification(couple, currentUserId, {
         type: "tracker_goal_created",
         title: "Новая цель пары",
@@ -1060,7 +1007,7 @@ export default function TrackerLabClient() {
     if (error) setMessage(`Не удалось переименовать категорию: ${error.message}`);
     else {
       setMessage("Название изменено только для вашей пары");
-      setReloadVersion((value) => value + 1);
+      reloadTrackerData();
     }
   }
 
@@ -1156,7 +1103,7 @@ export default function TrackerLabClient() {
       });
       setCommentText("");
       setCommentFile(null);
-      setReloadVersion((value) => value + 1);
+      reloadTrackerData();
       if (selectedPlan.visibility === "couple") {
         await createPartnerNotification(couple, currentUserId, {
           type: "tracker_plan_comment",
@@ -1494,7 +1441,7 @@ export default function TrackerLabClient() {
             <Search aria-hidden="true" />
             <input data-tracker-search value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Найти в календаре" />
           </label>
-          <button type="button" className="tracker-lab-refresh" onClick={() => setReloadVersion((value) => value + 1)} aria-label="Обновить"><RefreshCw /></button>
+          <button type="button" className="tracker-lab-refresh" onClick={() => reloadTrackerData()} aria-label="Обновить"><RefreshCw /></button>
         </section>
 
         {activeTab === "today" && (

@@ -8,7 +8,7 @@ import {
   getTrackerViewRange,
   getWeekStrip,
   type TrackerPlan,
-} from "../app/tracker/lab/trackerLabDomain.ts";
+} from "../lib/trackerPlanDomain.ts";
 
 function plan(overrides: Partial<TrackerPlan> = {}): TrackerPlan {
   return {

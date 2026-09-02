@@ -436,11 +436,11 @@ create policy tracker_attachments_select on public.tracker_plan_attachments
 for select to authenticated using (public.can_view_tracker_plan(plan_id, (select auth.uid())));
 create policy tracker_attachments_insert on public.tracker_plan_attachments
 for insert to authenticated with check (
-  (storage.foldername(name))[3] = (select auth.uid())::text
+  owner_id = (select auth.uid())
   and public.can_view_tracker_plan(plan_id, (select auth.uid()))
 );
 create policy tracker_attachments_delete_own on public.tracker_plan_attachments
-for delete to authenticated using ((storage.foldername(name))[3] = (select auth.uid())::text);
+for delete to authenticated using (owner_id = (select auth.uid()));
 
 create policy tracker_checkins_own on public.tracker_checkins
 for all to authenticated

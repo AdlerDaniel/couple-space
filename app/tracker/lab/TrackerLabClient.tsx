@@ -174,10 +174,33 @@ type TrackerComment = {
   attachment_signed_url?: string | null;
 };
 
+type TrackerParticipant = {
+  id: string;
+  plan_id: string;
+  couple_id: string;
+  user_id: string;
+  role: "participant" | "responsible";
+  response: "pending" | "accepted" | "declined";
+  created_at: string;
+};
+
+type TrackerOccurrenceOverride = {
+  id: string;
+  plan_id: string;
+  couple_id: string;
+  occurrence_date: string;
+  override_start_date: string | null;
+  override_starts_at: string | null;
+  override_ends_at: string | null;
+  status: "planned" | "cancelled" | "done";
+  updated_by: string;
+  updated_at: string;
+};
+
 type LocalTab = "today" | "calendar" | "activity";
 type CalendarMode = "day" | "week" | "month" | "year";
 type ScopeFilter = "all" | "me" | "partner" | "both";
-type ComposerMode = "menu" | "plan" | "checkin" | "goal" | "activity";
+type ComposerMode = "menu" | "plan" | "occurrence" | "checkin" | "goal" | "activity";
 type MoodKey = "great" | "good" | "normal" | "tired" | "bad";
 
 const moods: Array<{ key: MoodKey; label: string; emoji: string }> = [
@@ -274,6 +297,8 @@ export default function TrackerLabClient() {
   const [events, setEvents] = useState<TrackerEvent[]>([]);
   const [goals, setGoals] = useState<TrackerGoal[]>([]);
   const [plans, setPlans] = useState<TrackerPlan[]>([]);
+  const [participants, setParticipants] = useState<TrackerParticipant[]>([]);
+  const [occurrenceOverrides, setOccurrenceOverrides] = useState<TrackerOccurrenceOverride[]>([]);
   const [checkins, setCheckins] = useState<TrackerCheckin[]>([]);
   const [comments, setComments] = useState<TrackerComment[]>([]);
   const [activeTab, setActiveTab] = useState<LocalTab>("today");
@@ -281,6 +306,8 @@ export default function TrackerLabClient() {
   const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("all");
   const [selectedDate, setSelectedDate] = useState(toTrackerDateKey(new Date()));
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [selectedOccurrenceDate, setSelectedOccurrenceDate] = useState<string | null>(null);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [composerMode, setComposerMode] = useState<ComposerMode | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -349,6 +376,8 @@ export default function TrackerLabClient() {
       eventResult,
       goalResult,
       planResult,
+      participantResult,
+      overrideResult,
       checkinResult,
       profileResult,
       commentResult,
@@ -358,6 +387,8 @@ export default function TrackerLabClient() {
       supabase.from("tracker_events").select("*").eq("couple_id", coupleId).gte("date", from).lte("date", to).order("date"),
       supabase.from("tracker_goals").select("*").eq("couple_id", coupleId).order("created_at", { ascending: false }),
       supabase.from("tracker_plans").select("*").eq("couple_id", coupleId).order("created_at", { ascending: false }),
+      supabase.from("tracker_plan_participants").select("*").eq("couple_id", coupleId),
+      supabase.from("tracker_plan_occurrence_overrides").select("*").eq("couple_id", coupleId),
       supabase.rpc("get_tracker_checkins", { p_couple_id: coupleId, p_from: from, p_to: to }),
       supabase.from("couple_profiles").select("partner_one,partner_two,avatar,avatar_one,avatar_two,time_zone").eq("couple_id", coupleId).limit(1).maybeSingle(),
       supabase.from("tracker_plan_comments").select("*").eq("couple_id", coupleId).order("created_at"),
@@ -392,6 +423,8 @@ export default function TrackerLabClient() {
     setEvents((eventResult.data || []) as TrackerEvent[]);
     setGoals((goalResult.data || []) as TrackerGoal[]);
     setPlans((planResult.data || []) as TrackerPlan[]);
+    setParticipants((participantResult.data || []) as TrackerParticipant[]);
+    setOccurrenceOverrides((overrideResult.data || []) as TrackerOccurrenceOverride[]);
     setCheckins((checkinResult.data || []) as TrackerCheckin[]);
     setProfile((profileResult.data || null) as Profile | null);
     setComments(signedComments);
@@ -403,6 +436,8 @@ export default function TrackerLabClient() {
       eventResult.error,
       goalResult.error,
       planResult.error,
+      participantResult.error,
+      overrideResult.error,
       checkinResult.error,
       profileResult.error,
       commentResult.error,
@@ -454,6 +489,8 @@ export default function TrackerLabClient() {
       .on("postgres_changes", { event: "*", schema: "public", table: "tracker_events", filter: `couple_id=eq.${couple.id}` }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "tracker_goals", filter: `couple_id=eq.${couple.id}` }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plans", filter: `couple_id=eq.${couple.id}` }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_participants", filter: `couple_id=eq.${couple.id}` }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_occurrence_overrides", filter: `couple_id=eq.${couple.id}` }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "tracker_checkins", filter: `couple_id=eq.${couple.id}` }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_comments", filter: `couple_id=eq.${couple.id}` }, refresh)
       .subscribe();
@@ -515,6 +552,13 @@ export default function TrackerLabClient() {
     return () => window.removeEventListener("keydown", handleKeyboard);
   }, [selectedDate]);
 
+  useEffect(() => {
+    const requestedDate = new URLSearchParams(window.location.search).get("date");
+    if (requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
+      setSelectedDate(requestedDate);
+    }
+  }, []);
+
   useEffect(() => () => {
     const recorder = mediaRecorderRef.current;
     if (recorder && recorder.state !== "inactive") recorder.stop();
@@ -525,10 +569,25 @@ export default function TrackerLabClient() {
     () => getTrackerViewRange(selectedDate, calendarMode),
     [calendarMode, selectedDate],
   );
-  const occurrences = useMemo(
-    () => expandTrackerPlanOccurrences(plans, `${selectedYear}-01-01`, `${selectedYear}-12-31`),
-    [plans, selectedYear],
-  );
+  const occurrences = useMemo(() => {
+    const base = expandTrackerPlanOccurrences(plans, `${selectedYear}-01-01`, `${selectedYear}-12-31`);
+    return base.flatMap((occurrence) => {
+      const override = occurrenceOverrides.find((item) =>
+        item.plan_id === occurrence.plan.id && item.occurrence_date === occurrence.dateKey,
+      );
+      if (!override) return [occurrence];
+      if (override.status === "cancelled") return [];
+      return [{
+        ...occurrence,
+        dateKey: override.override_start_date || occurrence.dateKey,
+        startsAt: override.override_starts_at || occurrence.startsAt,
+        endsAt: override.override_ends_at || occurrence.endsAt,
+      }];
+    }).sort((first, second) =>
+      first.dateKey.localeCompare(second.dateKey) ||
+      (first.startsAt || "").localeCompare(second.startsAt || ""),
+    );
+  }, [occurrenceOverrides, plans, selectedYear]);
   const filteredOccurrences = useMemo(() => occurrences.filter((occurrence) => {
     const scope = currentUserId ? relativeScope(occurrence.plan, currentUserId) : "both";
     const matchesScope = scopeFilter === "all" || scope === scopeFilter;
@@ -546,6 +605,9 @@ export default function TrackerLabClient() {
     [filteredOccurrences, selectedDate],
   );
   const selectedPlan = plans.find((item) => item.id === selectedPlanId) || null;
+  const selectedParticipant = participants.find((item) =>
+    item.plan_id === selectedPlanId && item.user_id === currentUserId,
+  ) || null;
   const selectedComments = comments.filter((item) => item.plan_id === selectedPlanId);
   const week = useMemo(() => getWeekStrip(selectedDate), [selectedDate]);
   const cells = useMemo(() => monthCells(selectedDate), [selectedDate]);
@@ -567,7 +629,44 @@ export default function TrackerLabClient() {
 
   function openComposer(mode: ComposerMode) {
     setPlanDate(selectedDate);
+    if (mode === "plan") setEditingPlanId(null);
     setComposerMode(mode);
+  }
+
+  function resetPlanComposer() {
+    setPlanTitle("");
+    setPlanDescription("");
+    setPlanTime("");
+    setPlanEndTime("");
+    setPlanRepeat("none");
+    setPlanRepeatUntil("");
+    setEditingPlanId(null);
+  }
+
+  function openPlanEditor(plan: TrackerPlan) {
+    const dateKey = getPlanBaseDate(plan);
+    setEditingPlanId(plan.id);
+    setPlanTitle(plan.title);
+    setPlanDescription(plan.description || "");
+    setPlanKind(plan.kind);
+    setPlanDate(dateKey);
+    setPlanTime(plan.starts_at ? new Date(plan.starts_at).toTimeString().slice(0, 5) : "");
+    setPlanEndTime(plan.ends_at ? new Date(plan.ends_at).toTimeString().slice(0, 5) : "");
+    setPlanScope(plan.participant_scope);
+    setPlanVisibility(plan.visibility);
+    setPlanRepeat(plan.repeat_mode);
+    setPlanRepeatUntil(plan.repeat_until || "");
+    setSelectedPlanId(null);
+    setComposerMode("plan");
+  }
+
+  function openOccurrenceEditor(plan: TrackerPlan) {
+    const dateKey = selectedOccurrenceDate || getPlanBaseDate(plan);
+    const occurrence = occurrences.find((item) => item.plan.id === plan.id && item.dateKey === dateKey);
+    setPlanDate(dateKey);
+    setPlanTime(occurrence?.startsAt ? new Date(occurrence.startsAt).toTimeString().slice(0, 5) : "");
+    setPlanEndTime(occurrence?.endsAt ? new Date(occurrence.endsAt).toTimeString().slice(0, 5) : "");
+    setComposerMode("occurrence");
   }
 
   async function adjustCategory(category: TrackerCategory, delta: 1 | -1) {
@@ -631,6 +730,67 @@ export default function TrackerLabClient() {
     const allDay = !planTime;
     const startsAt = allDay ? null : new Date(`${planDate}T${planTime}:00`).toISOString();
     const endsAt = allDay || !planEndTime ? null : new Date(`${planDate}T${planEndTime}:00`).toISOString();
+    if (startsAt && endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) {
+      setMessage("Время окончания должно быть позже начала.");
+      setIsSaving(false);
+      return;
+    }
+
+    if (editingPlanId) {
+      const existing = plans.find((item) => item.id === editingPlanId);
+      if (!existing) {
+        setMessage("План уже недоступен.");
+        setIsSaving(false);
+        return;
+      }
+      const patch: Partial<TrackerPlan> = {
+        title: planTitle.trim(),
+        description: planDescription.trim() || null,
+        kind: planKind,
+        start_date: allDay ? planDate : null,
+        starts_at: startsAt,
+        ends_at: endsAt,
+        all_day: allDay,
+        participant_scope: planVisibility === "private" ? "me" : planScope,
+        assignee_id: planScope === "partner" ? partnerId : planScope === "me" ? currentUserId : null,
+        visibility: planVisibility,
+        repeat_mode: planRepeat,
+        repeat_interval: 1,
+        repeat_weekdays: planRepeat === "weekly" ? [parseTrackerDateKey(planDate).getDay() || 7] : [],
+        repeat_until: planRepeat === "none" ? null : planRepeatUntil || null,
+        updated_by: currentUserId,
+        updated_at: new Date().toISOString(),
+      };
+      const previous = plans;
+      setPlans((items) => items.map((item) => item.id === editingPlanId ? { ...item, ...patch } : item));
+      const { error } = await supabase.from("tracker_plans").update(patch).eq("id", editingPlanId);
+      if (error) {
+        setPlans(previous);
+        setMessage(`Не удалось изменить серию: ${error.message}`);
+      } else {
+        await supabase.from("tracker_plan_activity").insert({
+          plan_id: editingPlanId,
+          couple_id: couple.id,
+          actor_id: currentUserId,
+          activity_type: "updated",
+        });
+        if (existing.visibility === "couple") {
+          await createPartnerNotification(couple, currentUserId, {
+            type: "tracker_plan_updated",
+            title: "Совместный план изменён",
+            body: planTitle.trim(),
+            href: "/tracker/lab",
+          });
+        }
+        resetPlanComposer();
+        setComposerMode(null);
+        setSelectedPlanId(existing.id);
+        setReloadVersion((value) => value + 1);
+      }
+      setIsSaving(false);
+      return;
+    }
+
     const optimistic: TrackerPlan = {
       id: `local-${Date.now()}`,
       couple_id: couple.id,
@@ -712,12 +872,7 @@ export default function TrackerLabClient() {
       });
 
       setPlans((items) => items.map((item) => item.id === optimistic.id ? data : item));
-      setPlanTitle("");
-      setPlanDescription("");
-      setPlanTime("");
-      setPlanEndTime("");
-      setPlanRepeat("none");
-      setPlanRepeatUntil("");
+      resetPlanComposer();
       setComposerMode(null);
       setSelectedPlanId(data.id);
       if (data.visibility === "couple") {
@@ -733,6 +888,91 @@ export default function TrackerLabClient() {
       setMessage(`Не удалось создать событие: ${getErrorMessage(error, "попробуйте снова")}`);
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function saveOccurrenceOverride() {
+    if (!couple || !currentUserId || !selectedPlan || !selectedOccurrenceDate) return;
+    setIsSaving(true);
+    const existingOverride = occurrenceOverrides.find((item) =>
+      item.plan_id === selectedPlan.id &&
+      (item.override_start_date || item.occurrence_date) === selectedOccurrenceDate,
+    );
+    const occurrenceDate = existingOverride?.occurrence_date || selectedOccurrenceDate;
+    const allDay = selectedPlan.all_day || !planTime;
+    const overrideStartsAt = allDay ? null : new Date(`${planDate}T${planTime}:00`).toISOString();
+    const overrideEndsAt = allDay || !planEndTime ? null : new Date(`${planDate}T${planEndTime}:00`).toISOString();
+    if (overrideStartsAt && overrideEndsAt && Date.parse(overrideEndsAt) <= Date.parse(overrideStartsAt)) {
+      setMessage("Время окончания должно быть позже начала.");
+      setIsSaving(false);
+      return;
+    }
+    const { error } = await supabase.from("tracker_plan_occurrence_overrides").upsert({
+      plan_id: selectedPlan.id,
+      couple_id: couple.id,
+      occurrence_date: occurrenceDate,
+      override_start_date: planDate,
+      override_starts_at: overrideStartsAt,
+      override_ends_at: overrideEndsAt,
+      status: "planned",
+      updated_by: currentUserId,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "plan_id,occurrence_date" });
+    if (error) setMessage(`Не удалось перенести событие: ${error.message}`);
+    else {
+      await supabase.from("tracker_plan_activity").insert({
+        plan_id: selectedPlan.id,
+        couple_id: couple.id,
+        actor_id: currentUserId,
+        activity_type: "occurrence_updated",
+      });
+      setComposerMode(null);
+      setSelectedPlanId(null);
+      setSelectedOccurrenceDate(null);
+      setReloadVersion((value) => value + 1);
+    }
+    setIsSaving(false);
+  }
+
+  async function cancelOccurrence(plan: TrackerPlan) {
+    if (!couple || !currentUserId || !selectedOccurrenceDate) return;
+    if (!window.confirm("Отменить только это повторение? Остальная серия сохранится.")) return;
+    const existingOverride = occurrenceOverrides.find((item) =>
+      item.plan_id === plan.id &&
+      (item.override_start_date || item.occurrence_date) === selectedOccurrenceDate,
+    );
+    const occurrenceDate = existingOverride?.occurrence_date || selectedOccurrenceDate;
+    const { error } = await supabase.from("tracker_plan_occurrence_overrides").upsert({
+      plan_id: plan.id,
+      couple_id: couple.id,
+      occurrence_date: occurrenceDate,
+      status: "cancelled",
+      updated_by: currentUserId,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "plan_id,occurrence_date" });
+    if (error) setMessage(`Не удалось отменить повторение: ${error.message}`);
+    else {
+      setSelectedPlanId(null);
+      setSelectedOccurrenceDate(null);
+      setReloadVersion((value) => value + 1);
+    }
+  }
+
+  async function respondToPlan(response: "accepted" | "declined") {
+    if (!selectedParticipant || !currentUserId) return;
+    const previous = participants;
+    setParticipants((items) => items.map((item) =>
+      item.id === selectedParticipant.id ? { ...item, response } : item,
+    ));
+    const { error } = await supabase.from("tracker_plan_participants")
+      .update({ response })
+      .eq("id", selectedParticipant.id)
+      .eq("user_id", currentUserId);
+    if (error) {
+      setParticipants(previous);
+      setMessage(`Не удалось сохранить ответ: ${error.message}`);
+    } else {
+      setMessage(response === "accepted" ? "План принят" : "План отклонён");
     }
   }
 
@@ -1055,7 +1295,7 @@ export default function TrackerLabClient() {
         data-plan-card
         data-plan-id={plan.id}
       >
-        <button type="button" className="tracker-lab-plan-main" onClick={() => setSelectedPlanId(plan.id)}>
+        <button type="button" className="tracker-lab-plan-main" onClick={() => { setSelectedPlanId(plan.id); setSelectedOccurrenceDate(occurrence.dateKey); }}>
           <span className="tracker-lab-plan-icon">{getPlanIcon(plan.kind)}</span>
           <span className="tracker-lab-plan-copy">
             <span className="tracker-lab-plan-meta">
@@ -1442,7 +1682,28 @@ export default function TrackerLabClient() {
               <div><dt><UsersRound /></dt><dd><strong>{selectedPlan.participant_scope === "both" ? "Вместе" : selectedPlan.participant_scope === "me" ? "Автор" : "Партнёр"}</strong><span>{selectedPlan.edit_scope === "participants" ? "Можно редактировать вместе" : "Редактирует автор"}</span></dd></div>
               <div><dt><RefreshCw /></dt><dd><strong>{repeatLabels[selectedPlan.repeat_mode]}</strong><span>{selectedPlan.repeat_until ? `До ${formatTrackerDate(selectedPlan.repeat_until)}` : "Без даты окончания"}</span></dd></div>
             </dl>
+            {selectedParticipant?.response === "pending" && (
+              <section className="tracker-lab-invitation">
+                <span><UsersRound /><strong>Вас пригласили в этот план</strong></span>
+                <div>
+                  <button type="button" onClick={() => void respondToPlan("accepted")}><Check />Принять</button>
+                  <button type="button" onClick={() => void respondToPlan("declined")}><X />Отклонить</button>
+                </div>
+              </section>
+            )}
+            {selectedParticipant?.response === "declined" && (
+              <div className="tracker-lab-privacy-note"><EyeOff />Вы отклонили участие. План остаётся видимым в общем календаре.</div>
+            )}
             <div className="tracker-lab-detail-actions">
+              {(selectedPlan.created_by === currentUserId || selectedPlan.edit_scope === "participants") && (
+                <button type="button" onClick={() => openPlanEditor(selectedPlan)}><Pencil />Изменить всю серию</button>
+              )}
+              {selectedPlan.repeat_mode !== "none" && selectedOccurrenceDate && (
+                <button type="button" onClick={() => openOccurrenceEditor(selectedPlan)}><CalendarRange />Перенести этот день</button>
+              )}
+              {selectedPlan.repeat_mode !== "none" && selectedOccurrenceDate && (
+                <button type="button" onClick={() => void cancelOccurrence(selectedPlan)}><X />Отменить этот день</button>
+              )}
               {selectedPlan.status !== "done" && <button type="button" onClick={() => void updatePlanStatus(selectedPlan, "done")}><Check />Завершить</button>}
               <button type="button" onClick={() => downloadCalendar(selectedPlan)}><Download />Добавить в календарь</button>
               {selectedPlan.status === "done" && <button type="button" onClick={() => openMemoryComposer(selectedPlan)}><Sparkles />Сделать воспоминанием</button>}
@@ -1487,12 +1748,12 @@ export default function TrackerLabClient() {
         <div className="tracker-lab-overlay" onMouseDown={(event) => { if (event.currentTarget === event.target) setComposerMode(null); }}>
           <section className="tracker-lab-composer-sheet" aria-label="Добавить в трекер">
             <div className="tracker-lab-sheet-handle" />
-            <button type="button" className="tracker-lab-sheet-close" onClick={() => setComposerMode(null)} aria-label="Закрыть"><X /></button>
+            <button type="button" className="tracker-lab-sheet-close" onClick={() => { setComposerMode(null); setEditingPlanId(null); }} aria-label="Закрыть"><X /></button>
             {composerMode === "menu" && (
               <>
                 <p>Добавить</p><h2>Что происходит?</h2>
                 <div className="tracker-lab-create-menu">
-                  <button type="button" onClick={() => setComposerMode("plan")}><CalendarDays /><span><strong>Событие или план</strong><small>Свидание, задача, дата</small></span><ChevronRight /></button>
+                  <button type="button" onClick={() => openComposer("plan")}><CalendarDays /><span><strong>Событие или план</strong><small>Свидание, задача, дата</small></span><ChevronRight /></button>
                   <button type="button" onClick={() => setComposerMode("activity")}><Activity /><span><strong>Быстрая отметка</strong><small>Еда, спорт, игры и другое</small></span><ChevronRight /></button>
                   <button type="button" onClick={() => setComposerMode("checkin")}><Sparkles /><span><strong>Состояние дня</strong><small>Настроение и энергия</small></span><ChevronRight /></button>
                   <button type="button" onClick={() => setComposerMode("goal")}><Target /><span><strong>Новая цель</strong><small>Общий ориентир пары</small></span><ChevronRight /></button>
@@ -1501,7 +1762,7 @@ export default function TrackerLabClient() {
             )}
             {composerMode === "plan" && (
               <>
-                <p>Новый план</p><h2>Добавить в календарь</h2>
+                <p>{editingPlanId ? "Редактирование серии" : "Новый план"}</p><h2>{editingPlanId ? "Изменить весь план" : "Добавить в календарь"}</h2>
                 <div className="tracker-lab-form-grid">
                   <label className="is-wide"><span>Название</span><input value={planTitle} onChange={(event) => setPlanTitle(event.target.value)} placeholder="Например, вечерняя прогулка" autoFocus /></label>
                   <label><span>Тип</span><select value={planKind} onChange={(event) => setPlanKind(event.target.value as TrackerPlanKind)}>{Object.entries(kindLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
@@ -1515,7 +1776,19 @@ export default function TrackerLabClient() {
                   <label><span>Напомнить</span><select value={planReminder} onChange={(event) => setPlanReminder(Number(event.target.value))}><option value={0}>В момент события</option><option value={30}>За 30 минут</option><option value={60}>За час</option><option value={1440}>За день</option><option value={10080}>За неделю</option></select></label>
                   <label className="is-wide"><span>Описание</span><textarea value={planDescription} onChange={(event) => setPlanDescription(event.target.value)} placeholder="Детали, адрес или небольшая заметка" rows={3} /></label>
                 </div>
-                <button type="button" className="tracker-lab-primary-button" disabled={isSaving || !planTitle.trim()} onClick={() => void savePlan()}>{isSaving ? "Сохраняем…" : "Добавить в календарь"}</button>
+                <button type="button" className="tracker-lab-primary-button" disabled={isSaving || !planTitle.trim()} onClick={() => void savePlan()}>{isSaving ? "Сохраняем…" : editingPlanId ? "Сохранить всю серию" : "Добавить в календарь"}</button>
+              </>
+            )}
+            {composerMode === "occurrence" && selectedPlan && (
+              <>
+                <p>Одно повторение</p><h2>Перенести этот день</h2>
+                <span className="tracker-lab-privacy-note"><CalendarRange />Остальные даты серии не изменятся.</span>
+                <div className="tracker-lab-form-grid">
+                  <label className="is-wide"><span>Новая дата</span><input type="date" value={planDate} onChange={(event) => setPlanDate(event.target.value)} /></label>
+                  {!selectedPlan.all_day && <label><span>Начало</span><input type="time" value={planTime} onChange={(event) => setPlanTime(event.target.value)} /></label>}
+                  {!selectedPlan.all_day && <label><span>Конец</span><input type="time" value={planEndTime} onChange={(event) => setPlanEndTime(event.target.value)} /></label>}
+                </div>
+                <button type="button" className="tracker-lab-primary-button" disabled={isSaving} onClick={() => void saveOccurrenceOverride()}>{isSaving ? "Сохраняем…" : "Перенести только этот день"}</button>
               </>
             )}
             {composerMode === "checkin" && (
@@ -1565,6 +1838,7 @@ export default function TrackerLabClient() {
                   setPlanTime(new Date(slot.starts_at).toTimeString().slice(0, 5));
                   setPlanEndTime(new Date(slot.ends_at).toTimeString().slice(0, 5));
                   setIsFreeTimeOpen(false);
+                  setEditingPlanId(null);
                   setComposerMode("plan");
                 }}>
                   <Clock3 /><strong>{formatClock(slot.starts_at)}–{formatClock(slot.ends_at)}</strong><span>Запланировать</span>

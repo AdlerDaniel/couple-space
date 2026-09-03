@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { collectTrackerPages } from "@/lib/trackerPagination";
 import type { TrackerPlan } from "@/lib/trackerPlanDomain";
 
 export type TrackerLabSnapshot = {
@@ -14,6 +15,12 @@ export type TrackerLabSnapshot = {
   comments: unknown[];
   reminders: unknown[];
 };
+
+export function fetchTrackerEvents(coupleId: string, from: string, to: string) {
+  return collectTrackerPages((first, last) => supabase.from("tracker_events")
+    .select("*").eq("couple_id", coupleId).gte("date", from).lte("date", to)
+    .order("date", { ascending: false }).order("created_at", { ascending: false }).order("id").range(first, last));
+}
 
 export async function fetchTrackerLabData(coupleId: string, year: number): Promise<TrackerLabSnapshot> {
   const from = `${year}-01-01`;
@@ -33,15 +40,15 @@ export async function fetchTrackerLabData(coupleId: string, year: number): Promi
   ] = await Promise.all([
     supabase.from("tracker_categories").select("*").order("sort_order"),
     supabase.from("tracker_category_preferences").select("*").eq("couple_id", coupleId),
-    supabase.from("tracker_events").select("*").eq("couple_id", coupleId).gte("date", from).lte("date", to).order("date"),
-    supabase.from("tracker_goals").select("*").eq("couple_id", coupleId).order("created_at", { ascending: false }),
-    supabase.from("tracker_plans").select("*").eq("couple_id", coupleId).order("created_at", { ascending: false }),
-    supabase.from("tracker_plan_participants").select("*").eq("couple_id", coupleId),
-    supabase.from("tracker_plan_occurrence_overrides").select("*").eq("couple_id", coupleId),
+    fetchTrackerEvents(coupleId, `${year - 1}-12-01`, to),
+    collectTrackerPages((first, last) => supabase.from("tracker_goals").select("*").eq("couple_id", coupleId).order("created_at", { ascending: false }).order("id").range(first, last)),
+    collectTrackerPages((first, last) => supabase.from("tracker_plans").select("*").eq("couple_id", coupleId).order("created_at", { ascending: false }).order("id").range(first, last)),
+    collectTrackerPages((first, last) => supabase.from("tracker_plan_participants").select("*").eq("couple_id", coupleId).order("id").range(first, last)),
+    collectTrackerPages((first, last) => supabase.from("tracker_plan_occurrence_overrides").select("*").eq("couple_id", coupleId).order("id").range(first, last)),
     supabase.rpc("get_tracker_checkins", { p_couple_id: coupleId, p_from: from, p_to: to }),
     supabase.from("couple_profiles").select("partner_one,partner_two,avatar,avatar_one,avatar_two,time_zone").eq("couple_id", coupleId).limit(1).maybeSingle(),
-    supabase.from("tracker_plan_comments").select("*").eq("couple_id", coupleId).order("created_at"),
-    supabase.from("tracker_plan_reminders").select("id,plan_id,user_id,offset_minutes,delivery").eq("couple_id", coupleId).order("created_at", { ascending: false }),
+    collectTrackerPages((first, last) => supabase.from("tracker_plan_comments").select("*").eq("couple_id", coupleId).order("created_at").order("id").range(first, last)),
+    collectTrackerPages((first, last) => supabase.from("tracker_plan_reminders").select("id,plan_id,user_id,offset_minutes,delivery").eq("couple_id", coupleId).order("created_at", { ascending: false }).order("id").range(first, last)),
   ]);
 
   const firstError = [
@@ -84,22 +91,35 @@ export async function fetchTrackerLabData(coupleId: string, year: number): Promi
 
 export function subscribeTrackerData(coupleId: string, onChange: () => void) {
   const filter = `couple_id=eq.${coupleId}`;
+  let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  const scheduleRefresh = () => {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(onChange, 120);
+  };
   const channel = supabase
     .channel(`tracker-data:${coupleId}:${crypto.randomUUID()}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_events", filter }, onChange)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_goals", filter }, onChange)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plans", filter }, onChange)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_participants", filter }, onChange)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_occurrence_overrides", filter }, onChange)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_checkins", filter }, onChange)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_comments", filter }, onChange)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_category_preferences", filter }, onChange)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_reminders", filter }, onChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_events", filter }, scheduleRefresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_goals", filter }, scheduleRefresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plans", filter }, scheduleRefresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_participants", filter }, scheduleRefresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_occurrence_overrides", filter }, scheduleRefresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_checkins", filter }, scheduleRefresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_comments", filter }, scheduleRefresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_category_preferences", filter }, scheduleRefresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_reminders", filter }, scheduleRefresh)
     .subscribe();
 
   return () => {
+    if (refreshTimer) clearTimeout(refreshTimer);
     void supabase.removeChannel(channel);
   };
+}
+
+export async function completeTrackerAssignedTask(planId: string, occurrenceDate: string | null) {
+  return supabase.rpc("complete_tracker_assigned_task", {
+    p_plan_id: planId,
+    p_occurrence_date: occurrenceDate || undefined,
+  });
 }
 
 export async function adjustTrackerEventCount(input: {

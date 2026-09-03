@@ -7,6 +7,7 @@ import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import {
   adjustTrackerEventCount,
+  completeTrackerAssignedTask,
   saveTrackerCheckin,
   synchronizeTrackerParticipants,
   type TrackerLabSnapshot,
@@ -29,7 +30,6 @@ import {
   Gamepad2,
   Heart,
   LayoutDashboard,
-  ListFilter,
   Lock,
   Minus,
   Palette,
@@ -77,6 +77,7 @@ import {
   type TrackerPlanRepeat,
 } from "@/lib/trackerPlanDomain";
 import { useTrackerData } from "../useTrackerData";
+import TrackerLabAnalytics from "./TrackerLabAnalytics";
 import TrackerLabDialog from "./TrackerLabDialog";
 import TrackerLabDiscussion, { type TrackerComment } from "./TrackerLabDiscussion";
 import TrackerLabFreeTimeDialog from "./TrackerLabFreeTimeDialog";
@@ -508,6 +509,13 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     selectedPlan && currentUserId && (
       selectedPlan.created_by === currentUserId ||
       (selectedPlan.edit_scope === "participants" && selectedParticipant?.response === "accepted")
+    ),
+  );
+  const canCompleteSelectedPlan = Boolean(
+    canEditSelectedPlan || (
+      selectedPlan?.kind === "task" &&
+      selectedPlan.assignee_id === currentUserId &&
+      selectedParticipant?.response === "accepted"
     ),
   );
   const selectedComments = comments.filter((item) => item.plan_id === selectedPlanId);
@@ -1007,6 +1015,23 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     if (pendingMutations.current.has(mutationKey)) return;
     pendingMutations.current.add(mutationKey);
     try {
+      const participant = participants.find((item) => item.plan_id === plan.id && item.user_id === currentUserId);
+      const canEditPlan = plan.created_by === currentUserId ||
+        (plan.edit_scope === "participants" && participant?.response === "accepted");
+      const assignedOnly = !canEditPlan && plan.kind === "task" &&
+        plan.assignee_id === currentUserId && participant?.response === "accepted";
+      if (assignedOnly) {
+        const { error } = await completeTrackerAssignedTask(
+          plan.id,
+          plan.repeat_mode === "none" ? null : occurrence.originalDateKey,
+        );
+        if (error) setMessage(`Не удалось завершить назначенную задачу: ${error.message}`);
+        else {
+          setMessage("Задача завершена");
+          reloadTrackerData();
+        }
+        return;
+      }
       if (plan.repeat_mode === "none") {
         await updatePlanStatus(plan, "done");
         return;
@@ -1341,7 +1366,8 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     const scope = currentUserId ? relativeScope(plan, currentUserId) : "both";
     const participant = participants.find((item) => item.plan_id === plan.id && item.user_id === currentUserId);
     const canAct = plan.created_by === currentUserId ||
-      (plan.edit_scope === "participants" && participant?.response === "accepted");
+      (plan.edit_scope === "participants" && participant?.response === "accepted") ||
+      (plan.kind === "task" && plan.assignee_id === currentUserId && participant?.response === "accepted");
     return (
       <article
         key={`${plan.id}-${occurrence.originalDateKey}`}
@@ -1467,10 +1493,18 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
             const person = getPersonMeta(checkin.user_id);
             const mood = moods.find((item) => item.key === checkin.mood);
             return (
-              <div key={checkin.id}>
+              <div key={checkin.id} className="tracker-lab-checkin-entry">
                 <span className="tracker-lab-avatar">{person.avatar ? <Image src={person.avatar} alt="" width={36} height={36} unoptimized /> : person.initial}</span>
-                <span><strong>{person.name}</strong><small>{mood ? mood.label : "Ответ откроется позже"}</small></span>
+                <span><strong>{person.name}</strong><small>{mood ? mood.label : "Ответ откроется после вашей отметки"}</small></span>
                 {mood ? <FluentEmoji emoji={mood.emoji} size={34} decorative /> : <Lock size={20} />}
+                <div className="tracker-lab-checkin-details">
+                  {checkin.is_own && <small className="tracker-lab-checkin-visibility">{checkin.visibility === "private" ? <><Lock size={12} />Только вам</> : checkin.visibility === "summary" ? <><Eye size={12} />Партнёру виден статус</> : <><UsersRound size={12} />Открыто партнёру</>}{checkin.reveal_after_both && checkin.visibility !== "private" ? " · после ответа обоих" : ""}</small>}
+                  {(checkin.energy !== null || checkin.relationship !== null) && <dl>
+                    {checkin.energy !== null && <div><dt><Zap size={14} />Энергия</dt><dd>{checkin.energy}<span>/5</span></dd></div>}
+                    {checkin.relationship !== null && <div><dt><Heart size={14} />Близость</dt><dd>{checkin.relationship}<span>/5</span></dd></div>}
+                  </dl>}
+                  {checkin.note && <p>{checkin.note}</p>}
+                </div>
               </div>
             );
           })}
@@ -1669,6 +1703,13 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
               <article><UsersRound /><span><strong>{stats.together}</strong><small>совместных планов</small></span></article>
               <article><Check /><span><strong>{stats.done}</strong><small>завершено</small></span></article>
             </div>
+            <TrackerLabAnalytics
+              events={events}
+              categories={categories}
+              selectedDate={selectedDate}
+              getPersonMeta={getPersonMeta}
+              onDateChange={(date) => { setSelectedDate(date); setActiveTab("today"); }}
+            />
             <div className="tracker-lab-activity-layout">
               <section className="tracker-lab-insight-panel">
                 <div className="tracker-lab-section-heading"><div><span>Категории</span><h2>Ваши названия</h2></div><Pencil /></div>
@@ -1685,21 +1726,6 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
                     </div>
                   );
                 })}
-              </section>
-              <section className="tracker-lab-insight-panel">
-                <div className="tracker-lab-section-heading"><div><span>История</span><h2>Последние отметки</h2></div><ListFilter /></div>
-                <div className="tracker-lab-history">
-                  {[...activeEvents].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12).map((event) => {
-                    const category = categories.find((item) => item.id === event.category_id);
-                    const person = getPersonMeta(event.created_by);
-                    return (
-                      <div key={event.id}>
-                        <span style={{ color: category ? categoryColor(category) : "#d97706" }}>{category ? getCategoryIcon(category) : <Activity />}</span>
-                        <span><strong>{category?.name || "Активность"} · {event.count}</strong><small>{person.name} · {formatTrackerDate(event.date, { day: "numeric", month: "short" })}</small></span>
-                      </div>
-                    );
-                  })}
-                </div>
               </section>
               <section className="tracker-lab-insight-panel is-goals">
                 <div className="tracker-lab-section-heading"><div><span>Цели</span><h2>Общий прогресс</h2></div><Target /></div>
@@ -1760,7 +1786,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
               {canEditSelectedPlan && selectedPlan.repeat_mode !== "none" && selectedOccurrenceDate && (
                 <button type="button" onClick={() => void cancelOccurrence(selectedPlan)}><X />Отменить этот день</button>
               )}
-              {selectedStatus !== "done" && canEditSelectedPlan && <button type="button" onClick={() => void (selectedOccurrence ? completeOccurrence(selectedOccurrence) : updatePlanStatus(selectedPlan, "done"))}><Check />Завершить</button>}
+              {selectedStatus !== "done" && canCompleteSelectedPlan && <button type="button" onClick={() => void (selectedOccurrence ? completeOccurrence(selectedOccurrence) : updatePlanStatus(selectedPlan, "done"))}><Check />Завершить</button>}
               <button type="button" onClick={() => downloadCalendar(selectedPlan)}><Download />Добавить в календарь</button>
               {selectedStatus === "done" && <button type="button" onClick={() => openMemoryComposer(selectedPlan)}><Sparkles />Сделать воспоминанием</button>}
               {selectedPlan.created_by === currentUserId && <button type="button" className="is-danger" onClick={() => void deletePlan(selectedPlan)}><Trash2 />Удалить</button>}

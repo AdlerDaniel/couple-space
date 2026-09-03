@@ -15,7 +15,9 @@ const discussion = readFileSync(new URL("../app/tracker/lab/TrackerLabDiscussion
 const dialog = readFileSync(new URL("../app/tracker/lab/TrackerLabDialog.tsx", import.meta.url), "utf8");
 const planComposer = readFileSync(new URL("../app/tracker/lab/TrackerLabPlanComposer.tsx", import.meta.url), "utf8");
 const freeTime = readFileSync(new URL("../app/tracker/lab/TrackerLabFreeTimeDialog.tsx", import.meta.url), "utf8");
-const trackerSource = [client, repository, hook, dailyDigest, discussion, planComposer, freeTime].join("\n");
+const analytics = readFileSync(new URL("../app/tracker/lab/TrackerLabAnalytics.tsx", import.meta.url), "utf8");
+const pagination = readFileSync(new URL("../lib/trackerPagination.ts", import.meta.url), "utf8");
+const trackerSource = [client, repository, hook, dailyDigest, discussion, planComposer, freeTime, analytics, pagination].join("\n");
 
 test("tracker lab stays hidden from global navigation and search indexing", () => {
   assert.doesNotMatch(navigation, /href:\s*["']\/tracker\/lab["']/);
@@ -43,6 +45,10 @@ test("tracker lab exposes the complete collaborative flow", () => {
     "tracker_plan_occurrence_overrides",
     "Перенести этот день",
     "Принять",
+    "complete_tracker_assigned_task",
+    "Карта",
+    "По дням недели",
+    "История отметок",
   ]) {
     assert.match(trackerSource, new RegExp(marker));
   }
@@ -89,4 +95,22 @@ test("discussion owns disposable microphone state and dialogs manage focus and m
   assert.match(dialog, /previousFocus\?\.isConnected/);
   assert.match(dialog, /event\.shiftKey/);
   assert.match(dialog, /prefers-reduced-motion/);
+});
+
+test("analytics retains the original full-year and history capabilities", () => {
+  assert.match(client, /<TrackerLabAnalytics/);
+  assert.match(analytics, /Array\.from\(\{ length \}/);
+  assert.match(analytics, /tracker-lab-heat-grid/);
+  assert.match(analytics, /categoryFilter/);
+  assert.match(analytics, /getVisibleEventNote/);
+  assert.match(analytics, /duration_minutes/);
+  assert.match(repository, /collectTrackerPages/);
+  assert.match(originalTracker, /fetchTrackerEvents/);
+});
+
+test("visible check-ins render server-authorized details without changing privacy logic", () => {
+  assert.match(client, /checkin\.energy/);
+  assert.match(client, /checkin\.relationship/);
+  assert.match(client, /checkin\.note/);
+  assert.match(client, /checkin\.visibility === "private"/);
 });

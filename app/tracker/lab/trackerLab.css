@@ -2588,3 +2588,81 @@
   .tracker-lab-composer-sheet,
   .tracker-lab-detail-sheet { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 }
+
+/* A check-in only renders fields returned by the server's visibility-aware RPC. */
+.tracker-lab-checkin-people > .tracker-lab-checkin-entry {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 10px;
+}
+.tracker-lab-checkin-details { grid-column: 1 / -1; min-width: 0; }
+.tracker-lab-checkin-details dl { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 0; }
+.tracker-lab-checkin-details dl > div { flex: 1 1 90px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 12px; background: color-mix(in srgb, #d97706 9%, transparent); }
+.tracker-lab-checkin-details dt { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+.tracker-lab-checkin-details dd { margin: 0; font-weight: 800; }
+.tracker-lab-checkin-details dd span { font-size: 11px; opacity: .6; }
+.tracker-lab-checkin-details p { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.65; }
+.tracker-lab-checkin-visibility { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; opacity: .7; font-size: 11px; }
+
+.tracker-lab-analytics { display: grid; gap: 14px; margin: 14px 0; }
+.tracker-lab-analytics-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.tracker-lab-analytics-summary article { display: flex; min-width: 0; align-items: center; gap: 9px; padding: 12px; border: 1px solid var(--lab-line); border-radius: 14px; background: var(--lab-panel); }
+.tracker-lab-analytics-summary article > svg { width: 19px; flex: 0 0 auto; color: var(--lab-accent); }
+.tracker-lab-analytics-summary article span { display: grid; min-width: 0; }
+.tracker-lab-analytics-summary small { color: var(--lab-muted); font-size: 10px; font-weight: 750; }
+.tracker-lab-analytics-summary strong { overflow-wrap: anywhere; font-size: 15px; }
+.tracker-lab-year-heatmap, .tracker-lab-analytics-charts, .tracker-lab-analytics-history { min-width: 0; padding: 16px; border: 1px solid var(--lab-line); border-radius: 20px; background: var(--lab-panel); }
+.tracker-lab-analytics-filters { display: flex; overflow-x: auto; gap: 6px; margin: 12px 0; padding-bottom: 3px; scrollbar-width: thin; }
+.tracker-lab-analytics-filters button { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 5px; min-height: 32px; padding: 5px 10px; border: 1px solid var(--lab-line); border-radius: 999px; color: var(--lab-muted); background: var(--lab-surface-subtle); font-size: 11px; font-weight: 800; cursor: pointer; }
+.tracker-lab-analytics-filters button.is-active { border-color: var(--lab-accent); color: #fff; background: var(--lab-accent); }
+.tracker-lab-analytics-filters button i, .tracker-lab-category-chart span i { width: 8px; height: 8px; border-radius: 50%; }
+.tracker-lab-heat-grid { display: grid; grid-template-columns: repeat(53, minmax(0, 1fr)); gap: 3px; }
+.tracker-lab-heat-grid button, .tracker-lab-heat-legend i { aspect-ratio: 1; min-width: 0; border: 0; border-radius: 3px; background: color-mix(in srgb, var(--lab-ink) 6%, transparent); }
+.tracker-lab-heat-grid button { cursor: pointer; transition: transform .16s ease, outline-color .16s ease; }
+.tracker-lab-heat-grid button:hover, .tracker-lab-heat-grid button:focus-visible { z-index: 1; transform: scale(1.65); outline: 2px solid var(--lab-accent); outline-offset: 1px; }
+.tracker-lab-heat-grid [data-level="1"], .tracker-lab-heat-legend [data-level="1"] { background: color-mix(in srgb, var(--lab-accent) 25%, transparent); }
+.tracker-lab-heat-grid [data-level="2"], .tracker-lab-heat-legend [data-level="2"] { background: color-mix(in srgb, var(--lab-accent) 45%, transparent); }
+.tracker-lab-heat-grid [data-level="3"], .tracker-lab-heat-legend [data-level="3"] { background: color-mix(in srgb, var(--lab-accent) 70%, transparent); }
+.tracker-lab-heat-grid [data-level="4"], .tracker-lab-heat-legend [data-level="4"] { background: var(--lab-accent); }
+.tracker-lab-heat-legend { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 8px; color: var(--lab-muted); font-size: 9px; font-weight: 700; }
+.tracker-lab-heat-legend i { width: 9px; }
+.tracker-lab-analytics-charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tracker-lab-analytics-charts > .tracker-lab-section-heading { grid-column: 1 / -1; }
+.tracker-lab-chart, .tracker-lab-category-chart { min-width: 0; padding: 12px; border: 1px solid var(--lab-line); border-radius: 14px; background: var(--lab-surface-subtle); }
+.tracker-lab-chart h3, .tracker-lab-category-chart h3 { margin: 0 0 10px; font-size: 12px; }
+.tracker-lab-bars { display: flex; align-items: flex-end; height: 145px; gap: 4px; }
+.tracker-lab-bars > div { display: grid; grid-template-rows: 1fr auto auto; min-width: 0; height: 100%; flex: 1; text-align: center; }
+.tracker-lab-bars > div > span { display: flex; align-items: flex-end; min-height: 0; }
+.tracker-lab-bars > div i { display: block; width: 100%; min-height: 2px; border-radius: 5px 5px 2px 2px; background: linear-gradient(var(--lab-accent-bright), var(--lab-accent)); }
+.tracker-lab-bars small { overflow: hidden; color: var(--lab-muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.tracker-lab-bars b { min-height: 12px; font-size: 9px; }
+.tracker-lab-category-chart > div { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 3px 8px; margin-top: 9px; font-size: 11px; }
+.tracker-lab-category-chart span { display: flex; min-width: 0; align-items: center; gap: 6px; overflow-wrap: anywhere; }
+.tracker-lab-category-chart em { grid-column: 1 / -1; overflow: hidden; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--lab-ink) 7%, transparent); }
+.tracker-lab-category-chart em i { display: block; height: 100%; min-width: 0; border-radius: inherit; }
+.tracker-lab-analytics-history > div:last-child { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-top: 12px; }
+.tracker-lab-analytics-history > div > button { display: grid; grid-template-columns: 8px minmax(0,1fr) 17px; align-items: center; gap: 9px; min-width: 0; padding: 10px; border: 1px solid var(--lab-line); border-radius: 13px; color: var(--lab-ink); text-align: left; background: var(--lab-surface-subtle); cursor: pointer; }
+.tracker-lab-analytics-history button > i { width: 8px; height: 100%; min-height: 32px; border-radius: 999px; }
+.tracker-lab-analytics-history button > span { display: grid; min-width: 0; }
+.tracker-lab-analytics-history strong, .tracker-lab-analytics-history small, .tracker-lab-analytics-history p { overflow-wrap: anywhere; }
+.tracker-lab-analytics-history small { color: var(--lab-muted); font-size: 10px; }
+.tracker-lab-analytics-history p { margin: 4px 0 0; font-size: 11px; line-height: 1.5; white-space: pre-wrap; }
+.tracker-lab-analytics-history button > svg { width: 15px; color: var(--lab-muted); }
+.tracker-lab-empty-inline { color: var(--lab-muted); font-size: 12px; }
+@media (max-width: 900px) {
+  .tracker-lab-analytics-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tracker-lab-analytics-charts { grid-template-columns: 1fr; }
+  .tracker-lab-analytics-charts > .tracker-lab-section-heading { grid-column: auto; }
+  .tracker-lab-heat-grid { grid-template-columns: repeat(26, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .tracker-lab-heat-grid { grid-template-columns: repeat(18, minmax(0, 1fr)); gap: 4px; }
+  .tracker-lab-analytics-history > div:last-child { grid-template-columns: 1fr; }
+  .tracker-lab-year-heatmap, .tracker-lab-analytics-charts, .tracker-lab-analytics-history { padding: 12px; border-radius: 16px; }
+  .tracker-lab-analytics-summary article { padding: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tracker-lab-heat-grid button { transition: none; }
+  .tracker-lab-heat-grid button:hover, .tracker-lab-heat-grid button:focus-visible { transform: none; }
+}

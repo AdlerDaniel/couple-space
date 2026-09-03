@@ -52,6 +52,19 @@ export function useTrackerData({ coupleId, year, onData }: UseTrackerDataOptions
     return subscribeTrackerData(coupleId, reload);
   }, [coupleId, reload]);
 
+  useEffect(() => {
+    if (!coupleId) return;
+    const refreshWhenVisible = () => { if (!document.hidden) reload(); };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    const timer = window.setInterval(refreshWhenVisible, 45 * 60_000);
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.clearInterval(timer);
+    };
+  }, [coupleId, reload]);
+
   return {
     isLoading: Boolean(requestKey && completedRequest.key !== requestKey),
     error: completedRequest.key === requestKey ? completedRequest.error : null,

@@ -1411,6 +1411,10 @@ export type Database = {
           retry_after_seconds: number
         }[]
       }
+      complete_tracker_assigned_task: {
+        Args: { p_occurrence_date?: string; p_plan_id: string }
+        Returns: undefined
+      }
       create_couple_notification: {
         Args: {
           p_body?: string
@@ -1504,6 +1508,35 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      sync_tracker_checkin_legacy_day: {
+        Args: {
+          p_couple_id: string
+          p_date: string
+          p_removed_user_id?: string
+        }
+        Returns: undefined
+      }
+      tracker_expand_occurrences_internal: {
+        Args: {
+          p_couple_id: string
+          p_from: string
+          p_include_overlaps?: boolean
+          p_to: string
+        }
+        Returns: {
+          all_day: boolean
+          ends_at: string
+          occurrence_date: string
+          original_date: string
+          plan_id: string
+          starts_at: string
+          status: string
+        }[]
+      }
+      tracker_local_instant: {
+        Args: { p_local: string; p_time_zone: string }
+        Returns: string
       }
       tracker_safe_uuid: { Args: { p_value: string }; Returns: string }
     }

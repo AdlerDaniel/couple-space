@@ -2,7 +2,7 @@
 
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
-import { adjustTrackerEventCount, subscribeTrackerData } from "@/lib/trackerRepository";
+import { adjustTrackerEventCount, fetchTrackerEvents, subscribeTrackerData } from "@/lib/trackerRepository";
 import { trackerDefaultCategories } from "@/lib/trackerCategories";
 import { FluentEmoji } from "@/components/FluentEmoji";
 import Link from "next/link";
@@ -265,14 +265,7 @@ export default function TrackerPage() {
     if (!couple) return;
     const requestVersion = ++eventLoadVersion.current;
     const yearRange = getDateRange(new Date(viewYear, 0, 1), "year");
-    const { data, error } = await supabase
-      .from("tracker_events")
-      .select("*")
-      .eq("couple_id", couple.id)
-      .gte("date", yearRange.from)
-      .lte("date", yearRange.to)
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false });
+    const { data, error } = await fetchTrackerEvents(couple.id, yearRange.from, yearRange.to);
 
     if (!error && requestVersion === eventLoadVersion.current) {
       setEvents((data || []) as TrackerEvent[]);

@@ -15,6 +15,7 @@ declare
   row_event public.tracker_events;
   row_checkin record;
   n integer;
+  collision_rejected boolean := false;
 begin
   insert into auth.users(id) values (a), (b);
   insert into public.couples(id, partner_one_id, partner_two_id) values (pair_id, a, b);
@@ -126,6 +127,39 @@ begin
   select count(*) into n from public.tracker_events
   where couple_id = pair_id and created_by = a and category_id = fixture_category_id and date = '2040-01-01';
   if n <> 1 then raise exception 'Counter created duplicate instead of reusing zero row'; end if;
+
+  -- Historical marker + ordinary rows can legally share a category/day under
+  -- the two original partial indexes. A visibility change must fail atomically,
+  -- rather than merge/delete records or pretend that privacy was saved. The
+  -- production aggregate audit found zero such pairs before rollout.
+  insert into public.tracker_events(
+    couple_id, category_id, date, count, duration_minutes, note, mood, participants, created_by
+  ) values
+    (pair_id, fixture_category_id, '2040-01-03', 2, 15, E'[[day-mood]]\nMarker fixture', 'tired', 'me', a),
+    (pair_id, fixture_category_id, '2040-01-03', 5, 30, 'Ordinary fixture', 'good', 'me', a);
+  perform public.save_tracker_checkin(pair_id, '2040-01-03', 'tired', 2, 3, 'full', 'Shared fixture', false);
+  begin
+    perform public.save_tracker_checkin(pair_id, '2040-01-03', 'bad', 1, 2, 'private', 'Private fixture', false);
+  exception when unique_violation then
+    collision_rejected := true;
+  end;
+  if not collision_rejected then
+    raise exception 'A conflicting legacy marker must not silently lose the original activity uniqueness';
+  end if;
+  if not exists (
+    select 1 from public.tracker_checkins
+    where couple_id = pair_id and user_id = a and date = '2040-01-03'
+      and visibility = 'full' and mood = 'tired' and note = 'Shared fixture'
+  ) then
+    raise exception 'Failed privacy transition must leave the previous check-in fully unchanged';
+  end if;
+  select count(*) into n from public.tracker_events
+  where couple_id = pair_id and created_by = a and date = '2040-01-03'
+    and (
+      (count = 2 and duration_minutes = 15 and note = E'[[day-mood]]\nMarker fixture' and mood = 'tired')
+      or (count = 5 and duration_minutes = 30 and note = 'Ordinary fixture' and mood = 'good')
+    );
+  if n <> 2 then raise exception 'Failed privacy transition changed a legacy record'; end if;
 
   if has_function_privilege('authenticated', 'public.sync_tracker_checkin_legacy_day(uuid,date,uuid)', 'EXECUTE')
      or has_function_privilege('anon', 'public.save_tracker_checkin(uuid,date,text,integer,integer,text,text,boolean)', 'EXECUTE') then

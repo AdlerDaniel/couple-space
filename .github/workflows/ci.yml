@@ -100,7 +100,6 @@ jobs:
 
   verify-sites:
     name: Verify secondary Sites build
-    if: github.event_name == 'push'
     needs: verify-vercel
     runs-on: ubuntu-latest
     timeout-minutes: 20

@@ -1,17 +1,7 @@
 "use client";
 
-import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import { FluentEmoji } from "@/components/FluentEmoji";
-import { handleClipboardFilePaste } from "@/lib/clipboardFiles";
-import {
-  createCompatibleAudioRecorder,
-  createRecordedAudioFile,
-  getMediaKind,
-  getSafeStoragePath,
-  MAX_AUDIO_SIZE,
-  MAX_IMAGE_SIZE,
-  validateMediaFile,
-} from "@/lib/mediaFiles";
+import { getSafeStoragePath } from "@/lib/mediaFiles";
 import { encodeMemoryMedia, type MemoryAttachment } from "@/lib/memoryMedia";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
@@ -36,23 +26,18 @@ import {
   Dumbbell,
   Eye,
   EyeOff,
-  FileText,
   Gamepad2,
   Heart,
   LayoutDashboard,
   ListFilter,
   Lock,
-  MessageCircle,
-  Mic,
   Minus,
   Palette,
-  Paperclip,
   Pencil,
   Plus,
   RefreshCw,
   Search,
   Sparkles,
-  Square,
   Target,
   Trash2,
   UsersRound,
@@ -64,7 +49,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  type ClipboardEvent as ReactClipboardEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -94,6 +78,7 @@ import {
 } from "@/lib/trackerPlanDomain";
 import { useTrackerData } from "../useTrackerData";
 import TrackerLabDialog from "./TrackerLabDialog";
+import TrackerLabDiscussion, { type TrackerComment } from "./TrackerLabDiscussion";
 import TrackerLabFreeTimeDialog from "./TrackerLabFreeTimeDialog";
 import TrackerLabPlanComposer, { type TrackerPlanDraft } from "./TrackerLabPlanComposer";
 
@@ -175,20 +160,6 @@ type TrackerCheckin = {
   updated_at: string;
 };
 
-type TrackerComment = {
-  id: string;
-  plan_id: string;
-  couple_id: string;
-  user_id: string;
-  text: string | null;
-  attachment_url: string | null;
-  attachment_name: string | null;
-  attachment_type: "image" | "video" | "audio" | "file" | null;
-  mime_type: string | null;
-  created_at: string;
-  attachment_signed_url?: string | null;
-};
-
 type TrackerParticipant = {
   id: string;
   plan_id: string;
@@ -229,8 +200,6 @@ const repeatLabels: Record<TrackerPlanRepeat, string> = {
   monthly: "Каждый месяц",
   yearly: "Каждый год",
 };
-
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 function getCategoryIcon(category: TrackerCategory, size = 18) {
   const Icon = category.slug === "food"
@@ -283,9 +252,6 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   const router = useRouter();
   const agendaRef = useRef<HTMLDivElement | null>(null);
   const pendingMutations = useRef(new Set<string>());
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -347,9 +313,6 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   const [goalTarget, setGoalTarget] = useState(3);
   const [categoryDrafts, setCategoryDrafts] = useState<Record<string, string>>({});
 
-  const [commentText, setCommentText] = useState("");
-  const [commentFile, setCommentFile] = useState<File | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
   const [isFreeTimeOpen, setIsFreeTimeOpen] = useState(false);
 
   const [memoryPlan, setMemoryPlan] = useState<TrackerPlan | null>(null);
@@ -495,12 +458,6 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
 
 
 
-  useEffect(() => () => {
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== "inactive") recorder.stop();
-    recorder?.stream.getTracks().forEach((track) => track.stop());
-  }, []);
-
   const viewRange = useMemo(
     () => getTrackerViewRange(selectedDate, calendarMode),
     [calendarMode, selectedDate],
@@ -578,7 +535,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     if (mode === "plan") resetPlanComposer();
     if (mode === "checkin") {
       const own = checkins.find((item) => item.date === selectedDate && item.is_own);
-      setCheckinMood(own?.mood || "good");
+      setCheckinMood(own?.mood || selectedDateCheckins.find((item) => item.is_own)?.mood || "good");
       setCheckinEnergy(own?.energy ?? 3);
       setCheckinRelationship(own?.relationship ?? 3);
       setCheckinVisibility(own?.visibility || "private");
@@ -638,7 +595,25 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     setComposerMode("occurrence");
   }
 
+  async function runGuardedMutation(key: string, action: () => Promise<void>) {
+    if (pendingMutations.current.has(key)) return;
+    pendingMutations.current.add(key);
+    try {
+      await action();
+    } catch {
+      setMessage("Не удалось завершить сохранение. Проверьте соединение и повторите.");
+      reloadTrackerData();
+    } finally {
+      pendingMutations.current.delete(key);
+      setIsSaving(false);
+    }
+  }
+
   async function adjustCategory(category: TrackerCategory, delta: 1 | -1) {
+    await runGuardedMutation(`counter:${selectedDate}:${category.id}`, () => performAdjustCategory(category, delta));
+  }
+
+  async function performAdjustCategory(category: TrackerCategory, delta: 1 | -1) {
     if (!couple || isSaving) return;
     setIsSaving(true);
     const previous = events;
@@ -672,6 +647,10 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   }
 
   async function saveCheckin() {
+    await runGuardedMutation(`checkin:${selectedDate}`, () => performSaveCheckin());
+  }
+
+  async function performSaveCheckin() {
     if (!couple) return;
     setIsSaving(true);
     const { error } = await saveTrackerCheckin({
@@ -713,6 +692,10 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   }
 
   async function savePlan() {
+    await runGuardedMutation("save-plan", () => performSavePlan());
+  }
+
+  async function performSavePlan() {
     if (!couple || !currentUserId || !planTitle.trim() || !planDate || isSaving) return;
     setIsSaving(true);
     const allDay = !planTime;
@@ -778,7 +761,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
           setIsSaving(false);
           return;
         }
-        await supabase.from("tracker_plan_activity").insert({
+        void Promise.resolve(supabase.from("tracker_plan_activity").insert({
           plan_id: editingPlanId,
           couple_id: couple.id,
           actor_id: currentUserId,
@@ -790,7 +773,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
             title: "Совместный план изменён",
             body: planTitle.trim(),
             href: "/tracker/lab",
-          });
+          }).catch(() => undefined);
         }
         await savePersonalReminder(existing, planReminder);
         resetPlanComposer();
@@ -863,14 +846,14 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         user_id: currentUserId,
         offset_minutes: planReminder,
         delivery: "ics",
-      });
+      })).catch(() => undefined);
       if (reminderError) throw reminderError;
-      await supabase.from("tracker_plan_activity").insert({
+      void Promise.resolve(supabase.from("tracker_plan_activity").insert({
         plan_id: data.id,
         couple_id: couple.id,
         actor_id: currentUserId,
         activity_type: "created",
-      });
+      })).catch(() => undefined);
 
       setPlans((items) => items.map((item) => item.id === optimistic.id ? data : item));
       resetPlanComposer();
@@ -882,7 +865,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
           title: "Новый совместный план",
           body: data.title,
           href: "/tracker/lab",
-        });
+        }).catch(() => undefined);
       }
     } catch (error) {
       if (createdPlanId) {
@@ -901,6 +884,10 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   }
 
   async function saveOccurrenceOverride() {
+    await runGuardedMutation("save-occurrence", () => performSaveOccurrenceOverride());
+  }
+
+  async function performSaveOccurrenceOverride() {
     if (!couple || !currentUserId || !selectedPlan || !selectedOccurrenceDate) return;
     setIsSaving(true);
     const occurrenceDate = selectedOccurrenceDate;
@@ -935,12 +922,12 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     }, { onConflict: "plan_id,occurrence_date" });
     if (error) setMessage(`Не удалось перенести событие: ${error.message}`);
     else {
-      await supabase.from("tracker_plan_activity").insert({
+      void Promise.resolve(supabase.from("tracker_plan_activity").insert({
         plan_id: selectedPlan.id,
         couple_id: couple.id,
         actor_id: currentUserId,
         activity_type: "occurrence_updated",
-      });
+      })).catch(() => undefined);
       setComposerMode(null);
       setSelectedPlanId(null);
       setSelectedOccurrenceDate(null);
@@ -985,7 +972,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     } else {
       setMessage(response === "accepted" ? "План принят" : "План отклонён");
       if (selectedPlan && couple) {
-        await supabase.from("tracker_plan_activity").insert({
+        void Promise.resolve(supabase.from("tracker_plan_activity").insert({
           plan_id: selectedPlan.id,
           couple_id: couple.id,
           actor_id: currentUserId,
@@ -997,7 +984,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
           title: response === "accepted" ? "План принят" : "План отклонён",
           body: selectedPlan.title,
           href: "/tracker/lab",
-        });
+        }).catch(() => undefined);
       }
     }
   }
@@ -1048,7 +1035,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       }
       await supabase.from("tracker_plan_activity").insert({
         plan_id: plan.id, couple_id: plan.couple_id, actor_id: currentUserId, activity_type: "completed",
-      });
+      })).catch(() => undefined);
       reloadTrackerData();
     } finally {
       pendingMutations.current.delete(mutationKey);
@@ -1069,28 +1056,63 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       return;
     }
     if (status === "done" && currentUserId) {
-      await supabase.from("tracker_plan_activity").insert({
+      void Promise.resolve(supabase.from("tracker_plan_activity").insert({
         plan_id: plan.id,
         couple_id: plan.couple_id,
         actor_id: currentUserId,
         activity_type: "completed",
-      });
+      })).catch(() => undefined);
     }
   }
 
   async function deletePlan(plan: TrackerPlan) {
-    if (!window.confirm("Удалить этот план?")) return;
-    const previous = plans;
-    setPlans((items) => items.filter((item) => item.id !== plan.id));
-    setSelectedPlanId(null);
-    const { error } = await supabase.from("tracker_plans").delete().eq("id", plan.id).eq("created_by", currentUserId);
-    if (error) {
-      setPlans(previous);
-      setMessage("Удалить план может только его автор.");
+    if (!couple || !currentUserId || plan.created_by !== currentUserId) return;
+    const key = `delete-plan:${plan.id}`;
+    if (pendingMutations.current.has(key) || !window.confirm("Удалить этот план и его обсуждение с файлами? Уже созданные воспоминания останутся.")) return;
+    pendingMutations.current.add(key);
+    let removedMedia = false;
+    try {
+      const [attachments, planComments] = await Promise.all([
+        supabase.from("tracker_plan_attachments").select("storage_path").eq("plan_id", plan.id).eq("couple_id", couple.id),
+        supabase.from("tracker_plan_comments").select("attachment_url").eq("plan_id", plan.id).eq("couple_id", couple.id),
+      ]);
+      if (attachments.error || planComments.error) throw attachments.error || planComments.error;
+      const paths = [...new Set([
+        ...(attachments.data || []).map((row) => row.storage_path),
+        ...(planComments.data || []).map((row) => row.attachment_url).filter((path): path is string => Boolean(path)),
+      ])];
+      const prefix = `${couple.id}/${plan.id}/`;
+      if (paths.some((path) => !path.startsWith(prefix) || path.includes(".."))) {
+        throw new Error("Не удалось безопасно проверить пути вложений");
+      }
+      // Author access to the partner's files requires the plan to still exist.
+      for (let offset = 0; offset < paths.length; offset += 100) {
+        const { error } = await supabase.storage.from("tracker-media").remove(paths.slice(offset, offset + 100));
+        if (error) throw error;
+        removedMedia = true;
+      }
+      const { data, error } = await supabase.from("tracker_plans").delete()
+        .eq("id", plan.id).eq("couple_id", couple.id).eq("created_by", currentUserId).select("id");
+      if (error) throw error;
+      if (!data?.length) throw new Error("План уже удалён или недоступен");
+      setPlans((items) => items.filter((item) => item.id !== plan.id));
+      setSelectedPlanId(null);
+      setMessage("План, обсуждение и вложения удалены. Созданные воспоминания сохранены.");
+    } catch {
+      reloadTrackerData();
+      setMessage(removedMedia
+        ? "Вложения удалены, но удаление самого плана не завершилось. Повторите удаление."
+        : "Не удалось удалить план и вложения. Проверьте соединение и повторите.");
+    } finally {
+      pendingMutations.current.delete(key);
     }
   }
 
   async function createGoal() {
+    await runGuardedMutation("create-goal", () => performCreateGoal());
+  }
+
+  async function performCreateGoal() {
     if (!couple || !currentUserId || !goalCategoryId) return;
     const category = categories.find((item) => item.id === goalCategoryId);
     if (!category) return;
@@ -1112,7 +1134,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         title: "Новая цель пары",
         body: `${category.name}: ${goalTarget}`,
         href: "/tracker/lab",
-      });
+      }).catch(() => undefined);
     }
     setIsSaving(false);
   }
@@ -1142,123 +1164,6 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     else {
       setMessage("Название изменено только для вашей пары");
       reloadTrackerData();
-    }
-  }
-
-  function selectCommentFile(files: File[]) {
-    const file = files[0];
-    if (!file) return;
-    const kind = getMediaKind(file);
-    const max = kind === "audio" ? MAX_AUDIO_SIZE : kind === "image" ? MAX_IMAGE_SIZE : MAX_FILE_SIZE;
-    const validation = validateMediaFile(file, ["image", "video", "audio", "file"], max);
-    if (validation.error) {
-      setMessage(validation.error);
-      return;
-    }
-    setCommentFile(file);
-  }
-
-  function handleCommentPaste(event: ReactClipboardEvent<HTMLTextAreaElement>) {
-    handleClipboardFilePaste(event, selectCommentFile);
-  }
-
-  async function toggleRecording() {
-    if (isRecording) {
-      mediaRecorderRef.current?.stop();
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = createCompatibleAudioRecorder(stream);
-      audioChunksRef.current = [];
-      mediaRecorderRef.current = recorder;
-      recorder.ondataavailable = (event) => {
-        if (event.data.size) audioChunksRef.current.push(event.data);
-      };
-      recorder.onstop = () => {
-        stream.getTracks().forEach((track) => track.stop());
-        setIsRecording(false);
-        try {
-          setCommentFile(createRecordedAudioFile(audioChunksRef.current, recorder.mimeType, "tracker-voice"));
-        } catch (error) {
-          setMessage(getErrorMessage(error, "Не удалось сохранить голосовую запись"));
-        }
-      };
-      recorder.start();
-      setIsRecording(true);
-    } catch {
-      setMessage("Разрешите доступ к микрофону или прикрепите готовый аудиофайл.");
-    }
-  }
-
-  async function addComment() {
-    if (!couple || !currentUserId || !selectedPlan || (!commentText.trim() && !commentFile)) return;
-    setIsSaving(true);
-    let storagePath: string | null = null;
-    let savedCommentId: string | null = null;
-    try {
-      let attachmentType: TrackerComment["attachment_type"] = null;
-      if (commentFile) {
-        attachmentType = getMediaKind(commentFile);
-        const safeName = commentFile.name.replace(/[^a-zA-Z0-9._-]+/g, "-");
-        storagePath = `${couple.id}/${selectedPlan.id}/${currentUserId}/${crypto.randomUUID()}-${safeName}`;
-        const { error: uploadError } = await supabase.storage.from("tracker-media").upload(storagePath, commentFile);
-        if (uploadError) throw uploadError;
-      }
-      const { data, error } = await supabase.from("tracker_plan_comments").insert({
-        plan_id: selectedPlan.id,
-        couple_id: couple.id,
-        user_id: currentUserId,
-        text: commentText.trim() || null,
-        attachment_url: storagePath,
-        attachment_name: commentFile?.name || null,
-        attachment_type: attachmentType,
-        mime_type: commentFile?.type || null,
-      }).select("*").single<TrackerComment>();
-      if (error || !data) throw error || new Error("Комментарий не сохранён");
-      savedCommentId = data.id;
-      if (storagePath && commentFile && attachmentType) {
-        const { error: attachmentError } = await supabase.from("tracker_plan_attachments").insert({
-          plan_id: selectedPlan.id,
-          comment_id: data.id,
-          couple_id: couple.id,
-          owner_id: currentUserId,
-          storage_path: storagePath,
-          url: storagePath,
-          name: commentFile.name,
-          mime_type: commentFile.type || null,
-          media_type: attachmentType,
-          size_bytes: commentFile.size,
-        });
-        if (attachmentError) throw attachmentError;
-      }
-      await supabase.from("tracker_plan_activity").insert({
-        plan_id: selectedPlan.id,
-        couple_id: couple.id,
-        actor_id: currentUserId,
-        activity_type: "commented",
-      });
-      setCommentText("");
-      setCommentFile(null);
-      reloadTrackerData();
-      if (selectedPlan.visibility === "couple") {
-        await createPartnerNotification(couple, currentUserId, {
-          type: "tracker_plan_comment",
-          title: "Комментарий к плану",
-          body: selectedPlan.title,
-          href: "/tracker/lab",
-        });
-      }
-    } catch (error) {
-      let canRemoveUpload = !savedCommentId;
-      if (savedCommentId) {
-        const { error: rollbackError } = await supabase.from("tracker_plan_comments").delete().eq("id", savedCommentId).eq("user_id", currentUserId);
-        canRemoveUpload = !rollbackError;
-      }
-      if (storagePath && canRemoveUpload) await supabase.storage.from("tracker-media").remove([storagePath]);
-      setMessage(`Не удалось добавить комментарий: ${getErrorMessage(error, "попробуйте снова")}`);
-    } finally {
-      setIsSaving(false);
     }
   }
 
@@ -1304,8 +1209,18 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
 
   async function createMemoryFromPlan() {
     if (!memoryPlan || !couple || !currentUserId) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(memoryDate) || toTrackerDateKey(parseTrackerDateKey(memoryDate)) !== memoryDate) {
+      setMessage("Выберите корректную дату воспоминания");
+      return;
+    }
+    const key = `memory:${memoryPlan.id}:${memoryDate}`;
+    if (pendingMutations.current.has(key)) return;
+    pendingMutations.current.add(key);
     setIsSaving(true);
     const uploadedPaths: string[] = [];
+    const memoryId = crypto.randomUUID();
+    let memoryWriteAttempted = false;
+    let memorySaved = false;
     try {
       const { data: attachmentRows, error: attachmentLoadError } = await supabase
         .from("tracker_plan_attachments")
@@ -1341,7 +1256,9 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         });
       }
 
+      memoryWriteAttempted = true;
       const { data: memory, error } = await supabase.from("memories").insert({
+        id: memoryId,
         couple_id: couple.id,
         user_id: currentUserId,
         title: memoryTitle.trim() || memoryPlan.title,
@@ -1351,24 +1268,55 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         image: encodeMemoryMedia({ photoUrl, voiceUrl, attachments: memoryAttachments }),
       }).select("id").single<{ id: string }>();
       if (error || !memory) throw error || new Error("Воспоминание не создано");
-      await supabase.from("tracker_plan_memory_links").insert({
+      memorySaved = true;
+      const { error: linkError } = await supabase.from("tracker_plan_memory_links").insert({
         plan_id: memoryPlan.id,
         memory_id: memory.id,
         couple_id: couple.id,
         created_by: currentUserId,
       });
-      await supabase.from("tracker_plan_activity").insert({
-        plan_id: memoryPlan.id,
-        couple_id: couple.id,
-        actor_id: currentUserId,
-        activity_type: "memory_created",
-      });
+      // The memory is committed: a failed optional link or notification must never
+      // remove files which are already referenced by a real memory.
+      if (!linkError) {
+        void Promise.resolve(supabase.from("tracker_plan_activity").insert({
+          plan_id: memoryPlan.id,
+          couple_id: couple.id,
+          actor_id: currentUserId,
+          activity_type: "memory_created",
+        })).catch(() => undefined);
+      }
+      setMemoryPlan(null);
+      setMessage(linkError ? "Воспоминание сохранено, но связать его с планом не удалось." : "Воспоминание сохранено");
       router.push(`/memories/${memory.id}`);
     } catch (error) {
-      if (uploadedPaths.length) await supabase.storage.from("memory-images").remove(uploadedPaths);
-      setMessage(`Не удалось создать воспоминание: ${getErrorMessage(error, "попробуйте снова")}`);
+      let canRemoveUploads = !memoryWriteAttempted;
+      if (memoryWriteAttempted && !memorySaved) {
+        // A network failure can arrive after INSERT committed. Probe the stable ID
+        // before cleanup; if its outcome is uncertain, retain the uploaded media.
+        try {
+          const { data: existing, error: probeError } = await supabase.from("memories")
+            .select("id").eq("id", memoryId).eq("couple_id", couple.id).maybeSingle();
+          memorySaved = Boolean(existing);
+          canRemoveUploads = !probeError && !existing;
+        } catch {
+          canRemoveUploads = false;
+        }
+      }
+      if (memorySaved) {
+        setMemoryPlan(null);
+        router.push(`/memories/${memoryId}`);
+      } else if (!canRemoveUploads) {
+        setMemoryPlan(null);
+        setMessage("Не удалось подтвердить сохранение. Проверьте раздел «Воспоминания» перед повторной попыткой. Загруженные материалы не удалены.");
+      } else {
+        if (uploadedPaths.length) {
+          await supabase.storage.from("memory-images").remove(uploadedPaths).catch(() => undefined);
+        }
+        setMessage(`Не удалось создать воспоминание: ${getErrorMessage(error, "попробуйте снова")}`);
+      }
     } finally {
       setIsSaving(false);
+      pendingMutations.current.delete(key);
     }
   }
 
@@ -1385,7 +1333,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       (plan.edit_scope === "participants" && participant?.response === "accepted");
     return (
       <article
-        key={`${plan.id}-${occurrence.dateKey}`}
+        key={`${plan.id}-${occurrence.originalDateKey}`}
         className={`tracker-lab-plan-card is-${plan.kind} ${occurrence.status === "done" ? "is-done" : ""} ${compact ? "is-compact" : ""}`}
         data-plan-card
         data-plan-id={plan.id}
@@ -1426,7 +1374,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
           <button type="button" onClick={() => navigateDate(-1)} aria-label="Предыдущий период"><ChevronLeft /></button>
           <div>
             <strong>{new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(parseTrackerDateKey(selectedDate))}</strong>
-            <button type="button" onClick={() => setSelectedDate(toTrackerDateKey(new Date()))}>Сегодня</button>
+            <button type="button" onClick={() => setSelectedDate(getTrackerToday(timeZone))}>Сегодня</button>
           </div>
           <button type="button" onClick={() => navigateDate(1)} aria-label="Следующий период"><ChevronRight /></button>
         </div>
@@ -1445,7 +1393,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
                   "tracker-lab-day-cell",
                   cell.isCurrentMonth ? "" : "is-muted",
                   cell.key === selectedDate ? "is-selected" : "",
-                  cell.key === toTrackerDateKey(new Date()) ? "is-today" : "",
+                  cell.key === getTrackerToday(timeZone) ? "is-today" : "",
                 ].join(" ")}
                 onClick={() => setSelectedDate(cell.key)}
                 aria-label={formatTrackerDate(cell.key)}
@@ -1668,7 +1616,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
                   </button>
                 ))}
               </div>
-              <button type="button" onClick={() => setSelectedDate(toTrackerDateKey(new Date()))}>Сегодня</button>
+              <button type="button" onClick={() => setSelectedDate(getTrackerToday(timeZone))}>Сегодня</button>
             </div>
             {calendarMode === "month" && renderMonthCalendar()}
             {(calendarMode === "day" || calendarMode === "week") && (
@@ -1806,35 +1754,16 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
               {selectedStatus === "done" && <button type="button" onClick={() => openMemoryComposer(selectedPlan)}><Sparkles />Сделать воспоминанием</button>}
               {selectedPlan.created_by === currentUserId && <button type="button" className="is-danger" onClick={() => void deletePlan(selectedPlan)}><Trash2 />Удалить</button>}
             </div>
-            <section className="tracker-lab-comments">
-              <div className="tracker-lab-section-heading"><div><span>Вместе</span><h3>Обсуждение</h3></div><MessageCircle /></div>
-              <div className="tracker-lab-comment-list">
-                {selectedComments.map((comment) => {
-                  const person = getPersonMeta(comment.user_id);
-                  return (
-                    <article key={comment.id}>
-                      <span className="tracker-lab-avatar">{person.avatar ? <Image src={person.avatar} alt="" width={32} height={32} unoptimized /> : person.initial}</span>
-                      <div><strong>{person.name}</strong>{comment.text && <p>{comment.text}</p>}
-                        {comment.attachment_signed_url && comment.attachment_type === "image" && <Image src={comment.attachment_signed_url} alt={comment.attachment_name || "Фото"} width={620} height={420} unoptimized />}
-                        {comment.attachment_signed_url && comment.attachment_type === "video" && <video src={comment.attachment_signed_url} controls playsInline />}
-                        {comment.attachment_signed_url && comment.attachment_type === "audio" && <AccentAudioPlayer src={comment.attachment_signed_url} accent="#d97706" label={comment.attachment_name || "Голосовая запись"} />}
-                        {comment.attachment_signed_url && comment.attachment_type === "file" && <a href={comment.attachment_signed_url} target="_blank" rel="noreferrer"><FileText />{comment.attachment_name || "Файл"}</a>}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-              <div className="tracker-lab-comment-composer">
-                  <input ref={fileInputRef} type="file" className="sr-only" onChange={(event) => { selectCommentFile(Array.from(event.target.files || [])); event.target.value = ""; }} />
-                  <textarea value={commentText} onChange={(event) => setCommentText(event.target.value)} onPaste={handleCommentPaste} placeholder="Напишите или вставьте файл через Ctrl+V…" rows={2} />
-                  {commentFile && <span className="tracker-lab-pending-file"><Paperclip />{commentFile.name}<button type="button" onClick={() => setCommentFile(null)}><X /></button></span>}
-                  <div>
-                    <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Прикрепить файл"><Paperclip /></button>
-                    <button type="button" className={isRecording ? "is-recording" : ""} onClick={() => void toggleRecording()} aria-label={isRecording ? "Остановить запись" : "Записать голос"}>{isRecording ? <Square /> : <Mic />}</button>
-                    <button type="button" className="is-send" onClick={() => void addComment()} disabled={isSaving || (!commentText.trim() && !commentFile)}><ChevronRight /></button>
-                  </div>
-              </div>
-            </section>
+            {couple && currentUserId && <TrackerLabDiscussion
+              key={selectedPlan.id}
+              plan={selectedPlan}
+              couple={couple}
+              currentUserId={currentUserId}
+              comments={selectedComments}
+              getPersonMeta={getPersonMeta}
+              onReload={reloadTrackerData}
+              onMessage={setMessage}
+            />}
         </TrackerLabDialog>
       )}
 

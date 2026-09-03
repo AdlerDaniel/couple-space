@@ -13,5 +13,5 @@ export default async function TrackerLabPage({
     toTrackerDateKey(parseTrackerDateKey(requestedDate)) === requestedDate
     ? requestedDate
     : null;
-  return <TrackerLabClient initialDate={initialDate} />;
+  return <TrackerLabClient key={initialDate || "today"} initialDate={initialDate} initialNow={new Date().toISOString()} />;
 }

@@ -2,6 +2,7 @@
 
 import { animate } from "animejs";
 import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 const focusableSelector = 'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
@@ -26,8 +27,21 @@ export default function TrackerLabDialog({
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    (dialog.querySelector<HTMLElement>("[autofocus]") ||
-      dialog.querySelector<HTMLElement>(focusableSelector) || dialog).focus();
+    if (!dialog.contains(document.activeElement)) {
+      (dialog.querySelector<HTMLElement>(focusableSelector) || dialog).focus();
+    }
+    const viewport = window.visualViewport;
+    const syncViewport = () => {
+      const overlay = dialog.parentElement;
+      if (!viewport || !overlay) return;
+      overlay.style.height = `${viewport.height}px`;
+      overlay.style.top = `${viewport.offsetTop}px`;
+      overlay.style.bottom = "auto";
+      dialog.style.maxHeight = `${Math.max(180, viewport.height - 24)}px`;
+    };
+    syncViewport();
+    viewport?.addEventListener("resize", syncViewport);
+    viewport?.addEventListener("scroll", syncViewport);
     const animation = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? null
       : animate(dialog, { opacity: [0, 1], translateY: [24, 0], duration: 260, ease: "out(3)" });
@@ -59,19 +73,22 @@ export default function TrackerLabDialog({
     dialog.addEventListener("keydown", handleKeyDown);
     return () => {
       animation?.revert();
+      viewport?.removeEventListener("resize", syncViewport);
+      viewport?.removeEventListener("scroll", syncViewport);
       dialog.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
       if (previousFocus?.isConnected) previousFocus.focus();
     };
   }, []);
 
-  return (
-    <div className="tracker-lab-overlay" onMouseDown={(event) => {
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="tracker-lab-page tracker-lab-modal-root"><div className="tracker-lab-overlay" onMouseDown={(event) => {
       if (event.currentTarget === event.target) onClose();
     }}>
       <section ref={dialogRef} className={className} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1}>
         {children}
       </section>
-    </div>
+    </div></div>, document.body
   );
 }

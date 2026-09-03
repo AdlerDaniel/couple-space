@@ -269,6 +269,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("all");
   const timeZone = profile?.time_zone || "Europe/Moscow";
   const [chosenDate, setChosenDate] = useState<string | null>(initialDate);
+  const [clockNow, setClockNow] = useState(initialNow);
   const selectedDate = chosenDate || getTrackerToday(timeZone, new Date(initialNow));
   const setSelectedDate = useCallback((next: string | ((current: string) => string)) => {
     setChosenDate((current) => typeof next === "function"
@@ -458,6 +459,16 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
 
 
 
+  useEffect(() => {
+    const updateClock = () => setClockNow(new Date().toISOString());
+    const timer = window.setInterval(updateClock, 60_000);
+    document.addEventListener("visibilitychange", updateClock);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", updateClock);
+    };
+  }, []);
+
   const viewRange = useMemo(
     () => getTrackerViewRange(selectedDate, calendarMode),
     [calendarMode, selectedDate],
@@ -505,11 +516,11 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   const activeEvents = events.filter((event) => event.count > 0);
   const selectedDayEvents = activeEvents.filter((event) => event.date === selectedDate);
   const nextOccurrence = useMemo(() => {
-    const nowKey = getTrackerToday(timeZone);
-    const now = Date.now();
+    const now = new Date(clockNow).getTime();
+    const nowKey = getTrackerToday(timeZone, new Date(clockNow));
     return filteredOccurrences.find((item) => item.dateKey >= nowKey && item.status !== "done" &&
       (!item.startsAt || Date.parse(item.endsAt || item.startsAt) >= now)) || null;
-  }, [filteredOccurrences, timeZone]);
+  }, [clockNow, filteredOccurrences, timeZone]);
   const selectedDateCheckins = checkins.filter((item) => item.date === selectedDate);
   for (const userId of [currentUserId, partnerId]) {
     if (!userId || selectedDateCheckins.some((item) => item.user_id === userId)) continue;
@@ -786,7 +797,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     }
 
     const optimistic: TrackerPlan = {
-      id: `local-${Date.now()}`,
+      id: `local-${crypto.randomUUID()}`,
       couple_id: couple.id,
       title: planTitle.trim(),
       description: planDescription.trim() || null,
@@ -1393,7 +1404,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
                   "tracker-lab-day-cell",
                   cell.isCurrentMonth ? "" : "is-muted",
                   cell.key === selectedDate ? "is-selected" : "",
-                  cell.key === getTrackerToday(timeZone) ? "is-today" : "",
+                  cell.key === getTrackerToday(timeZone, new Date(clockNow)) ? "is-today" : "",
                 ].join(" ")}
                 onClick={() => setSelectedDate(cell.key)}
                 aria-label={formatTrackerDate(cell.key)}

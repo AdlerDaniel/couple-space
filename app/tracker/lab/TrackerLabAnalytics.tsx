@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { BarChart3, CalendarDays, Clock3, Flame, History, Sparkles, Trophy } from "lucide-react";
 
 import {
@@ -48,6 +48,7 @@ export default function TrackerLabAnalytics({
   events, categories, selectedDate, getPersonMeta, onDateChange,
 }: Props) {
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const heatmapRef = useRef<HTMLDivElement | null>(null);
   const year = parseTrackerDateKey(selectedDate).getFullYear();
   const yearFrom = `${year}-01-01`;
   const yearTo = `${year}-12-31`;
@@ -104,29 +105,87 @@ export default function TrackerLabAnalytics({
   const history = [...events].filter((row) => row.count > 0 || getVisibleEventNote(row))
     .sort((a, b) => b.date.localeCompare(a.date) || (b.time || "").localeCompare(a.time || "") || b.created_at.localeCompare(a.created_at))
     .slice(0, 16);
+  const heatMonths = Array.from({ length: 12 }, (_, index) => {
+    const key = `${year}-${String(index + 1).padStart(2, "0")}`;
+    const first = new Date(year, index, 1, 12);
+    return {
+      key,
+      label: new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(first),
+      offset: (first.getDay() + 6) % 7,
+      days: days.filter((day) => day.dateKey.startsWith(key)),
+    };
+  });
+
+  useEffect(() => {
+    if (!window.matchMedia("(max-width: 520px)").matches) return;
+    const selectedMonth = heatmapRef.current?.querySelector<HTMLElement>(
+      `[data-heat-month="${selectedDate.slice(0, 7)}"]`,
+    );
+    selectedMonth?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [selectedDate]);
+
+  function handleHeatKeyDown(event: KeyboardEvent<HTMLButtonElement>, dateKey: string) {
+    const offsets: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+    let target = dateKey;
+    if (event.key in offsets) target = toTrackerDateKey(addTrackerDays(parseTrackerDateKey(dateKey), offsets[event.key]));
+    else if (event.key === "Home") target = yearFrom;
+    else if (event.key === "End") target = yearTo;
+    else return;
+    if (target < yearFrom || target > yearTo) return;
+    event.preventDefault();
+    onDateChange(target);
+  }
 
   return (
     <div className="tracker-lab-analytics">
       <section className="tracker-lab-analytics-summary" aria-label="Сводка активности">
-        <article><CalendarDays /><span><small>Активных дней</small><strong>{byDate.size}</strong></span></article>
+        <article><CalendarDays /><span><small>Активных дней за год</small><strong>{byDate.size}</strong></span></article>
         <article><Flame /><span><small>Серия до выбранного дня</small><strong>{streak} дн.</strong></span></article>
-        <article><Trophy /><span><small>Лучший день</small><strong>{bestDay ? `${formatTrackerDate(bestDay.date, { day: "numeric", month: "short" })} · ${bestDay.value}` : "Пока нет"}</strong></span></article>
-        <article><Sparkles /><span><small>Чаще всего</small><strong>{favorite}</strong></span></article>
-        <article><BarChart3 /><span><small>К прошлому месяцу</small><strong>{comparison}</strong></span></article>
+        <article><Trophy /><span><small>Лучший день года</small><strong>{bestDay ? `${formatTrackerDate(bestDay.date, { day: "numeric", month: "short" })} · ${bestDay.value}` : "Пока нет"}</strong></span></article>
+        <article><Sparkles /><span><small>Категория года</small><strong>{favorite}</strong></span></article>
+        <article><BarChart3 /><span><small>Месяц к предыдущему</small><strong>{comparison}</strong></span></article>
       </section>
 
       <section className="tracker-lab-year-heatmap">
         <div className="tracker-lab-section-heading"><div><span>Каждый день</span><h2>Карта {year} года</h2></div><CalendarDays /></div>
         <div className="tracker-lab-analytics-filters" aria-label="Фильтр карты по категориям">
-          <button type="button" className={categoryFilter === "all" ? "is-active" : ""} onClick={() => setCategoryFilter("all")}>Все</button>
-          {categories.map((category) => <button type="button" key={category.id} className={categoryFilter === category.id ? "is-active" : ""} onClick={() => setCategoryFilter(category.id)}><i style={{ background: getCategoryColor(category) }} />{category.name}</button>)}
+          <button type="button" className={categoryFilter === "all" ? "is-active" : ""} aria-pressed={categoryFilter === "all"} onClick={() => setCategoryFilter("all")}>Все</button>
+          {categories.map((category) => <button type="button" key={category.id} className={categoryFilter === category.id ? "is-active" : ""} aria-pressed={categoryFilter === category.id} onClick={() => setCategoryFilter(category.id)}><i style={{ background: getCategoryColor(category) }} />{category.name}</button>)}
         </div>
-        <div className="tracker-lab-heat-grid">
-          {days.map((day) => {
-            const level = day.value ? Math.max(1, Math.ceil(day.value / maxDay * 4)) : 0;
-            const label = `${formatTrackerDate(day.dateKey)}: ${day.value} отметок`;
-            return <button type="button" key={day.dateKey} data-level={level} title={label} aria-label={`Открыть ${label}`} onClick={() => onDateChange(day.dateKey)} />;
-          })}
+        <div className="tracker-lab-heat-months" ref={heatmapRef}>
+          {heatMonths.map((month) => (
+            <section key={month.key} data-heat-month={month.key} className="tracker-lab-heat-month" aria-label={`${month.label} ${year}`}>
+              <h3>{month.label}</h3>
+              <div className="tracker-lab-heat-weekdays" aria-hidden="true">
+                {weekLabels.map((label) => <span key={label}>{label.slice(0, 1)}</span>)}
+              </div>
+              <div className="tracker-lab-heat-grid">
+                {Array.from({ length: month.offset }, (_, index) => <span key={`empty-${index}`} aria-hidden="true" />)}
+                {month.days.map((day) => {
+                  const level = day.value ? Math.max(1, Math.ceil(day.value / maxDay * 4)) : 0;
+                  const label = `${formatTrackerDate(day.dateKey)}: ${day.value} отметок`;
+                  const isSelected = day.dateKey === selectedDate;
+                  return (
+                    <button
+                      type="button"
+                      key={day.dateKey}
+                      data-level={level}
+                      data-heat-date={day.dateKey}
+                      className={isSelected ? "is-selected" : ""}
+                      title={label}
+                      aria-label={`Открыть ${label}`}
+                      aria-current={isSelected ? "date" : undefined}
+                      tabIndex={isSelected ? 0 : -1}
+                      onKeyDown={(event) => handleHeatKeyDown(event, day.dateKey)}
+                      onClick={() => onDateChange(day.dateKey)}
+                    >
+                      <span>{Number(day.dateKey.slice(-2))}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
         <div className="tracker-lab-heat-legend" aria-hidden="true"><span>Меньше</span>{[0,1,2,3,4].map((level) => <i key={level} data-level={level} />)}<span>Больше</span></div>
       </section>

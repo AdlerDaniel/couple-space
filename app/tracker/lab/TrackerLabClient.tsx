@@ -240,9 +240,17 @@ function monthCells(value: string) {
 }
 
 function relativeScope(plan: TrackerPlan, currentUserId: string): Exclude<ScopeFilter, "all"> {
+  if (plan.kind === "task" && plan.assignee_id) {
+    return plan.assignee_id === currentUserId ? "me" : "partner";
+  }
   if (plan.participant_scope === "both") return "both";
   if (plan.created_by === currentUserId) return plan.participant_scope;
   return plan.participant_scope === "me" ? "partner" : "me";
+}
+
+function getTimedEndDate(date: string, startsAt: string, endsAt: string) {
+  if (!startsAt || !endsAt || endsAt >= startsAt) return date;
+  return toTrackerDateKey(addTrackerDays(parseTrackerDateKey(date), 1));
 }
 
 function categoryColor(category: TrackerCategory) {
@@ -252,6 +260,8 @@ function categoryColor(category: TrackerCategory) {
 export default function TrackerLabClient({ initialDate, initialNow }: { initialDate: string | null; initialNow: string }) {
   const router = useRouter();
   const agendaRef = useRef<HTMLDivElement | null>(null);
+  const insightsToggleRef = useRef<HTMLButtonElement | null>(null);
+  const insightsCloseRef = useRef<HTMLButtonElement | null>(null);
   const pendingMutations = useRef(new Set<string>());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [couple, setCouple] = useState<Couple | null>(null);
@@ -266,6 +276,11 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   const [comments, setComments] = useState<TrackerComment[]>([]);
   const [reminders, setReminders] = useState<TrackerReminder[]>([]);
   const [activeTab, setActiveTab] = useState<LocalTab>("today");
+  const [isInsightsOpen, setIsInsightsOpen] = useState(false);
+  const closeInsights = useCallback(() => {
+    setIsInsightsOpen(false);
+    window.requestAnimationFrame(() => insightsToggleRef.current?.focus());
+  }, []);
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
   const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("all");
   const timeZone = profile?.time_zone || "Europe/Moscow";
@@ -435,10 +450,20 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   }, [plans, selectedDate, activeTab]);
 
   useEffect(() => {
+    if (!isInsightsOpen) return;
+    const frame = window.requestAnimationFrame(() => insightsCloseRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [isInsightsOpen]);
+
+  useEffect(() => {
     function handleKeyboard(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
       if (document.querySelector('[role="dialog"]') || target?.matches("input,textarea,select,[contenteditable='true']")) return;
       if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isInsightsOpen) {
+        if (event.key === "Escape") closeInsights();
+        return;
+      }
       if (event.key.toLowerCase() === "t") setSelectedDate(getTrackerToday(timeZone));
       if (event.key.toLowerCase() === "n") setComposerMode("menu");
       if (event.key === "/") {
@@ -450,13 +475,14 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         setSelectedPlanId(null);
         setIsFreeTimeOpen(false);
         setMemoryPlan(null);
+        setIsInsightsOpen(false);
       }
       if (event.key === "ArrowLeft") setSelectedDate((date) => toTrackerDateKey(addTrackerDays(parseTrackerDateKey(date), -1)));
       if (event.key === "ArrowRight") setSelectedDate((date) => toTrackerDateKey(addTrackerDays(parseTrackerDateKey(date), 1)));
     }
     window.addEventListener("keydown", handleKeyboard);
     return () => window.removeEventListener("keydown", handleKeyboard);
-  }, [selectedDate, setSelectedDate, timeZone]);
+  }, [closeInsights, isInsightsOpen, selectedDate, setSelectedDate, timeZone]);
 
 
 
@@ -519,6 +545,19 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     ),
   );
   const selectedComments = comments.filter((item) => item.plan_id === selectedPlanId);
+  const cancelledOccurrences = useMemo<Array<{ override: TrackerOccurrenceOverride; plan: TrackerPlan }>>(
+    () => occurrenceOverrides.flatMap((override) => {
+      if (override.status !== "cancelled") return [];
+      const plan = plans.find((item) => item.id === override.plan_id);
+      if (!plan || plan.status === "cancelled") return [];
+      const canEdit = plan.created_by === currentUserId || (
+        plan.edit_scope === "participants" &&
+        participants.some((item) => item.plan_id === plan.id && item.user_id === currentUserId && item.response === "accepted")
+      );
+      return canEdit ? [{ override, plan }] : [];
+    }).sort((a, b) => b.override.occurrence_date.localeCompare(a.override.occurrence_date)),
+    [currentUserId, occurrenceOverrides, participants, plans],
+  );
   const week = useMemo(() => getWeekStrip(selectedDate, timeZone), [selectedDate, timeZone]);
   const cells = useMemo(() => monthCells(selectedDate), [selectedDate]);
   const activeEvents = events.filter((event) => event.count > 0);
@@ -723,7 +762,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     try {
       startsAt = allDay ? null : trackerDateTimeToIso(planDate, planTime, timeZone);
       endsAt = startsAt
-        ? planEndTime ? trackerDateTimeToIso(planDate, planEndTime, timeZone) : new Date(Date.parse(startsAt) + 3_600_000).toISOString()
+        ? planEndTime ? trackerDateTimeToIso(getTimedEndDate(planDate, planTime, planEndTime), planEndTime, timeZone) : new Date(Date.parse(startsAt) + 3_600_000).toISOString()
         : null;
     } catch {
       setMessage("Проверьте дату и время: в часовом поясе пары это время недоступно.");
@@ -916,7 +955,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     try {
       overrideStartsAt = allDay ? null : trackerDateTimeToIso(planDate, planTime, timeZone);
       overrideEndsAt = overrideStartsAt
-        ? planEndTime ? trackerDateTimeToIso(planDate, planEndTime, timeZone) : new Date(Date.parse(overrideStartsAt) + 3_600_000).toISOString()
+        ? planEndTime ? trackerDateTimeToIso(getTimedEndDate(planDate, planTime, planEndTime), planEndTime, timeZone) : new Date(Date.parse(overrideStartsAt) + 3_600_000).toISOString()
         : null;
     } catch {
       setMessage("Проверьте дату и время в часовом поясе пары.");
@@ -928,7 +967,11 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       setIsSaving(false);
       return;
     }
-    const { error } = await supabase.from("tracker_plan_occurrence_overrides").upsert({
+    const previous = occurrenceOverrides;
+    const existing = previous.find((item) =>
+      item.plan_id === selectedPlan.id && item.occurrence_date === occurrenceDate);
+    const optimistic: TrackerOccurrenceOverride = {
+      id: existing?.id || crypto.randomUUID(),
       plan_id: selectedPlan.id,
       couple_id: couple.id,
       occurrence_date: occurrenceDate,
@@ -938,15 +981,40 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       status: "planned",
       updated_by: currentUserId,
       updated_at: new Date().toISOString(),
+    };
+    setOccurrenceOverrides((items) => [
+      ...items.filter((item) => !(item.plan_id === selectedPlan.id && item.occurrence_date === occurrenceDate)),
+      optimistic,
+    ]);
+    const { error } = await supabase.from("tracker_plan_occurrence_overrides").upsert({
+      plan_id: optimistic.plan_id,
+      couple_id: optimistic.couple_id,
+      occurrence_date: optimistic.occurrence_date,
+      override_start_date: optimistic.override_start_date,
+      override_starts_at: optimistic.override_starts_at,
+      override_ends_at: optimistic.override_ends_at,
+      status: optimistic.status,
+      updated_by: optimistic.updated_by,
+      updated_at: optimistic.updated_at,
     }, { onConflict: "plan_id,occurrence_date" });
-    if (error) setMessage(`Не удалось перенести событие: ${error.message}`);
-    else {
+    if (error) {
+      setOccurrenceOverrides(previous);
+      setMessage(`Не удалось перенести событие: ${error.message}`);
+    } else {
       void Promise.resolve(supabase.from("tracker_plan_activity").insert({
         plan_id: selectedPlan.id,
         couple_id: couple.id,
         actor_id: currentUserId,
         activity_type: "occurrence_updated",
       })).catch(() => undefined);
+      if (selectedPlan.visibility === "couple") {
+        await createPartnerNotification(couple, currentUserId, {
+          type: "tracker_plan_occurrence_updated",
+          title: "Дата совместного плана изменена",
+          body: selectedPlan.title,
+          href: "/tracker/lab",
+        }).catch(() => undefined);
+      }
       setComposerMode(null);
       setSelectedPlanId(null);
       setSelectedOccurrenceDate(null);
@@ -957,54 +1025,141 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
 
   async function cancelOccurrence(plan: TrackerPlan) {
     if (!couple || !currentUserId || !selectedOccurrenceDate) return;
-    if (!window.confirm("Отменить только это повторение? Остальная серия сохранится.")) return;
     const occurrenceDate = selectedOccurrenceDate;
-    const { error } = await supabase.from("tracker_plan_occurrence_overrides").upsert({
+    const key = `cancel:${plan.id}:${occurrenceDate}`;
+    if (pendingMutations.current.has(key) || !window.confirm("Отменить только это повторение? Остальная серия сохранится.")) return;
+    pendingMutations.current.add(key);
+    const previous = occurrenceOverrides;
+    const existing = previous.find((item) =>
+      item.plan_id === plan.id && item.occurrence_date === occurrenceDate);
+    const optimistic: TrackerOccurrenceOverride = {
+      id: existing?.id || crypto.randomUUID(),
       plan_id: plan.id,
       couple_id: couple.id,
       occurrence_date: occurrenceDate,
+      override_start_date: existing?.override_start_date || null,
+      override_starts_at: existing?.override_starts_at || null,
+      override_ends_at: existing?.override_ends_at || null,
       status: "cancelled",
       updated_by: currentUserId,
       updated_at: new Date().toISOString(),
-    }, { onConflict: "plan_id,occurrence_date" });
-    if (error) setMessage(`Не удалось отменить повторение: ${error.message}`);
-    else {
+    };
+    setOccurrenceOverrides((items) => [
+      ...items.filter((item) => !(item.plan_id === plan.id && item.occurrence_date === occurrenceDate)),
+      optimistic,
+    ]);
+    try {
+      const { error } = await supabase.from("tracker_plan_occurrence_overrides").upsert({
+        plan_id: optimistic.plan_id,
+        couple_id: optimistic.couple_id,
+        occurrence_date: optimistic.occurrence_date,
+        override_start_date: optimistic.override_start_date,
+        override_starts_at: optimistic.override_starts_at,
+        override_ends_at: optimistic.override_ends_at,
+        status: optimistic.status,
+        updated_by: optimistic.updated_by,
+        updated_at: optimistic.updated_at,
+      }, { onConflict: "plan_id,occurrence_date" });
+      if (error) {
+        setOccurrenceOverrides(previous);
+        setMessage(`Не удалось отменить повторение: ${error.message}`);
+        return;
+      }
+      void Promise.resolve(supabase.from("tracker_plan_activity").insert({
+        plan_id: plan.id, couple_id: plan.couple_id, actor_id: currentUserId, activity_type: "occurrence_updated",
+        metadata: { action: "cancelled" },
+      })).catch(() => undefined);
+      if (plan.visibility === "couple") {
+        await createPartnerNotification(couple, currentUserId, {
+          type: "tracker_plan_occurrence_cancelled",
+          title: "Дата совместного плана отменена",
+          body: plan.title,
+          href: "/tracker/lab",
+        }).catch(() => undefined);
+      }
       setSelectedPlanId(null);
       setSelectedOccurrenceDate(null);
-      reloadTrackerData();
+    } finally {
+      pendingMutations.current.delete(key);
+    }
+  }
+
+  async function restoreOccurrence(override: TrackerOccurrenceOverride, plan: TrackerPlan) {
+    if (!couple || !currentUserId) return;
+    const key = `restore:${plan.id}:${override.occurrence_date}`;
+    if (pendingMutations.current.has(key)) return;
+    pendingMutations.current.add(key);
+    const previous = occurrenceOverrides;
+    setOccurrenceOverrides((items) => items.map((item) =>
+      item.id === override.id ? { ...item, status: "planned", updated_by: currentUserId, updated_at: new Date().toISOString() } : item,
+    ));
+    try {
+      const { data, error } = await supabase.from("tracker_plan_occurrence_overrides").update({
+        status: "planned",
+        updated_by: currentUserId,
+        updated_at: new Date().toISOString(),
+      }).eq("id", override.id).eq("couple_id", couple.id).select("id");
+      if (error || !data?.length) {
+        setOccurrenceOverrides(previous);
+        setMessage(`Не удалось восстановить дату: ${error?.message || "дата уже недоступна"}`);
+        return;
+      }
+      setMessage("Дата восстановлена");
+      void Promise.resolve(supabase.from("tracker_plan_activity").insert({
+        plan_id: plan.id, couple_id: plan.couple_id, actor_id: currentUserId, activity_type: "occurrence_updated",
+        metadata: { action: "restored" },
+      })).catch(() => undefined);
+      if (plan.visibility === "couple") {
+        await createPartnerNotification(couple, currentUserId, {
+          type: "tracker_plan_occurrence_restored",
+          title: "Дата совместного плана восстановлена",
+          body: plan.title,
+          href: "/tracker/lab",
+        }).catch(() => undefined);
+      }
+    } finally {
+      pendingMutations.current.delete(key);
     }
   }
 
   async function respondToPlan(response: "accepted" | "declined") {
     if (!selectedParticipant || !currentUserId) return;
+    const key = `respond:${selectedParticipant.id}`;
+    if (pendingMutations.current.has(key)) return;
+    pendingMutations.current.add(key);
     const previous = participants;
     setParticipants((items) => items.map((item) =>
       item.id === selectedParticipant.id ? { ...item, response } : item,
     ));
-    const { error } = await supabase.from("tracker_plan_participants")
-      .update({ response })
-      .eq("id", selectedParticipant.id)
-      .eq("user_id", currentUserId);
-    if (error) {
-      setParticipants(previous);
-      setMessage(`Не удалось сохранить ответ: ${error.message}`);
-    } else {
-      setMessage(response === "accepted" ? "План принят" : "План отклонён");
-      if (selectedPlan && couple) {
-        void Promise.resolve(supabase.from("tracker_plan_activity").insert({
-          plan_id: selectedPlan.id,
-          couple_id: couple.id,
-          actor_id: currentUserId,
-          activity_type: "responded",
-          metadata: { response },
-        })).catch(() => undefined);
-        await createPartnerNotification(couple, currentUserId, {
-          type: "tracker_plan_response",
-          title: response === "accepted" ? "План принят" : "План отклонён",
-          body: selectedPlan.title,
-          href: "/tracker/lab",
-        }).catch(() => undefined);
+    try {
+      const { data, error } = await supabase.from("tracker_plan_participants")
+        .update({ response })
+        .eq("id", selectedParticipant.id)
+        .eq("user_id", currentUserId)
+        .select("id");
+      if (error || !data?.length) {
+        setParticipants(previous);
+        setMessage(`Не удалось сохранить ответ: ${error?.message || "приглашение уже недоступно"}`);
+      } else {
+        setMessage(response === "accepted" ? "План принят" : "План отклонён");
+        if (selectedPlan && couple) {
+          void Promise.resolve(supabase.from("tracker_plan_activity").insert({
+            plan_id: selectedPlan.id,
+            couple_id: couple.id,
+            actor_id: currentUserId,
+            activity_type: "responded",
+            metadata: { response },
+          })).catch(() => undefined);
+          await createPartnerNotification(couple, currentUserId, {
+            type: "tracker_plan_response",
+            title: response === "accepted" ? "План принят" : "План отклонён",
+            body: selectedPlan.title,
+            href: "/tracker/lab",
+          }).catch(() => undefined);
+        }
       }
+    } finally {
+      pendingMutations.current.delete(key);
     }
   }
 
@@ -1028,6 +1183,14 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         if (error) setMessage(`Не удалось завершить назначенную задачу: ${error.message}`);
         else {
           setMessage("Задача завершена");
+          if (couple && plan.visibility === "couple") {
+            await createPartnerNotification(couple, currentUserId, {
+              type: "tracker_plan_completed",
+              title: "Совместная задача завершена",
+              body: plan.title,
+              href: "/tracker/lab",
+            }).catch(() => undefined);
+          }
           reloadTrackerData();
         }
         return;
@@ -1072,6 +1235,14 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       void Promise.resolve(supabase.from("tracker_plan_activity").insert({
         plan_id: plan.id, couple_id: plan.couple_id, actor_id: currentUserId, activity_type: "completed",
       })).catch(() => undefined);
+      if (couple && plan.visibility === "couple") {
+        await createPartnerNotification(couple, currentUserId, {
+          type: "tracker_plan_completed",
+          title: "Совместный план завершён",
+          body: plan.title,
+          href: "/tracker/lab",
+        }).catch(() => undefined);
+      }
       reloadTrackerData();
     } finally {
       pendingMutations.current.delete(mutationKey);
@@ -1098,6 +1269,14 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         actor_id: currentUserId,
         activity_type: "completed",
       })).catch(() => undefined);
+      if (couple && plan.visibility === "couple") {
+        await createPartnerNotification(couple, currentUserId, {
+          type: "tracker_plan_completed",
+          title: "Совместный план завершён",
+          body: plan.title,
+          href: "/tracker/lab",
+        }).catch(() => undefined);
+      }
     }
   }
 
@@ -1556,7 +1735,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
             ["calendar", CalendarRange, "Календарь"],
             ["activity", Activity, "Активность"],
           ] as const).map(([key, Icon, label]) => (
-            <button type="button" key={key} className={activeTab === key ? "is-active" : ""} onClick={() => setActiveTab(key)}>
+            <button type="button" key={key} className={activeTab === key ? "is-active" : ""} aria-current={activeTab === key ? "page" : undefined} onClick={() => { setActiveTab(key); setIsInsightsOpen(false); }}>
               <Icon size={18} /><span>{label}</span>
             </button>
           ))}
@@ -1574,7 +1753,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         <section className="tracker-lab-toolbar">
           <div className="tracker-lab-week-strip">
             {week.map((item) => (
-              <button type="button" key={item.dateKey} className={selectedDate === item.dateKey ? "is-active" : ""} onClick={() => setSelectedDate(item.dateKey)}>
+              <button type="button" key={item.dateKey} className={selectedDate === item.dateKey ? "is-active" : ""} aria-pressed={selectedDate === item.dateKey} onClick={() => setSelectedDate(item.dateKey)}>
                 <small>{item.weekday}</small><strong>{item.day}</strong>{item.dateKey === getTrackerToday(timeZone) && <i />}
               </button>
             ))}
@@ -1600,12 +1779,22 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
                 <div><span>Выбранный день</span><h2>{formatTrackerDate(selectedDate)}</h2></div>
                 <div className="tracker-lab-filter-row">
                   {(["all","me","partner","both"] as ScopeFilter[]).map((filter) => (
-                    <button type="button" key={filter} className={scopeFilter === filter ? "is-active" : ""} onClick={() => setScopeFilter(filter)}>
+                    <button type="button" key={filter} className={scopeFilter === filter ? "is-active" : ""} aria-pressed={scopeFilter === filter} onClick={() => setScopeFilter(filter)}>
                       {filter === "all" ? "Все" : filter === "me" ? "Я" : filter === "partner" ? "Партнёр" : "Вместе"}
                     </button>
                   ))}
                 </div>
               </div>
+              <button
+                type="button"
+                ref={insightsToggleRef}
+                className="tracker-lab-insights-toggle"
+                aria-controls="tracker-lab-insights"
+                aria-expanded={isInsightsOpen}
+                onClick={() => setIsInsightsOpen(true)}
+              >
+                <Activity />Сводка дня
+              </button>
               <div className="tracker-lab-agenda" ref={agendaRef}>
                 {selectedOccurrences.length === 0 ? (
                   <div className="tracker-lab-empty">
@@ -1617,7 +1806,18 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
               {renderActivityCounters()}
             </div>
 
-            <aside className="tracker-lab-right-column">
+            <button
+              type="button"
+              className={`tracker-lab-insights-backdrop ${isInsightsOpen ? "is-open" : ""}`}
+              aria-label="Закрыть сводку"
+              tabIndex={-1}
+              onClick={closeInsights}
+            />
+            <aside id="tracker-lab-insights" className={`tracker-lab-right-column ${isInsightsOpen ? "is-drawer-open" : ""}`} aria-label="Сводка дня">
+              <div className="tracker-lab-drawer-heading">
+                <span><Activity />Сводка дня</span>
+                <button ref={insightsCloseRef} type="button" onClick={closeInsights} aria-label="Закрыть сводку"><X /></button>
+              </div>
               {renderCheckinCard()}
               <section className="tracker-lab-stats-card">
                 <div className="tracker-lab-section-heading">
@@ -1656,7 +1856,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
             <div className="tracker-lab-calendar-controls">
               <div>
                 {(["day","week","month","year"] as CalendarMode[]).map((mode) => (
-                  <button type="button" key={mode} className={calendarMode === mode ? "is-active" : ""} onClick={() => setCalendarMode(mode)}>
+                  <button type="button" key={mode} className={calendarMode === mode ? "is-active" : ""} aria-pressed={calendarMode === mode} onClick={() => setCalendarMode(mode)}>
                     {mode === "day" ? "День" : mode === "week" ? "Неделя" : mode === "month" ? "Месяц" : "Год"}
                   </button>
                 ))}
@@ -1683,7 +1883,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
                   const monthKey = `${selectedYear}-${String(month + 1).padStart(2, "0")}`;
                   const value = activeEvents.filter((event) => event.date.startsWith(monthKey)).reduce((sum, event) => sum + event.count, 0);
                   return (
-                    <button type="button" key={month} onClick={() => { setSelectedDate(toTrackerDateKey(date)); setCalendarMode("month"); }}>
+                    <button type="button" key={month} aria-pressed={selectedDate.startsWith(monthKey)} onClick={() => { setSelectedDate(toTrackerDateKey(date)); setCalendarMode("month"); }}>
                       <span>{new Intl.DateTimeFormat("ru-RU", { month: "short" }).format(date)}</span>
                       <i style={{ ["--heat" as string]: Math.min(1, value / 18) }} />
                       <strong>{value}</strong>
@@ -1710,6 +1910,31 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
               getPersonMeta={getPersonMeta}
               onDateChange={(date) => { setSelectedDate(date); setActiveTab("today"); }}
             />
+            {cancelledOccurrences.length > 0 && (
+              <section className="tracker-lab-cancelled-occurrences">
+                <div className="tracker-lab-section-heading">
+                  <div><span>Повторения</span><h2>Отменённые даты</h2></div><RefreshCw />
+                </div>
+                <div>
+                  {cancelledOccurrences.map(({ override, plan }) => (
+                    <article key={override.id}>
+                      <span>
+                        <strong>{plan.title}</strong>
+                        <small>
+                          {formatTrackerDate(override.override_start_date || override.occurrence_date)}
+                          {override.override_start_date && override.override_start_date !== override.occurrence_date
+                            ? ` · исходно ${formatTrackerDate(override.occurrence_date)}`
+                            : ""}
+                        </small>
+                      </span>
+                      <button type="button" onClick={() => void restoreOccurrence(override, plan)}>
+                        <RefreshCw />Восстановить
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
             <div className="tracker-lab-activity-layout">
               <section className="tracker-lab-insight-panel">
                 <div className="tracker-lab-section-heading"><div><span>Категории</span><h2>Ваши названия</h2></div><Pencil /></div>
@@ -1853,13 +2078,13 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
               <>
                 <p>Check-in</p><h2>Как проходит день?</h2>
                 <div className="tracker-lab-mood-picker">
-                  {moods.map((mood) => <button type="button" key={mood.key} className={checkinMood === mood.key ? "is-active" : ""} onClick={() => setCheckinMood(mood.key)}><FluentEmoji emoji={mood.emoji} size={34} decorative /><span>{mood.label}</span></button>)}
+                  {moods.map((mood) => <button type="button" key={mood.key} className={checkinMood === mood.key ? "is-active" : ""} aria-pressed={checkinMood === mood.key} onClick={() => setCheckinMood(mood.key)}><FluentEmoji emoji={mood.emoji} size={34} decorative /><span>{mood.label}</span></button>)}
                 </div>
                 <label className="tracker-lab-range-label"><span>Энергия <strong>{checkinEnergy}/5</strong></span><input type="range" min={1} max={5} value={checkinEnergy} onChange={(event) => setCheckinEnergy(Number(event.target.value))} /></label>
                 <label className="tracker-lab-range-label"><span>Близость <strong>{checkinRelationship}/5</strong></span><input type="range" min={1} max={5} value={checkinRelationship} onChange={(event) => setCheckinRelationship(Number(event.target.value))} /></label>
                 <textarea className="tracker-lab-big-input" value={checkinNote} onChange={(event) => setCheckinNote(event.target.value)} placeholder="Личная заметка о дне" rows={3} />
                 <div className="tracker-lab-privacy-options">
-                  {(["private","summary","full"] as const).map((visibility) => <button type="button" key={visibility} className={checkinVisibility === visibility ? "is-active" : ""} onClick={() => setCheckinVisibility(visibility)}>{visibility === "private" ? <EyeOff /> : visibility === "summary" ? <Eye /> : <UsersRound />}<span>{visibility === "private" ? "Только мне" : visibility === "summary" ? "Показать статус" : "Показать всё"}</span></button>)}
+                  {(["private","summary","full"] as const).map((visibility) => <button type="button" key={visibility} className={checkinVisibility === visibility ? "is-active" : ""} aria-pressed={checkinVisibility === visibility} onClick={() => setCheckinVisibility(visibility)}>{visibility === "private" ? <EyeOff /> : visibility === "summary" ? <Eye /> : <UsersRound />}<span>{visibility === "private" ? "Только мне" : visibility === "summary" ? "Показать статус" : "Показать всё"}</span></button>)}
                 </div>
                 <label className="tracker-lab-switch"><input type="checkbox" checked={checkinReveal} onChange={(event) => setCheckinReveal(event.target.checked)} /><span /><div><strong>Открыть после ответа обоих</strong><small>Без давления и сравнений</small></div></label>
                 <button type="button" className="tracker-lab-primary-button" disabled={isSaving} onClick={() => void saveCheckin()}>Сохранить состояние</button>

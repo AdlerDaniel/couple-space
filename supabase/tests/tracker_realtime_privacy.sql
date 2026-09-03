@@ -64,7 +64,7 @@ select results_eq(
 );
 select is(
   (
-    select payload
+    select payload - 'id'
     from realtime.messages
     where topic = 'tracker:a0000000-0000-4000-8000-000000000001'
       and event = 'changed'

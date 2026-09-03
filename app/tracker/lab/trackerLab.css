@@ -2666,3 +2666,317 @@
   .tracker-lab-heat-grid button { transition: none; }
   .tracker-lab-heat-grid button:hover, .tracker-lab-heat-grid button:focus-visible { transform: none; }
 }
+
+
+/* Medium-width summary drawer and recoverable occurrence states. */
+.tracker-lab-insights-toggle,
+.tracker-lab-insights-backdrop,
+.tracker-lab-drawer-heading {
+  display: none;
+}
+
+.tracker-lab-cancelled-occurrences {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--lab-line);
+  border-radius: 1.25rem;
+  background: var(--lab-panel);
+  box-shadow: var(--lab-shadow-small);
+}
+
+.tracker-lab-cancelled-occurrences > div:last-child {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+.tracker-lab-cancelled-occurrences article {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--lab-line);
+  border-radius: 1rem;
+  background: var(--lab-surface-subtle);
+}
+
+.tracker-lab-cancelled-occurrences article > span {
+  display: grid;
+  min-width: 0;
+}
+
+.tracker-lab-cancelled-occurrences strong,
+.tracker-lab-cancelled-occurrences small {
+  overflow-wrap: anywhere;
+}
+
+.tracker-lab-cancelled-occurrences small {
+  color: var(--lab-muted);
+  font-size: 0.72rem;
+}
+
+.tracker-lab-cancelled-occurrences article button,
+.tracker-lab-insights-toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--lab-accent) 35%, var(--lab-line));
+  border-radius: 0.85rem;
+  color: var(--lab-accent);
+  background: color-mix(in srgb, var(--lab-accent) 10%, var(--lab-surface));
+  font-size: 0.75rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.tracker-lab-cancelled-occurrences button svg,
+.tracker-lab-insights-toggle svg,
+.tracker-lab-drawer-heading svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+@keyframes tracker-lab-selected-day {
+  0% { transform: scale(0.92); }
+  65% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+@keyframes tracker-lab-completed {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--lab-accent) 38%, transparent); }
+  70% { box-shadow: 0 0 0 0.55rem transparent; }
+  100% { box-shadow: var(--lab-shadow-small); }
+}
+
+.tracker-lab-week-strip button.is-active {
+  animation: tracker-lab-selected-day 260ms ease-out;
+}
+
+.tracker-lab-plan-card.is-done {
+  animation: tracker-lab-completed 480ms ease-out;
+}
+
+@media (min-width: 768px) and (max-width: 1179px) {
+  .tracker-lab-insights-toggle {
+    display: inline-flex;
+    justify-self: end;
+  }
+
+  .tracker-lab-insights-backdrop.is-open {
+    position: fixed;
+    inset: 0;
+    z-index: 109;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: color-mix(in srgb, #111827 42%, transparent);
+    backdrop-filter: blur(3px);
+    cursor: default;
+  }
+
+  .tracker-lab-right-column {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 110;
+    display: flex;
+    width: min(25rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 0.85rem;
+    border: 1px solid var(--lab-line);
+    border-radius: 1.5rem;
+    background: var(--lab-panel);
+    box-shadow: 0 24px 70px rgba(51, 32, 8, 0.28);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(calc(100% + 2rem));
+    transition: transform 220ms ease, opacity 180ms ease, visibility 180ms ease;
+  }
+
+  .tracker-lab-right-column.is-drawer-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+
+  .tracker-lab-drawer-heading {
+    position: sticky;
+    top: -0.85rem;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: -0.85rem -0.85rem 0;
+    padding: 0.8rem 0.9rem;
+    border-bottom: 1px solid var(--lab-line);
+    background: color-mix(in srgb, var(--lab-panel) 94%, transparent);
+    backdrop-filter: blur(14px);
+  }
+
+  .tracker-lab-drawer-heading > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 900;
+  }
+
+  .tracker-lab-drawer-heading button {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border: 1px solid var(--lab-line);
+    border-radius: 0.8rem;
+    color: var(--lab-ink);
+    background: var(--lab-surface);
+    cursor: pointer;
+  }
+}
+
+@media (max-width: 620px) {
+  .tracker-lab-cancelled-occurrences > div:last-child {
+    grid-template-columns: 1fr;
+  }
+
+  .tracker-lab-cancelled-occurrences article {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tracker-lab-week-strip button.is-active,
+  .tracker-lab-plan-card.is-done {
+    animation: none;
+  }
+
+  .tracker-lab-right-column {
+    transition: none;
+  }
+}
+
+
+/* Readable, keyboard-friendly month groups replace the tiny 365-cell strip. */
+.tracker-lab-heat-months {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(12rem, 1fr));
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.tracker-lab-heat-month {
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid var(--lab-line);
+  border-radius: 1rem;
+  background: var(--lab-surface-subtle);
+}
+
+.tracker-lab-heat-month h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.tracker-lab-heat-weekdays,
+.tracker-lab-heat-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.22rem;
+}
+
+.tracker-lab-heat-weekdays {
+  margin-bottom: 0.22rem;
+  color: var(--lab-muted);
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.tracker-lab-heat-grid > span,
+.tracker-lab-heat-grid button {
+  min-width: 0;
+  aspect-ratio: 1;
+}
+
+.tracker-lab-heat-grid button {
+  display: grid;
+  place-items: center;
+  border-radius: 0.42rem;
+}
+
+.tracker-lab-heat-grid button > span {
+  color: color-mix(in srgb, var(--lab-ink) 76%, transparent);
+  font-size: clamp(0.56rem, 0.8vw, 0.7rem);
+  font-weight: 850;
+  line-height: 1;
+}
+
+.tracker-lab-heat-grid [data-level="3"] > span,
+.tracker-lab-heat-grid [data-level="4"] > span {
+  color: #fff;
+}
+
+.tracker-lab-heat-grid button.is-selected {
+  outline: 2px solid var(--lab-accent);
+  outline-offset: 2px;
+}
+
+.tracker-lab-heat-grid button:hover,
+.tracker-lab-heat-grid button:focus-visible {
+  transform: scale(1.1);
+}
+
+@media (max-width: 1020px) {
+  .tracker-lab-heat-months {
+    grid-template-columns: repeat(2, minmax(13rem, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .tracker-lab-heat-months {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: min(22rem, 82vw);
+    overflow-x: auto;
+    margin-inline: -0.2rem;
+    padding: 0.2rem 0.2rem 0.65rem;
+    scroll-padding-inline: 0.2rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+
+  .tracker-lab-heat-month {
+    scroll-snap-align: center;
+  }
+
+  .tracker-lab-heat-grid button {
+    min-height: 2.15rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tracker-lab-heat-grid button {
+    transition: none;
+  }
+
+  .tracker-lab-heat-grid button:hover,
+  .tracker-lab-heat-grid button:focus-visible {
+    transform: none;
+  }
+}

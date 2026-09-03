@@ -50,7 +50,7 @@ export default function TrackerLabPlanComposer({
         <label><span>Конец</span><input type="time" value={value.endTime} onChange={(event) => onChange({ endTime: event.target.value })} disabled={!value.time} /></label>
         <label className="is-wide"><span>Описание</span><textarea value={value.description} onChange={(event) => onChange({ description: event.target.value })} maxLength={10000} placeholder="Детали, адрес или небольшая заметка" rows={3} /></label>
       </div>
-      <p className="tracker-lab-form-hint"><CalendarDays size={15} />{value.time ? "Если конец не указан — длительность 1 час." : "Без времени — событие на весь день."} Часовой пояс: {timeZone}.</p>
+      <p className="tracker-lab-form-hint"><CalendarDays size={15} />{value.time ? "Без конца — 1 час; более раннее время конца означает следующий день." : "Без времени — событие на весь день."} Часовой пояс: {timeZone}.</p>
       <details className="tracker-lab-advanced" open={editing || undefined}>
         <summary>Дополнительные параметры<ChevronDown size={18} /></summary>
         <div className="tracker-lab-form-grid">

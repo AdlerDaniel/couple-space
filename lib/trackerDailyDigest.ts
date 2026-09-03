@@ -20,6 +20,7 @@ type CoupleProfile = {
 
 function includesUser(plan: TrackerPlan, userId: string, couple: Couple) {
   if (plan.visibility === "private") return plan.created_by === userId;
+  if (plan.assignee_id === userId) return true;
   if (plan.participant_scope === "both") return true;
   if (plan.participant_scope === "me") return plan.created_by === userId;
   const partnerId = plan.created_by === couple.partner_one_id

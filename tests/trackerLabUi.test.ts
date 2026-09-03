@@ -68,6 +68,10 @@ test("responsive styling covers required mobile and desktop widths and reduced m
   assert.match(css, /@media \(max-width: 430px\)/);
   assert.match(css, /@media \(max-width: 767px\)/);
   assert.match(css, /@media \(max-width: 1179px\)/);
+  assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1179px\)/);
+  assert.match(client, /tracker-lab-insights/);
+  assert.match(client, /aria-current=\{activeTab/);
+  assert.match(client, /aria-pressed=\{scopeFilter/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /grid-template-columns:\s*minmax\(14rem/);
   assert.match(css, /safe-area-inset-bottom/);
@@ -86,6 +90,9 @@ test("shared repository powers both tracker versions and the daily free-tier dig
   assert.match(originalTracker, /tracker_category_preferences/);
   assert.match(dailyDigest, /expandTrackerPlanOccurrences/);
   assert.match(dailyDigest, /tracker-digest-/);
+  assert.match(dailyDigest, /plan\.assignee_id === userId/);
+  assert.match(client, /getTimedEndDate/);
+  assert.match(client, /restoreOccurrence/);
 });
 
 test("discussion owns disposable microphone state and dialogs manage focus and mobile viewport", () => {
@@ -105,6 +112,9 @@ test("analytics retains the original full-year and history capabilities", () => 
   assert.match(client, /<TrackerLabAnalytics/);
   assert.match(analytics, /Array\.from\(\{ length \}/);
   assert.match(analytics, /tracker-lab-heat-grid/);
+  assert.match(analytics, /tracker-lab-heat-months/);
+  assert.match(analytics, /data-heat-month/);
+  assert.match(analytics, /tabIndex=\{isSelected \? 0 : -1\}/);
   assert.match(analytics, /categoryFilter/);
   assert.match(analytics, /getVisibleEventNote/);
   assert.match(analytics, /duration_minutes/);

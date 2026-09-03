@@ -323,6 +323,13 @@ test("tracker lab mobile and desktop layouts in both themes and reduced motion",
           await page.locator(".tracker-lab-local-nav").getByRole("button", { name: tab, exact: true }).click();
           await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
         }
+        if (width === 768) {
+          await page.locator(".tracker-lab-local-nav").getByRole("button", { name: "Сегодня", exact: true }).click();
+          await page.getByRole("button", { name: "Сводка дня", exact: true }).click();
+          await expect(page.locator("#tracker-lab-insights")).toBeVisible();
+          await page.keyboard.press("Escape");
+          await expect(page.locator("#tracker-lab-insights")).toBeHidden();
+        }
       }
     }
 

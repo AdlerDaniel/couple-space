@@ -1,8 +1,9 @@
-import { getDailyQuestionDate } from "@/lib/dailyQuestions";
 import { sendPushToUser } from "@/lib/pushServer";
 import { getAdminClient } from "@/lib/supabaseAdmin";
 import {
   expandTrackerPlanOccurrences,
+  getTrackerToday,
+  type TrackerOccurrenceOverride,
   type TrackerPlan,
 } from "@/lib/trackerPlanDomain";
 
@@ -56,14 +57,22 @@ export async function sendTrackerDailyDigest(now = new Date()) {
   let skippedUsers = 0;
 
   for (const couple of couples) {
-    const dateKey = getDailyQuestionDate(now, zones.get(couple.id) || "Europe/Moscow");
+    const timeZone = zones.get(couple.id) || "Europe/Moscow";
+    const dateKey = getTrackerToday(timeZone, now);
     const { data: planRows } = await adminSupabase
       .from("tracker_plans")
       .select("*")
       .eq("couple_id", couple.id)
       .neq("status", "cancelled")
       .returns<TrackerPlan[]>();
-    const occurrences = expandTrackerPlanOccurrences(planRows || [], dateKey, dateKey);
+    const { data: overrides, error: overrideError } = await adminSupabase
+      .from("tracker_plan_occurrence_overrides")
+      .select("*")
+      .eq("couple_id", couple.id)
+      .returns<TrackerOccurrenceOverride[]>();
+    if (overrideError) continue;
+    const occurrences = expandTrackerPlanOccurrences(planRows || [], dateKey, dateKey, timeZone, overrides || [])
+      .filter((occurrence) => occurrence.status !== "done" && occurrence.status !== "cancelled");
 
     for (const userId of [couple.partner_one_id, couple.partner_two_id].filter(Boolean) as string[]) {
       const visibleCount = occurrences.filter(({ plan }) => includesUser(plan, userId, couple)).length;

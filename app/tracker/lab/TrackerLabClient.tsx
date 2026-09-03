@@ -766,7 +766,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
           couple_id: couple.id,
           actor_id: currentUserId,
           activity_type: "updated",
-        });
+        })).catch(() => undefined);
         if (existing.visibility === "couple" && planVisibility === "couple") {
           await createPartnerNotification(couple, currentUserId, {
             type: "tracker_plan_updated",
@@ -846,7 +846,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         user_id: currentUserId,
         offset_minutes: planReminder,
         delivery: "ics",
-      })).catch(() => undefined);
+      });
       if (reminderError) throw reminderError;
       void Promise.resolve(supabase.from("tracker_plan_activity").insert({
         plan_id: data.id,
@@ -978,7 +978,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
           actor_id: currentUserId,
           activity_type: "responded",
           metadata: { response },
-        });
+        })).catch(() => undefined);
         await createPartnerNotification(couple, currentUserId, {
           type: "tracker_plan_response",
           title: response === "accepted" ? "План принят" : "План отклонён",
@@ -1033,7 +1033,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         setMessage(`Не удалось завершить этот день: ${error.message}`);
         return;
       }
-      await supabase.from("tracker_plan_activity").insert({
+      void Promise.resolve(supabase.from("tracker_plan_activity").insert({
         plan_id: plan.id, couple_id: plan.couple_id, actor_id: currentUserId, activity_type: "completed",
       })).catch(() => undefined);
       reloadTrackerData();

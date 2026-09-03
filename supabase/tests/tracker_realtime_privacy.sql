@@ -64,14 +64,14 @@ select results_eq(
 );
 select is(
   (
-    select pg_catalog.jsonb_object_length(payload)
+    select payload
     from realtime.messages
     where topic = 'tracker:a0000000-0000-4000-8000-000000000001'
       and event = 'changed'
     order by inserted_at desc
     limit 1
   ),
-  2,
+  '{"table":"tracker_plans","operation":"INSERT"}'::jsonb,
   'invalidation payload contains no private row data or identifier'
 );
 

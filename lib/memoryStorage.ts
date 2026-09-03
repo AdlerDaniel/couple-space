@@ -1,6 +1,6 @@
-import { decodeMemoryMedia, encodeMemoryMedia, type MemoryMedia } from "@/lib/memoryMedia";
-import { supabase } from "@/lib/supabaseClient";
-import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
+import { decodeMemoryMedia, encodeMemoryMedia, type MemoryMedia } from "./memoryMedia.ts";
+import { supabase } from "./supabaseClient.ts";
+import { toPortableSupabaseUrl } from "./supabaseUrls.ts";
 
 const MEMORY_BUCKET = "memory-images";
 const SIGNED_URL_TTL_SECONDS = 4 * 60 * 60;

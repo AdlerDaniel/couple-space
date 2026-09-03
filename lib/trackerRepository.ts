@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import type { TrackerPlan } from "@/lib/trackerPlanDomain";
 
 export type TrackerLabSnapshot = {
   categories: unknown[];
@@ -156,4 +157,40 @@ export async function fetchTrackerFreeSlots(coupleId: string, query: {
   const error = results.find((result) => result.error)?.error;
   if (error) throw new Error(error.message);
   return results.flatMap((result) => (result.data || []) as Array<{ starts_at: string; ends_at: string }>);
+}
+
+export async function synchronizeTrackerParticipants(
+  plan: TrackerPlan,
+  currentUserId: string,
+  partnerId: string | null,
+) {
+  if (plan.created_by !== currentUserId) return;
+  const { data: existing, error: loadError } = await supabase.from("tracker_plan_participants")
+    .select("id,user_id,role,response").eq("plan_id", plan.id).eq("couple_id", plan.couple_id);
+  if (loadError) throw new Error(loadError.message);
+  const desired = new Set<string>(plan.visibility === "private" || plan.participant_scope === "me"
+    ? [currentUserId]
+    : plan.participant_scope === "partner"
+      ? partnerId ? [partnerId] : [currentUserId]
+      : [currentUserId, ...(partnerId ? [partnerId] : [])]);
+  if (plan.assignee_id && plan.visibility !== "private") desired.add(plan.assignee_id);
+  for (const userId of desired) {
+    const participant = existing?.find((item) => item.user_id === userId);
+    const role = userId === plan.assignee_id ? "responsible" : "participant";
+    if (!participant) {
+      const { error } = await supabase.from("tracker_plan_participants").insert({
+        plan_id: plan.id, couple_id: plan.couple_id, user_id: userId, role,
+        response: userId === currentUserId ? "accepted" : "pending",
+      });
+      if (error) throw new Error(error.message);
+    } else if (participant.role !== role) {
+      const { error } = await supabase.from("tracker_plan_participants").update({ role }).eq("id", participant.id);
+      if (error) throw new Error(error.message);
+    }
+  }
+  const removed = (existing || []).filter((item) => !desired.has(item.user_id)).map((item) => item.id);
+  if (removed.length) {
+    const { error } = await supabase.from("tracker_plan_participants").delete().eq("plan_id", plan.id).in("id", removed);
+    if (error) throw new Error(error.message);
+  }
 }

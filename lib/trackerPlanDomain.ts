@@ -84,10 +84,10 @@ export function startOfTrackerWeek(value: Date) {
   return addTrackerDays(value, 1 - day);
 }
 
-export function getWeekStrip(value: string | Date) {
+export function getWeekStrip(value: string | Date, timeZone = "Europe/Moscow") {
   const source = typeof value === "string" ? parseTrackerDateKey(value) : value;
   const start = startOfTrackerWeek(source);
-  const todayKey = toTrackerDateKey(new Date());
+  const todayKey = getTrackerToday(timeZone);
   return Array.from({ length: 7 }, (_, index) => {
     const date = addTrackerDays(start, index);
     return {

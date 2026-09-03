@@ -11,7 +11,11 @@ const repository = readFileSync(new URL("../lib/trackerRepository.ts", import.me
 const hook = readFileSync(new URL("../app/tracker/useTrackerData.ts", import.meta.url), "utf8");
 const originalTracker = readFileSync(new URL("../app/tracker/page.tsx", import.meta.url), "utf8");
 const dailyDigest = readFileSync(new URL("../lib/trackerDailyDigest.ts", import.meta.url), "utf8");
-const trackerSource = [client, repository, hook, dailyDigest].join("\n");
+const discussion = readFileSync(new URL("../app/tracker/lab/TrackerLabDiscussion.tsx", import.meta.url), "utf8");
+const dialog = readFileSync(new URL("../app/tracker/lab/TrackerLabDialog.tsx", import.meta.url), "utf8");
+const planComposer = readFileSync(new URL("../app/tracker/lab/TrackerLabPlanComposer.tsx", import.meta.url), "utf8");
+const freeTime = readFileSync(new URL("../app/tracker/lab/TrackerLabFreeTimeDialog.tsx", import.meta.url), "utf8");
+const trackerSource = [client, repository, hook, dailyDigest, discussion, planComposer, freeTime].join("\n");
 
 test("tracker lab stays hidden from global navigation and search indexing", () => {
   assert.doesNotMatch(navigation, /href:\s*["']\/tracker\/lab["']/);
@@ -45,13 +49,13 @@ test("tracker lab exposes the complete collaborative flow", () => {
 });
 
 test("comments support text paste, files, photos, video and voice", () => {
-  assert.match(client, /onPaste=\{handleCommentPaste\}/);
-  assert.match(client, /handleClipboardFilePaste/);
-  assert.match(client, /createCompatibleAudioRecorder/);
-  assert.match(client, /<AccentAudioPlayer/);
-  assert.match(client, /attachment_type === "image"/);
-  assert.match(client, /attachment_type === "video"/);
-  assert.match(client, /attachment_type === "file"/);
+  assert.match(discussion, /onPaste=\{handlePaste\}/);
+  assert.match(discussion, /handleClipboardFilePaste/);
+  assert.match(discussion, /createCompatibleAudioRecorder/);
+  assert.match(discussion, /<AccentAudioPlayer/);
+  assert.match(discussion, /attachment_type === "image"/);
+  assert.match(discussion, /attachment_type === "video"/);
+  assert.match(discussion, /attachment_type === "file"/);
 });
 
 test("responsive styling covers required mobile and desktop widths and reduced motion", () => {
@@ -72,4 +76,17 @@ test("shared repository powers both tracker versions and the daily free-tier dig
   assert.match(originalTracker, /tracker_category_preferences/);
   assert.match(dailyDigest, /expandTrackerPlanOccurrences/);
   assert.match(dailyDigest, /tracker-digest-/);
+});
+
+test("discussion owns disposable microphone state and dialogs manage focus and mobile viewport", () => {
+  assert.match(client, /<TrackerLabDiscussion/);
+  assert.match(client, /key=\{selectedPlan\.id\}/);
+  assert.match(discussion, /recorder\.onstop = null/);
+  assert.match(discussion, /stream\.getTracks\(\)\.forEach\(\(track\) => track\.stop\(\)\)/);
+  assert.match(discussion, /!mountedRef\.current \|\| request !== recordingRequestRef\.current/);
+  assert.match(dialog, /aria-modal="true"/);
+  assert.match(dialog, /visualViewport/);
+  assert.match(dialog, /previousFocus\?\.isConnected/);
+  assert.match(dialog, /event\.shiftKey/);
+  assert.match(dialog, /prefers-reduced-motion/);
 });

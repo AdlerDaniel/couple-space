@@ -90,26 +90,27 @@ export async function fetchTrackerLabData(coupleId: string, year: number): Promi
 }
 
 export function subscribeTrackerData(coupleId: string, onChange: () => void) {
-  const filter = `couple_id=eq.${coupleId}`;
   let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  let disposed = false;
   const scheduleRefresh = () => {
     if (refreshTimer) clearTimeout(refreshTimer);
     refreshTimer = setTimeout(onChange, 120);
   };
   const channel = supabase
-    .channel(`tracker-data:${coupleId}:${crypto.randomUUID()}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_events", filter }, scheduleRefresh)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_goals", filter }, scheduleRefresh)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plans", filter }, scheduleRefresh)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_participants", filter }, scheduleRefresh)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_occurrence_overrides", filter }, scheduleRefresh)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_checkins", filter }, scheduleRefresh)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_comments", filter }, scheduleRefresh)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_category_preferences", filter }, scheduleRefresh)
-    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_reminders", filter }, scheduleRefresh)
-    .subscribe();
+    .channel(`tracker:${coupleId}`, { config: { private: true } })
+    .on("broadcast", { event: "changed" }, scheduleRefresh);
+
+  // Private Broadcast is pair-scoped by realtime.messages RLS. Unlike filtered
+  // Postgres DELETE events it carries no row payload, so privacy revocations and
+  // deletions can safely invalidate every open tab.
+  void supabase.realtime.setAuth()
+    .then(() => {
+      if (!disposed) channel.subscribe();
+    })
+    .catch(() => undefined);
 
   return () => {
+    disposed = true;
     if (refreshTimer) clearTimeout(refreshTimer);
     void supabase.removeChannel(channel);
   };

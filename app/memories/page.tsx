@@ -6,6 +6,7 @@ import EmojiPicker from "@/components/EmojiPicker";
 import { supabase } from "@/lib/supabaseClient";
 import { createPartnerNotification } from "@/lib/notifications";
 import { decodeMemoryMedia } from "@/lib/memoryMedia";
+import { getMemoryStoragePath, signMemoryMediaRows } from "@/lib/memoryStorage";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -66,23 +67,6 @@ function getMemoryTitle(value?: string | null) {
 function getMemoryDescription(memory?: Pick<Memory, "caption" | "text"> | null) {
   const description = memory?.caption?.trim() || memory?.text?.trim() || "";
   return /^без описания$/i.test(description) ? "" : description;
-}
-
-function getMemoryStoragePath(mediaUrl?: string | null) {
-  if (!mediaUrl) return null;
-
-  const marker = "/memory-images/";
-  const markerIndex = mediaUrl.indexOf(marker);
-
-  if (markerIndex === -1) return null;
-
-  const storagePath = mediaUrl.slice(markerIndex + marker.length);
-
-  try {
-    return decodeURIComponent(storagePath);
-  } catch {
-    return storagePath;
-  }
 }
 
 export default function MemoriesPage() {
@@ -150,7 +134,7 @@ export default function MemoriesPage() {
       ]);
 
       if (profileData) setProfile(profileData);
-      setMemories((memoryRows || []) as Memory[]);
+      setMemories(await signMemoryMediaRows((memoryRows || []) as Memory[]));
       setComments(
         (commentRows || []).reduce<Record<string, MemoryComment[]>>((groups, comment) => {
           groups[comment.memory_id] = [...(groups[comment.memory_id] || []), comment];

@@ -37,7 +37,7 @@ test("tracker lab exposes the complete collaborative flow", () => {
     "find_tracker_common_free_slots",
     "save_tracker_checkin",
     "adjust_tracker_event_count",
-    "postgres_changes",
+    "broadcast",
     "tracker_plan_comments",
     "tracker_plan_attachments",
     "buildTrackerPlanIcs",
@@ -75,6 +75,10 @@ test("responsive styling covers required mobile and desktop widths and reduced m
 
 
 test("shared repository powers both tracker versions and the daily free-tier digest", () => {
+  assert.match(repository, /channel\(`tracker:\$\{coupleId\}`, \{ config: \{ private: true \} \}\)/);
+  assert.match(repository, /\.on\("broadcast", \{ event: "changed" \}/);
+  assert.match(repository, /realtime\.setAuth\(\)/);
+  assert.doesNotMatch(repository, /postgres_changes/);
   assert.match(client, /useTrackerData/);
   assert.match(client, /adjustTrackerEventCount/);
   assert.match(originalTracker, /adjustTrackerEventCount/);

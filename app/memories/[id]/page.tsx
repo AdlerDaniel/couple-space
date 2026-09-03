@@ -4,6 +4,7 @@ import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import EmojiPicker from "@/components/EmojiPicker";
 import { FluentEmoji, FluentEmojiText } from "@/components/FluentEmoji";
 import { decodeMemoryMedia } from "@/lib/memoryMedia";
+import { signMemoryMediaRow } from "@/lib/memoryStorage";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import { toBrowserSupabaseUrl } from "@/lib/supabaseUrls";
@@ -58,11 +59,12 @@ export default function MemoryPostPage() {
         supabase.from("memory_comments").select("id, memory_id, user_id, text, created_at").eq("memory_id", memoryId).eq("couple_id", coupleData.id).order("created_at", { ascending: true }),
         supabase.from("couple_profiles").select("partner_one, partner_two, avatar, avatar_one, avatar_two").eq("couple_id", coupleData.id).maybeSingle<Profile>(),
       ]);
+      const signedMemory = memoryData ? await signMemoryMediaRow(memoryData) : null;
       if (ignore) return;
       setCurrentUserId(user.id);
       setCouple(coupleData);
       setProfile(profileData || null);
-      setMemory(memoryData || null);
+      setMemory(signedMemory);
       setComments((commentData || []) as Comment[]);
       if (error || !memoryData) setMessage("Воспоминание не найдено или недоступно.");
     }

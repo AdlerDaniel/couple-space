@@ -14,6 +14,7 @@ import {
   validateMediaFile,
 } from "@/lib/mediaFiles";
 import { decodeMemoryMedia, encodeMemoryMedia, type MemoryAttachment } from "@/lib/memoryMedia";
+import { normalizeMemoryMediaValueForStorage } from "@/lib/memoryStorage";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
@@ -287,7 +288,7 @@ export default function MemoryComposer({
         title: title.trim() || null,
         caption: caption.trim() || null,
         text: caption.trim() || null,
-        image: encodeMemoryMedia({ photoUrl, voiceUrl, attachments }),
+        image: normalizeMemoryMediaValueForStorage(encodeMemoryMedia({ photoUrl, voiceUrl, attachments })),
       };
       const request = initialMemory
         ? supabase.from("memories").update(payload).eq("id", initialMemory.id).eq("couple_id", couple.id)

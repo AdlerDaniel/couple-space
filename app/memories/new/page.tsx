@@ -1,6 +1,7 @@
 "use client";
 
 import MemoryComposer, { type CreatedMemory } from "@/components/MemoryComposer";
+import { signMemoryMediaRow } from "@/lib/memoryStorage";
 import { supabase } from "@/lib/supabaseClient";
 import { ArrowLeft, Images } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -52,7 +53,9 @@ export default function NewMemoryPage() {
           setMessage("Не удалось открыть воспоминание для редактирования.");
           return;
         }
-        setInitialMemory(memoryData);
+        const signedMemory = await signMemoryMediaRow(memoryData);
+        if (ignore) return;
+        setInitialMemory(signedMemory);
       }
       setCurrentUserId(user.id);
       setCouple(data);

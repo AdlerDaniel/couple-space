@@ -1,6 +1,6 @@
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(14);
+select plan(15);
 
 insert into public.tracker_plans
 (id,couple_id,title,kind,created_by,start_date,participant_scope,assignee_id,edit_scope,repeat_mode,repeat_interval,repeat_weekdays,repeat_until)
@@ -33,6 +33,7 @@ select set_config('request.jwt.claims','{"sub":"20000000-0000-4000-8000-00000000
 select lives_ok($$select public.complete_tracker_assigned_task('fd000000-0000-4000-8000-000000000001',null)$$,'accepted assignee completes a creator-only task');
 select is((select status from public.tracker_plans where id='fd000000-0000-4000-8000-000000000001'),'done','non-repeating assigned task is done');
 select throws_ok($$select public.complete_tracker_assigned_task('fd000000-0000-4000-8000-000000000002',null)$$,'22023',null,'repeating task requires the original occurrence date');
+select throws_ok($$select public.complete_tracker_assigned_task('fd000000-0000-4000-8000-000000000002','infinity'::date)$$,'22023',null,'infinite dates are rejected');
 select throws_ok($$select public.complete_tracker_assigned_task('fd000000-0000-4000-8000-000000000002','2026-09-15')$$,'22023',null,'date outside recurrence cannot be completed');
 select lives_ok($$select public.complete_tracker_assigned_task('fd000000-0000-4000-8000-000000000002','2026-09-14')$$,'assignee completes one moved occurrence by its original date');
 select results_eq($$select status,override_start_date from public.tracker_plan_occurrence_overrides where plan_id='fd000000-0000-4000-8000-000000000002' and occurrence_date='2026-09-14'$$,$$values ('done'::text,date '2026-09-16')$$,'completion preserves moved date and changes only status');

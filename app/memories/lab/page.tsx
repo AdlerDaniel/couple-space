@@ -4,6 +4,7 @@ import AccentAudioPlayer from "@/components/AccentAudioPlayer";
 import EmojiPicker from "@/components/EmojiPicker";
 import { FluentEmoji, FluentEmojiText } from "@/components/FluentEmoji";
 import { decodeMemoryMedia, type MemoryMedia } from "@/lib/memoryMedia";
+import { getMemoryStoragePath, signMemoryMediaRows } from "@/lib/memoryStorage";
 import { createPartnerNotification } from "@/lib/notifications";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -96,19 +97,6 @@ function getMemoryDescription(memory?: Pick<Memory, "caption" | "text"> | null) 
   return /^без описания$/i.test(description) ? "" : description;
 }
 
-function getMemoryStoragePath(mediaUrl?: string | null) {
-  if (!mediaUrl) return null;
-  const marker = "/memory-images/";
-  const markerIndex = mediaUrl.indexOf(marker);
-  if (markerIndex === -1) return null;
-  const storagePath = mediaUrl.slice(markerIndex + marker.length);
-  try {
-    return decodeURIComponent(storagePath);
-  } catch {
-    return storagePath;
-  }
-}
-
 function getMonthKey(value: string) {
   const date = new Date(value);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -160,7 +148,7 @@ export default function MemoriesLabPage() {
     ] as const;
 
     const [{ data: memoryRows }, { data: commentRows }] = await Promise.all(requests);
-    setMemories((memoryRows || []) as Memory[]);
+    setMemories(await signMemoryMediaRows((memoryRows || []) as Memory[]));
     setComments(
       (commentRows || []).reduce<Record<string, MemoryComment[]>>((groups, comment) => {
         groups[comment.memory_id] = [...(groups[comment.memory_id] || []), comment];

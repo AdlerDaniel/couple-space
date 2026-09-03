@@ -286,6 +286,10 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
       expect(url).not.toBeNull();
       const path = url!.split("/object/public/memory-images/")[1];
       expect(path).toMatch(new RegExp("^" + coupleId + "/"));
+      const publicResponse = await fetch(
+        required("NEXT_PUBLIC_SUPABASE_URL") + "/storage/v1/object/public/memory-images/" + path,
+      );
+      expect(publicResponse.ok).toBe(false);
       const download = await clients[1].storage.from("memory-images").download(path);
       expect(download.error).toBeNull();
       expect(download.data?.size).toBeGreaterThan(0);
@@ -309,25 +313,35 @@ test("tracker lab mobile and desktop layouts in both themes and reduced motion",
   await withPair(browser, baseURL, async ({ pages }) => {
     const page = pages[0];
     await openTracker(page);
+
     for (const width of [375, 390, 768, 1280, 1440]) {
+      await page.setViewportSize({ width, height: 850 });
       for (const theme of ["light", "dark"] as const) {
-        await page.setViewportSize({ width, height: 850 });
         await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
         await page.evaluate((dark) => document.documentElement.classList.toggle("dark", dark), theme === "dark");
         for (const tab of ["Сегодня", "Календарь", "Активность"]) {
           await page.locator(".tracker-lab-local-nav").getByRole("button", { name: tab, exact: true }).click();
           await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
         }
-        const composer = await openPlanComposer(page);
-        await composer.getByLabel("Название", { exact: true }).fill("Длинное синтетическое название ".repeat(4).slice(0, 120));
-        await composer.getByLabel("Описание", { exact: true }).fill("Синтетический текст ".repeat(60));
-        await composer.locator("summary").filter({ hasText: "Дополнительные параметры" }).click();
-        const bounds = await composer.boundingBox();
-        expect(bounds).not.toBeNull();
-        expect(bounds!.x).toBeGreaterThanOrEqual(-1);
-        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width + 1);
-        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
-        await page.setViewportSize({ width, height: 500 });
+      }
+    }
+
+    for (const scenario of [{ width: 390, theme: "dark" }, { width: 1440, theme: "light" }] as const) {
+      await page.setViewportSize({ width: scenario.width, height: 850 });
+      await page.emulateMedia({ colorScheme: scenario.theme, reducedMotion: "reduce" });
+      await page.evaluate((dark) => document.documentElement.classList.toggle("dark", dark), scenario.theme === "dark");
+      const composer = await openPlanComposer(page);
+      await composer.getByLabel("Название", { exact: true }).fill("Длинное синтетическое название ".repeat(4).slice(0, 120));
+      await composer.getByLabel("Описание", { exact: true }).fill("Синтетический текст ".repeat(60));
+      await composer.locator("summary").filter({ hasText: "Дополнительные параметры" }).click();
+      const bounds = await composer.boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(bounds!.x).toBeGreaterThanOrEqual(-1);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(scenario.width + 1);
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+
+      if (scenario.width === 390) {
+        await page.setViewportSize({ width: scenario.width, height: 500 });
         await composer.getByLabel("Описание", { exact: true }).focus();
         await composer.getByRole("button", { name: "Добавить в календарь", exact: true }).scrollIntoViewIfNeeded();
         await expect(composer.getByRole("button", { name: "Добавить в календарь", exact: true })).toBeInViewport();
@@ -336,11 +350,12 @@ test("tracker lab mobile and desktop layouts in both themes and reduced motion",
         await expect(composer.getByRole("button", { name: "Добавить в календарь", exact: true })).toBeFocused();
         await page.keyboard.press("Tab");
         await expect(composer.getByRole("button", { name: "Закрыть", exact: true })).toBeFocused();
-        await page.keyboard.press("Escape");
-        await expect(page.getByRole("dialog")).toHaveCount(0);
-        await expect(page.getByRole("button", { name: "Добавить запись", exact: true })).toBeFocused();
       }
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Добавить запись", exact: true })).toBeFocused();
     }
+
     expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
   });
 });

@@ -264,10 +264,12 @@ export default function TrackerLabDiscussion({
         let mayRemoveUpload = !commentInsertStarted;
         if (commentInsertStarted) {
           try {
-            const { error: rollbackError } = await supabase.from("tracker_plan_comments")
+            const { data: removedComments, error: rollbackError } = await supabase.from("tracker_plan_comments")
               .delete().eq("id", commentId).eq("plan_id", plan.id)
-              .eq("couple_id", couple.id).eq("user_id", currentUserId);
-            mayRemoveUpload = !rollbackError;
+              .eq("couple_id", couple.id).eq("user_id", currentUserId).select("id");
+            // A successful zero-row DELETE can mean RLS hid the comment. Keep
+            // its media unless this attempt's exact row was proved deleted.
+            mayRemoveUpload = !rollbackError && Boolean(removedComments?.some((row) => row.id === commentId));
           } catch {
             mayRemoveUpload = false;
           }

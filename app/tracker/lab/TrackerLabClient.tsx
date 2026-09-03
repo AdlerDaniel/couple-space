@@ -18,6 +18,7 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   adjustTrackerEventCount,
   saveTrackerCheckin,
+  synchronizeTrackerParticipants,
   type TrackerLabSnapshot,
 } from "@/lib/trackerRepository";
 import { toPortableSupabaseUrl } from "@/lib/supabaseUrls";
@@ -769,6 +770,14 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         setPlans(previous);
         setMessage(`Не удалось изменить серию: ${error.message}`);
       } else {
+        try {
+          await synchronizeTrackerParticipants({ ...existing, ...patch }, currentUserId, partnerId);
+        } catch {
+          setMessage("План сохранён, но состав участников обновился не полностью. Повторите сохранение — уже принятые приглашения сохранятся.");
+          reloadTrackerData();
+          setIsSaving(false);
+          return;
+        }
         await supabase.from("tracker_plan_activity").insert({
           plan_id: editingPlanId,
           couple_id: couple.id,
@@ -847,22 +856,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       if (error || !data) throw error || new Error("Событие не создано");
       createdPlanId = data.id;
 
-      const participantIds = data.visibility === "private"
-        ? [currentUserId]
-        : data.participant_scope === "both"
-          ? [currentUserId, partnerId].filter((value): value is string => Boolean(value))
-          : data.participant_scope === "partner" && partnerId
-            ? [partnerId]
-            : [currentUserId];
-      if (data.assignee_id && !participantIds.includes(data.assignee_id)) participantIds.push(data.assignee_id);
-      const { error: participantError } = await supabase.from("tracker_plan_participants").insert(participantIds.map((userId) => ({
-        plan_id: data.id,
-        couple_id: couple.id,
-        user_id: userId,
-        role: userId === data.assignee_id ? "responsible" : "participant",
-        response: userId === currentUserId ? "accepted" : "pending",
-      })));
-      if (participantError) throw participantError;
+      await synchronizeTrackerParticipants(data, currentUserId, partnerId);
       const { error: reminderError } = await supabase.from("tracker_plan_reminders").insert({
         plan_id: data.id,
         couple_id: couple.id,

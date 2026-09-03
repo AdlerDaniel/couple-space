@@ -7,6 +7,11 @@ import {
   expandTrackerPlanOccurrences,
   findFreeSlots,
   getTrackerViewRange,
+  getTrackerToday,
+  trackerDateTimeToIso,
+  formatTrackerClock,
+  getPlanBaseDate,
+  type TrackerOccurrenceOverride,
   getWeekStrip,
   type TrackerPlan,
 } from "../lib/trackerPlanDomain.ts";
@@ -124,7 +129,7 @@ test("ICS export includes recurrence, alarm and escaped user text", () => {
 
   assert.match(ics, /SUMMARY:Вечер вместе/);
   assert.match(ics, /DESCRIPTION:Чай\\, фильм\\; без телефонов/);
-  assert.match(ics, /RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,FR;UNTIL=20261002T235959Z/);
+  assert.match(ics.replace(/\r\n /g, ""), /RRULE:FREQ=WEEKLY;INTERVAL=1;WKST=MO;BYDAY=MO,FR;UNTIL=20261002T205959Z/);
   assert.match(ics, /TRIGGER:-PT30M/);
   assert.match(ics, /END:VCALENDAR\r\n$/);
 });
@@ -162,4 +167,74 @@ test("single occurrence override moves or cancels only the selected repetition",
 
   assert.deepEqual(moved.map((item) => item.dateKey), ["2026-09-07", "2026-09-10"]);
   assert.equal(moved[1]?.startsAt, "2026-09-10T17:00:00.000Z");
+});
+
+
+function override(values: Partial<TrackerOccurrenceOverride> = {}): TrackerOccurrenceOverride {
+  return { id: "override", plan_id: "plan-1", couple_id: "couple-1", occurrence_date: "2026-09-08",
+    override_start_date: null, override_starts_at: null, override_ends_at: null, status: "planned",
+    updated_by: "user-1", updated_at: "2026-09-02T10:00:00Z", ...values };
+}
+
+test("pair timezone determines date and converts input independently of browser timezone", () => {
+  assert.equal(getTrackerToday("Asia/Tokyo", new Date("2026-09-02T23:30:00Z")), "2026-09-03");
+  assert.equal(trackerDateTimeToIso("2026-09-03", "09:30", "Asia/Tokyo"), "2026-09-03T00:30:00.000Z");
+  assert.equal(formatTrackerClock("2026-09-03T00:30:00Z", "Asia/Tokyo"), "09:30");
+  assert.equal(getPlanBaseDate(plan({ starts_at: "2026-09-02T23:30:00Z" }), "Asia/Tokyo"), "2026-09-03");
+});
+
+test("DST conversion rejects nonexistent input and chooses first ambiguous instant", () => {
+  assert.throws(() => trackerDateTimeToIso("2026-03-08", "02:30", "America/New_York"), RangeError);
+  assert.equal(trackerDateTimeToIso("2026-11-01", "01:30", "America/New_York"), "2026-11-01T05:30:00.000Z");
+});
+
+test("timed daily recurrence retains local clock across DST", () => {
+  const rows = expandTrackerPlanOccurrences([plan({ starts_at: "2026-03-07T14:00:00Z", ends_at: "2026-03-07T15:00:00Z", repeat_mode: "daily", repeat_until: null })], "2026-03-07", "2026-03-09", "America/New_York");
+  assert.deepEqual(rows.map((row) => row.startsAt), ["2026-03-07T14:00:00.000Z", "2026-03-08T13:00:00.000Z", "2026-03-09T13:00:00.000Z"]);
+  assert.ok(rows.every((row) => formatTrackerClock(row.startsAt!, "America/New_York") === "09:00"));
+});
+
+test("weekly interval is anchored to Monday, not seven days after DTSTART", () => {
+  const rows = expandTrackerPlanOccurrences([plan({ all_day: true, start_date: "2026-09-09", starts_at: null, ends_at: null, repeat_mode: "weekly", repeat_interval: 2, repeat_weekdays: [1, 3] })], "2026-09-09", "2026-09-30");
+  assert.deepEqual(rows.map((row) => row.dateKey), ["2026-09-09", "2026-09-21", "2026-09-23"]);
+});
+
+test("monthly and leap-year repetitions skip nonexistent calendar dates", () => {
+  const monthly = plan({ all_day: true, start_date: "2026-01-31", starts_at: null, ends_at: null, repeat_mode: "monthly" });
+  assert.deepEqual(expandTrackerPlanOccurrences([monthly], "2026-01-01", "2026-04-30").map((row) => row.dateKey), ["2026-01-31", "2026-03-31"]);
+  const yearly = plan({ all_day: true, start_date: "2024-02-29", starts_at: null, ends_at: null, repeat_mode: "yearly" });
+  assert.deepEqual(expandTrackerPlanOccurrences([yearly], "2024-01-01", "2028-12-31").map((row) => row.dateKey), ["2024-02-29", "2028-02-29"]);
+});
+
+test("moved occurrence preserves original identity, is re-editable, and carries done status", () => {
+  const recurring = plan({ repeat_mode: "daily" });
+  const edits = [override({ override_start_date: "2026-09-20", status: "done" })];
+  const rows = expandTrackerPlanOccurrences([recurring], "2026-09-20", "2026-09-20", "Europe/Moscow", edits);
+  const moved = rows.find((row) => row.originalDateKey === "2026-09-08");
+  assert.ok(moved);
+  assert.equal(moved.dateKey, "2026-09-20");
+  assert.equal(moved.status, "done");
+  const again = applyTrackerOccurrenceOverrides([moved], [override({ override_start_date: "2026-09-21" })]);
+  assert.equal(again[0]?.dateKey, "2026-09-21");
+  assert.equal(again[0]?.originalDateKey, "2026-09-08");
+});
+
+test("all-day ICS has DATE UNTIL and UTF-8 lines never exceed 75 octets", () => {
+  const ics = buildTrackerPlanIcs(plan({ all_day: true, starts_at: null, ends_at: null, repeat_mode: "daily", repeat_until: "2026-09-30", title: "Наш прекрасный совместный вечер ".repeat(15) }));
+  const unfolded = ics.replace(/\r\n /g, "");
+  assert.match(unfolded, /UNTIL=20260930(?:\r\n|;)/);
+  assert.doesNotMatch(unfolded, /UNTIL=20260930T/);
+  for (const line of ics.split("\r\n")) assert.ok(Buffer.byteLength(line, "utf8") <= 75);
+  assert.match(unfolded, /SUMMARY:Наш прекрасный совместный вечер /);
+});
+
+test("ICS identifies moved and cancelled instances by their original DTSTART", () => {
+  const ics = buildTrackerPlanIcs(plan({ repeat_mode: "daily" }), 30, "Europe/Moscow", [
+    override({ override_start_date: "2026-09-10", override_starts_at: "2026-09-10T17:00:00Z", override_ends_at: "2026-09-10T19:00:00Z" }),
+    override({ id: "cancel", occurrence_date: "2026-09-09", status: "cancelled" }),
+  ]).replace(/\r\n /g, "");
+  assert.match(ics, /RECURRENCE-ID;TZID=Europe\/Moscow:20260908T190000/);
+  assert.match(ics, /DTSTART;TZID=Europe\/Moscow:20260910T200000/);
+  assert.match(ics, /RECURRENCE-ID;TZID=Europe\/Moscow:20260909T190000/);
+  assert.match(ics, /STATUS:CANCELLED/);
 });

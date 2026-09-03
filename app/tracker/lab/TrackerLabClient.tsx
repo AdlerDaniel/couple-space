@@ -72,10 +72,13 @@ import {
 } from "react";
 import {
   addTrackerDays,
-  applyTrackerOccurrenceOverrides,
   buildTrackerPlanIcs,
   expandTrackerPlanOccurrences,
   formatTrackerDate,
+  formatTrackerClock,
+  getTrackerToday,
+  trackerDateTimeToIso,
+  shiftTrackerViewDate,
   getPlanBaseDate,
   getTrackerViewRange,
   getWeekStrip,
@@ -89,6 +92,7 @@ import {
   type TrackerPlanRepeat,
 } from "@/lib/trackerPlanDomain";
 import { useTrackerData } from "../useTrackerData";
+import TrackerLabDialog from "./TrackerLabDialog";
 
 type Couple = {
   id: string;
@@ -245,11 +249,6 @@ function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
 
-function formatClock(value: string | null) {
-  if (!value) return "Весь день";
-  return new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
-}
-
 function monthCells(value: string) {
   const source = parseTrackerDateKey(value);
   const first = new Date(source.getFullYear(), source.getMonth(), 1, 12);
@@ -275,9 +274,10 @@ function categoryColor(category: TrackerCategory) {
   return category.color || "#d97706";
 }
 
-export default function TrackerLabClient({ initialDate }: { initialDate: string | null }) {
+export default function TrackerLabClient({ initialDate, initialNow }: { initialDate: string | null; initialNow: string }) {
   const router = useRouter();
   const agendaRef = useRef<HTMLDivElement | null>(null);
+  const pendingMutations = useRef(new Set<string>());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -295,7 +295,15 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
   const [activeTab, setActiveTab] = useState<LocalTab>("today");
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
   const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("all");
-  const [selectedDate, setSelectedDate] = useState(initialDate || toTrackerDateKey(new Date()));
+  const timeZone = profile?.time_zone || "Europe/Moscow";
+  const [chosenDate, setChosenDate] = useState<string | null>(initialDate);
+  const selectedDate = chosenDate || getTrackerToday(timeZone, new Date(initialNow));
+  const setSelectedDate = useCallback((next: string | ((current: string) => string)) => {
+    setChosenDate((current) => typeof next === "function"
+      ? next(current || getTrackerToday(timeZone, new Date(initialNow)))
+      : next);
+  }, [initialNow, timeZone]);
+  const formatClock = (value: string | null) => value ? formatTrackerClock(value, timeZone) : "Весь день";
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [selectedOccurrenceDate, setSelectedOccurrenceDate] = useState<string | null>(null);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
@@ -336,6 +344,7 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
 
   const [memoryPlan, setMemoryPlan] = useState<TrackerPlan | null>(null);
   const [memoryTitle, setMemoryTitle] = useState("");
+  const [memoryDate, setMemoryDate] = useState(selectedDate);
   const [memoryCaption, setMemoryCaption] = useState("");
 
   const selectedYear = Number(selectedDate.slice(0, 4));
@@ -452,10 +461,17 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
   useEffect(() => {
     function handleKeyboard(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
-      if (target?.matches("input,textarea,select,[contenteditable='true']")) return;
-      if (event.key.toLowerCase() === "t") setSelectedDate(toTrackerDateKey(new Date()));
+      if (document.querySelector('[role="dialog"]') || target?.matches("input,textarea,select,[contenteditable='true']")) return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key.toLowerCase() === "t") setSelectedDate(getTrackerToday(timeZone));
       if (event.key.toLowerCase() === "n") {
         setPlanDate(selectedDate);
+        setEditingPlanId(null);
+        setPlanTitle("");
+        setPlanDescription("");
+        setPlanTime("");
+        setPlanEndTime("");
+        setPlanRepeat("none");
         setComposerMode("plan");
       }
       if (event.key === "/") {
@@ -473,7 +489,7 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
     }
     window.addEventListener("keydown", handleKeyboard);
     return () => window.removeEventListener("keydown", handleKeyboard);
-  }, [selectedDate]);
+  }, [selectedDate, setSelectedDate, timeZone]);
 
 
 
@@ -488,11 +504,10 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
     [calendarMode, selectedDate],
   );
   const occurrences = useMemo(
-    () => applyTrackerOccurrenceOverrides(
-      expandTrackerPlanOccurrences(plans, `${selectedYear}-01-01`, `${selectedYear}-12-31`),
-      occurrenceOverrides,
+    () => expandTrackerPlanOccurrences(
+      plans, `${selectedYear}-01-01`, `${selectedYear}-12-31`, timeZone, occurrenceOverrides,
     ),
-    [occurrenceOverrides, plans, selectedYear],
+    [occurrenceOverrides, plans, selectedYear, timeZone],
   );
   const filteredOccurrences = useMemo(() => occurrences.filter((occurrence) => {
     const scope = currentUserId ? relativeScope(occurrence.plan, currentUserId) : "both";
@@ -511,6 +526,10 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
     [filteredOccurrences, selectedDate],
   );
   const selectedPlan = plans.find((item) => item.id === selectedPlanId) || null;
+  const selectedOccurrence = occurrences.find((item) =>
+    item.plan.id === selectedPlanId && item.originalDateKey === selectedOccurrenceDate,
+  ) || null;
+  const selectedStatus = selectedOccurrence?.status || selectedPlan?.status;
   const selectedParticipant = participants.find((item) =>
     item.plan_id === selectedPlanId && item.user_id === currentUserId,
   ) || null;
@@ -521,14 +540,16 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
     ),
   );
   const selectedComments = comments.filter((item) => item.plan_id === selectedPlanId);
-  const week = useMemo(() => getWeekStrip(selectedDate), [selectedDate]);
+  const week = useMemo(() => getWeekStrip(selectedDate, timeZone), [selectedDate, timeZone]);
   const cells = useMemo(() => monthCells(selectedDate), [selectedDate]);
   const activeEvents = events.filter((event) => event.count > 0);
   const selectedDayEvents = activeEvents.filter((event) => event.date === selectedDate);
   const nextOccurrence = useMemo(() => {
-    const nowKey = toTrackerDateKey(new Date());
-    return filteredOccurrences.find((item) => item.dateKey >= nowKey && item.plan.status !== "done") || null;
-  }, [filteredOccurrences]);
+    const nowKey = getTrackerToday(timeZone);
+    const now = Date.now();
+    return filteredOccurrences.find((item) => item.dateKey >= nowKey && item.status !== "done" &&
+      (!item.startsAt || Date.parse(item.endsAt || item.startsAt) >= now)) || null;
+  }, [filteredOccurrences, timeZone]);
   const selectedDateCheckins = checkins.filter((item) => item.date === selectedDate);
 
   const periodEvents = activeEvents.filter((event) => event.date >= viewRange.from && event.date <= viewRange.to);
@@ -536,7 +557,7 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
     marks: periodEvents.reduce((sum, event) => sum + event.count, 0),
     days: new Set(periodEvents.map((event) => event.date)).size,
     together: filteredOccurrences.filter((item) => item.dateKey >= viewRange.from && item.dateKey <= viewRange.to && item.plan.participant_scope === "both").length,
-    done: filteredOccurrences.filter((item) => item.dateKey >= viewRange.from && item.dateKey <= viewRange.to && item.plan.status === "done").length,
+    done: filteredOccurrences.filter((item) => item.dateKey >= viewRange.from && item.dateKey <= viewRange.to && item.status === "done").length,
   };
 
   function openComposer(mode: ComposerMode) {
@@ -565,14 +586,14 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
   }
 
   function openPlanEditor(plan: TrackerPlan) {
-    const dateKey = getPlanBaseDate(plan);
+    const dateKey = getPlanBaseDate(plan, timeZone);
     setEditingPlanId(plan.id);
     setPlanTitle(plan.title);
     setPlanDescription(plan.description || "");
     setPlanKind(plan.kind);
     setPlanDate(dateKey);
-    setPlanTime(plan.starts_at ? new Date(plan.starts_at).toTimeString().slice(0, 5) : "");
-    setPlanEndTime(plan.ends_at ? new Date(plan.ends_at).toTimeString().slice(0, 5) : "");
+    setPlanTime(plan.starts_at ? formatTrackerClock(plan.starts_at, timeZone) : "");
+    setPlanEndTime(plan.ends_at ? formatTrackerClock(plan.ends_at, timeZone) : "");
     setPlanScope(plan.participant_scope);
     setPlanVisibility(plan.visibility);
     setPlanRepeat(plan.repeat_mode);
@@ -582,11 +603,10 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
   }
 
   function openOccurrenceEditor(plan: TrackerPlan) {
-    const dateKey = selectedOccurrenceDate || getPlanBaseDate(plan);
-    const occurrence = occurrences.find((item) => item.plan.id === plan.id && item.dateKey === dateKey);
-    setPlanDate(dateKey);
-    setPlanTime(occurrence?.startsAt ? new Date(occurrence.startsAt).toTimeString().slice(0, 5) : "");
-    setPlanEndTime(occurrence?.endsAt ? new Date(occurrence.endsAt).toTimeString().slice(0, 5) : "");
+    const occurrence = selectedOccurrence;
+    setPlanDate(occurrence?.dateKey || getPlanBaseDate(plan, timeZone));
+    setPlanTime(occurrence?.startsAt ? formatTrackerClock(occurrence.startsAt, timeZone) : "");
+    setPlanEndTime(occurrence?.endsAt ? formatTrackerClock(occurrence.endsAt, timeZone) : "");
     setComposerMode("occurrence");
   }
 
@@ -649,8 +669,18 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
     if (!couple || !currentUserId || !planTitle.trim()) return;
     setIsSaving(true);
     const allDay = !planTime;
-    const startsAt = allDay ? null : new Date(`${planDate}T${planTime}:00`).toISOString();
-    const endsAt = allDay || !planEndTime ? null : new Date(`${planDate}T${planEndTime}:00`).toISOString();
+    let startsAt: string | null = null;
+    let endsAt: string | null = null;
+    try {
+      startsAt = allDay ? null : trackerDateTimeToIso(planDate, planTime, timeZone);
+      endsAt = startsAt
+        ? planEndTime ? trackerDateTimeToIso(planDate, planEndTime, timeZone) : new Date(Date.parse(startsAt) + 3_600_000).toISOString()
+        : null;
+    } catch {
+      setMessage("Проверьте дату и время: в часовом поясе пары это время недоступно.");
+      setIsSaving(false);
+      return;
+    }
     if (startsAt && endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) {
       setMessage("Время окончания должно быть позже начала.");
       setIsSaving(false);
@@ -815,14 +845,20 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
   async function saveOccurrenceOverride() {
     if (!couple || !currentUserId || !selectedPlan || !selectedOccurrenceDate) return;
     setIsSaving(true);
-    const existingOverride = occurrenceOverrides.find((item) =>
-      item.plan_id === selectedPlan.id &&
-      (item.override_start_date || item.occurrence_date) === selectedOccurrenceDate,
-    );
-    const occurrenceDate = existingOverride?.occurrence_date || selectedOccurrenceDate;
+    const occurrenceDate = selectedOccurrenceDate;
     const allDay = selectedPlan.all_day || !planTime;
-    const overrideStartsAt = allDay ? null : new Date(`${planDate}T${planTime}:00`).toISOString();
-    const overrideEndsAt = allDay || !planEndTime ? null : new Date(`${planDate}T${planEndTime}:00`).toISOString();
+    let overrideStartsAt: string | null = null;
+    let overrideEndsAt: string | null = null;
+    try {
+      overrideStartsAt = allDay ? null : trackerDateTimeToIso(planDate, planTime, timeZone);
+      overrideEndsAt = overrideStartsAt
+        ? planEndTime ? trackerDateTimeToIso(planDate, planEndTime, timeZone) : new Date(Date.parse(overrideStartsAt) + 3_600_000).toISOString()
+        : null;
+    } catch {
+      setMessage("Проверьте дату и время в часовом поясе пары.");
+      setIsSaving(false);
+      return;
+    }
     if (overrideStartsAt && overrideEndsAt && Date.parse(overrideEndsAt) <= Date.parse(overrideStartsAt)) {
       setMessage("Время окончания должно быть позже начала.");
       setIsSaving(false);
@@ -858,11 +894,7 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
   async function cancelOccurrence(plan: TrackerPlan) {
     if (!couple || !currentUserId || !selectedOccurrenceDate) return;
     if (!window.confirm("Отменить только это повторение? Остальная серия сохранится.")) return;
-    const existingOverride = occurrenceOverrides.find((item) =>
-      item.plan_id === plan.id &&
-      (item.override_start_date || item.occurrence_date) === selectedOccurrenceDate,
-    );
-    const occurrenceDate = existingOverride?.occurrence_date || selectedOccurrenceDate;
+    const occurrenceDate = selectedOccurrenceDate;
     const { error } = await supabase.from("tracker_plan_occurrence_overrides").upsert({
       plan_id: plan.id,
       couple_id: couple.id,
@@ -909,6 +941,59 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
           href: "/tracker/lab",
         });
       }
+    }
+  }
+
+  async function completeOccurrence(occurrence: TrackerOccurrence) {
+    if (!currentUserId) return;
+    const plan = occurrence.plan;
+    const mutationKey = `complete:${plan.id}:${occurrence.originalDateKey}`;
+    if (pendingMutations.current.has(mutationKey)) return;
+    pendingMutations.current.add(mutationKey);
+    try {
+      if (plan.repeat_mode === "none") {
+        await updatePlanStatus(plan, "done");
+        return;
+      }
+      const previous = occurrenceOverrides;
+      const existing = previous.find((item) =>
+        item.plan_id === plan.id && item.occurrence_date === occurrence.originalDateKey);
+      const optimistic: TrackerOccurrenceOverride = {
+        id: existing?.id || crypto.randomUUID(),
+        plan_id: plan.id,
+        couple_id: plan.couple_id,
+        occurrence_date: occurrence.originalDateKey,
+        override_start_date: existing?.override_start_date || null,
+        override_starts_at: existing?.override_starts_at || null,
+        override_ends_at: existing?.override_ends_at || null,
+        status: "done",
+        updated_by: currentUserId,
+        updated_at: new Date().toISOString(),
+      };
+      setOccurrenceOverrides((items) => [...items.filter((item) =>
+        !(item.plan_id === plan.id && item.occurrence_date === occurrence.originalDateKey)), optimistic]);
+      const { error } = await supabase.from("tracker_plan_occurrence_overrides").upsert({
+        plan_id: optimistic.plan_id,
+        couple_id: optimistic.couple_id,
+        occurrence_date: optimistic.occurrence_date,
+        override_start_date: optimistic.override_start_date,
+        override_starts_at: optimistic.override_starts_at,
+        override_ends_at: optimistic.override_ends_at,
+        status: "done",
+        updated_by: currentUserId,
+        updated_at: optimistic.updated_at,
+      }, { onConflict: "plan_id,occurrence_date" });
+      if (error) {
+        setOccurrenceOverrides(previous);
+        setMessage(`Не удалось завершить этот день: ${error.message}`);
+        return;
+      }
+      await supabase.from("tracker_plan_activity").insert({
+        plan_id: plan.id, couple_id: plan.couple_id, actor_id: currentUserId, activity_type: "completed",
+      });
+      reloadTrackerData();
+    } finally {
+      pendingMutations.current.delete(mutationKey);
     }
   }
 
@@ -1052,6 +1137,7 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
     if (!couple || !currentUserId || !selectedPlan || (!commentText.trim() && !commentFile)) return;
     setIsSaving(true);
     let storagePath: string | null = null;
+    let savedCommentId: string | null = null;
     try {
       let attachmentType: TrackerComment["attachment_type"] = null;
       if (commentFile) {
@@ -1072,8 +1158,9 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
         mime_type: commentFile?.type || null,
       }).select("*").single<TrackerComment>();
       if (error || !data) throw error || new Error("Комментарий не сохранён");
+      savedCommentId = data.id;
       if (storagePath && commentFile && attachmentType) {
-        await supabase.from("tracker_plan_attachments").insert({
+        const { error: attachmentError } = await supabase.from("tracker_plan_attachments").insert({
           plan_id: selectedPlan.id,
           comment_id: data.id,
           couple_id: couple.id,
@@ -1085,6 +1172,7 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
           media_type: attachmentType,
           size_bytes: commentFile.size,
         });
+        if (attachmentError) throw attachmentError;
       }
       await supabase.from("tracker_plan_activity").insert({
         plan_id: selectedPlan.id,
@@ -1104,7 +1192,12 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
         });
       }
     } catch (error) {
-      if (storagePath) await supabase.storage.from("tracker-media").remove([storagePath]);
+      let canRemoveUpload = !savedCommentId;
+      if (savedCommentId) {
+        const { error: rollbackError } = await supabase.from("tracker_plan_comments").delete().eq("id", savedCommentId).eq("user_id", currentUserId);
+        canRemoveUpload = !rollbackError;
+      }
+      if (storagePath && canRemoveUpload) await supabase.storage.from("tracker-media").remove([storagePath]);
       setMessage(`Не удалось добавить комментарий: ${getErrorMessage(error, "попробуйте снова")}`);
     } finally {
       setIsSaving(false);
@@ -1126,7 +1219,7 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
   }
 
   function downloadCalendar(plan: TrackerPlan) {
-    const blob = new Blob([buildTrackerPlanIcs(plan, planReminder)], { type: "text/calendar;charset=utf-8" });
+    const blob = new Blob([buildTrackerPlanIcs(plan, planReminder, timeZone, occurrenceOverrides)], { type: "text/calendar;charset=utf-8" });
     const href = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = href;
@@ -1135,7 +1228,8 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
     URL.revokeObjectURL(href);
   }
 
-  function openMemoryComposer(plan: TrackerPlan) {
+  function openMemoryComposer(plan: TrackerPlan, date = selectedOccurrence?.dateKey || getPlanBaseDate(plan, timeZone)) {
+    setMemoryDate(date);
     setMemoryPlan(plan);
     setMemoryTitle(plan.title);
     setMemoryCaption(plan.description || "");
@@ -1146,12 +1240,12 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
     setIsSaving(true);
     const uploadedPaths: string[] = [];
     try {
-      const { data: attachmentRows } = await supabase
+      const { data: attachmentRows, error: attachmentLoadError } = await supabase
         .from("tracker_plan_attachments")
         .select("storage_path,name,mime_type,media_type,size_bytes")
         .eq("plan_id", memoryPlan.id)
-        .order("created_at")
-        .limit(8);
+        .order("created_at");
+      if (attachmentLoadError) throw attachmentLoadError;
       let photoUrl: string | null = null;
       let voiceUrl: string | null = null;
       const memoryAttachments: MemoryAttachment[] = [];
@@ -1160,11 +1254,11 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
         const { data: blob, error: downloadError } = await supabase.storage
           .from("tracker-media")
           .download(attachment.storage_path);
-        if (downloadError || !blob) continue;
+        if (downloadError || !blob) throw downloadError || new Error("Не удалось прочитать вложение");
         const file = new File([blob], attachment.name, { type: attachment.mime_type || blob.type });
         const targetPath = getSafeStoragePath(couple.id, file);
         const { error: uploadError } = await supabase.storage.from("memory-images").upload(targetPath, file);
-        if (uploadError) continue;
+        if (uploadError) throw uploadError;
         uploadedPaths.push(targetPath);
         const { data: publicData } = supabase.storage.from("memory-images").getPublicUrl(targetPath);
         const url = toPortableSupabaseUrl(publicData.publicUrl) || publicData.publicUrl;
@@ -1186,7 +1280,7 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
         title: memoryTitle.trim() || memoryPlan.title,
         caption: memoryCaption.trim() || null,
         text: memoryCaption.trim() || null,
-        event_date: getPlanBaseDate(memoryPlan),
+        event_date: memoryDate,
         image: encodeMemoryMedia({ photoUrl, voiceUrl, attachments: memoryAttachments }),
       }).select("id").single<{ id: string }>();
       if (error || !memory) throw error || new Error("Воспоминание не создано");
@@ -1212,12 +1306,7 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
   }
 
   function navigateDate(amount: number) {
-    const source = parseTrackerDateKey(selectedDate);
-    if (calendarMode === "day") source.setDate(source.getDate() + amount);
-    if (calendarMode === "week") source.setDate(source.getDate() + amount * 7);
-    if (calendarMode === "month") source.setMonth(source.getMonth() + amount);
-    if (calendarMode === "year") source.setFullYear(source.getFullYear() + amount);
-    setSelectedDate(toTrackerDateKey(source));
+    setSelectedDate(shiftTrackerViewDate(selectedDate, calendarMode, amount));
   }
 
   function renderPlanCard(occurrence: TrackerOccurrence, compact = false) {
@@ -1230,11 +1319,11 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
     return (
       <article
         key={`${plan.id}-${occurrence.dateKey}`}
-        className={`tracker-lab-plan-card is-${plan.kind} ${plan.status === "done" ? "is-done" : ""} ${compact ? "is-compact" : ""}`}
+        className={`tracker-lab-plan-card is-${plan.kind} ${occurrence.status === "done" ? "is-done" : ""} ${compact ? "is-compact" : ""}`}
         data-plan-card
         data-plan-id={plan.id}
       >
-        <button type="button" className="tracker-lab-plan-main" onClick={() => { setSelectedPlanId(plan.id); setSelectedOccurrenceDate(occurrence.dateKey); }}>
+        <button type="button" className="tracker-lab-plan-main" onClick={() => { setSelectedPlanId(plan.id); setSelectedOccurrenceDate(occurrence.originalDateKey); }}>
           <span className="tracker-lab-plan-icon">{getPlanIcon(plan.kind)}</span>
           <span className="tracker-lab-plan-copy">
             <span className="tracker-lab-plan-meta">
@@ -1251,12 +1340,12 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
           </span>
         </button>
         <div className="tracker-lab-plan-actions">
-          {plan.status !== "done" && canAct && (
-            <button type="button" onClick={() => void updatePlanStatus(plan, "done")}><Check size={15} />Готово</button>
+          {occurrence.status !== "done" && canAct && (
+            <button type="button" onClick={() => void completeOccurrence(occurrence)}><Check size={15} />Готово</button>
           )}
           <button type="button" onClick={() => downloadCalendar(plan)}><Download size={15} />В календарь</button>
-          {plan.status === "done" && (
-            <button type="button" onClick={() => openMemoryComposer(plan)}><Sparkles size={15} />В воспоминания</button>
+          {occurrence.status === "done" && (
+            <button type="button" onClick={() => openMemoryComposer(plan, occurrence.dateKey)}><Sparkles size={15} />В воспоминания</button>
           )}
         </div>
       </article>
@@ -1416,7 +1505,9 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
         {visibleMessage && (
           <div className="tracker-lab-toast" role="status">
             <span>{visibleMessage}</span>
-            <button type="button" onClick={() => setMessage("")} aria-label="Закрыть"><X /></button>
+            {trackerLoadError
+              ? <button type="button" onClick={reloadTrackerData} aria-label="Повторить загрузку"><RefreshCw /></button>
+              : <button type="button" onClick={() => setMessage("")} aria-label="Закрыть"><X /></button>}
           </div>
         )}
 
@@ -1424,7 +1515,7 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
           <div className="tracker-lab-week-strip">
             {week.map((item) => (
               <button type="button" key={item.dateKey} className={selectedDate === item.dateKey ? "is-active" : ""} onClick={() => setSelectedDate(item.dateKey)}>
-                <small>{item.weekday}</small><strong>{item.day}</strong>{item.isToday && <i />}
+                <small>{item.weekday}</small><strong>{item.day}</strong>{item.dateKey === getTrackerToday(timeZone) && <i />}
               </button>
             ))}
           </div>
@@ -1608,16 +1699,15 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
         <Plus />
       </button>
 
-      {selectedPlan && (
-        <div className="tracker-lab-overlay" onMouseDown={(event) => { if (event.currentTarget === event.target) setSelectedPlanId(null); }}>
-          <aside className="tracker-lab-detail-sheet" aria-label="Подробности события">
+      {selectedPlan && !composerMode && !memoryPlan && !isFreeTimeOpen && (
+        <TrackerLabDialog className="tracker-lab-detail-sheet" label="Подробности события" onClose={() => setSelectedPlanId(null)}>
             <button type="button" className="tracker-lab-sheet-close" onClick={() => setSelectedPlanId(null)} aria-label="Закрыть"><X /></button>
             <span className="tracker-lab-detail-icon">{getPlanIcon(selectedPlan.kind, 24)}</span>
             <p>{kindLabels[selectedPlan.kind]} · {selectedPlan.visibility === "private" ? "Только вам" : "Для пары"}</p>
             <h2>{selectedPlan.title}</h2>
             {selectedPlan.description && <div className="tracker-lab-detail-description">{selectedPlan.description}</div>}
             <dl className="tracker-lab-detail-list">
-              <div><dt><CalendarDays /></dt><dd><strong>{formatTrackerDate(getPlanBaseDate(selectedPlan))}</strong><span>{selectedPlan.all_day ? "Весь день" : formatClock(selectedPlan.starts_at)}</span></dd></div>
+              <div><dt><CalendarDays /></dt><dd><strong>{formatTrackerDate(selectedOccurrence?.dateKey || getPlanBaseDate(selectedPlan, timeZone))}</strong><span>{formatClock(selectedOccurrence?.startsAt || selectedPlan.starts_at)} · {timeZone}</span></dd></div>
               <div><dt><UsersRound /></dt><dd><strong>{selectedPlan.participant_scope === "both" ? "Вместе" : selectedPlan.participant_scope === "me" ? "Автор" : "Партнёр"}</strong><span>{selectedPlan.edit_scope === "participants" ? "Можно редактировать вместе" : "Редактирует автор"}</span></dd></div>
               <div><dt><RefreshCw /></dt><dd><strong>{repeatLabels[selectedPlan.repeat_mode]}</strong><span>{selectedPlan.repeat_until ? `До ${formatTrackerDate(selectedPlan.repeat_until)}` : "Без даты окончания"}</span></dd></div>
             </dl>
@@ -1643,9 +1733,9 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
               {canEditSelectedPlan && selectedPlan.repeat_mode !== "none" && selectedOccurrenceDate && (
                 <button type="button" onClick={() => void cancelOccurrence(selectedPlan)}><X />Отменить этот день</button>
               )}
-              {selectedPlan.status !== "done" && canEditSelectedPlan && <button type="button" onClick={() => void updatePlanStatus(selectedPlan, "done")}><Check />Завершить</button>}
+              {selectedStatus !== "done" && canEditSelectedPlan && <button type="button" onClick={() => void (selectedOccurrence ? completeOccurrence(selectedOccurrence) : updatePlanStatus(selectedPlan, "done"))}><Check />Завершить</button>}
               <button type="button" onClick={() => downloadCalendar(selectedPlan)}><Download />Добавить в календарь</button>
-              {selectedPlan.status === "done" && <button type="button" onClick={() => openMemoryComposer(selectedPlan)}><Sparkles />Сделать воспоминанием</button>}
+              {selectedStatus === "done" && <button type="button" onClick={() => openMemoryComposer(selectedPlan)}><Sparkles />Сделать воспоминанием</button>}
               {selectedPlan.created_by === currentUserId && <button type="button" className="is-danger" onClick={() => void deletePlan(selectedPlan)}><Trash2 />Удалить</button>}
             </div>
             <section className="tracker-lab-comments">
@@ -1666,8 +1756,7 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
                   );
                 })}
               </div>
-              {selectedPlan.visibility === "couple" && (
-                <div className="tracker-lab-comment-composer">
+              <div className="tracker-lab-comment-composer">
                   <input ref={fileInputRef} type="file" className="sr-only" onChange={(event) => { selectCommentFile(Array.from(event.target.files || [])); event.target.value = ""; }} />
                   <textarea value={commentText} onChange={(event) => setCommentText(event.target.value)} onPaste={handleCommentPaste} placeholder="Напишите или вставьте файл через Ctrl+V…" rows={2} />
                   {commentFile && <span className="tracker-lab-pending-file"><Paperclip />{commentFile.name}<button type="button" onClick={() => setCommentFile(null)}><X /></button></span>}
@@ -1676,16 +1765,13 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
                     <button type="button" className={isRecording ? "is-recording" : ""} onClick={() => void toggleRecording()} aria-label={isRecording ? "Остановить запись" : "Записать голос"}>{isRecording ? <Square /> : <Mic />}</button>
                     <button type="button" className="is-send" onClick={() => void addComment()} disabled={isSaving || (!commentText.trim() && !commentFile)}><ChevronRight /></button>
                   </div>
-                </div>
-              )}
+              </div>
             </section>
-          </aside>
-        </div>
+        </TrackerLabDialog>
       )}
 
       {composerMode && (
-        <div className="tracker-lab-overlay" onMouseDown={(event) => { if (event.currentTarget === event.target) setComposerMode(null); }}>
-          <section className="tracker-lab-composer-sheet" aria-label="Добавить в трекер">
+        <TrackerLabDialog className="tracker-lab-composer-sheet" label="Добавить в трекер" onClose={() => { setComposerMode(null); setEditingPlanId(null); }}>
             <div className="tracker-lab-sheet-handle" />
             <button type="button" className="tracker-lab-sheet-close" onClick={() => { setComposerMode(null); setEditingPlanId(null); }} aria-label="Закрыть"><X /></button>
             {composerMode === "menu" && (
@@ -1760,22 +1846,21 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
             {composerMode === "activity" && (
               <><p>Быстрая отметка</p><h2>{formatTrackerDate(selectedDate)}</h2>{renderActivityCounters()}</>
             )}
-          </section>
-        </div>
+        </TrackerLabDialog>
       )}
 
       {isFreeTimeOpen && (
-        <div className="tracker-lab-overlay" onMouseDown={(event) => { if (event.currentTarget === event.target) setIsFreeTimeOpen(false); }}>
-          <section className="tracker-lab-composer-sheet">
+        <TrackerLabDialog className="tracker-lab-composer-sheet" label="Наше свободное время" onClose={() => setIsFreeTimeOpen(false)}>
             <button type="button" className="tracker-lab-sheet-close" onClick={() => setIsFreeTimeOpen(false)} aria-label="Закрыть"><X /></button>
             <p>Наше свободное время</p><h2>{formatTrackerDate(selectedDate)}</h2>
             <span className="tracker-lab-privacy-note"><Lock />Приватные планы учитываются как занятость, но их содержание не раскрывается.</span>
             <div className="tracker-lab-free-slots">
               {freeSlots.length ? freeSlots.slice(0, 12).map((slot) => (
                 <button type="button" key={slot.starts_at} onClick={() => {
-                  setPlanDate(selectedDate);
-                  setPlanTime(new Date(slot.starts_at).toTimeString().slice(0, 5));
-                  setPlanEndTime(new Date(slot.ends_at).toTimeString().slice(0, 5));
+                  resetPlanComposer();
+                  setPlanDate(getTrackerToday(timeZone, new Date(slot.starts_at)));
+                  setPlanTime(formatTrackerClock(slot.starts_at, timeZone));
+                  setPlanEndTime(formatTrackerClock(slot.ends_at, timeZone));
                   setIsFreeTimeOpen(false);
                   setEditingPlanId(null);
                   setComposerMode("plan");
@@ -1784,23 +1869,21 @@ export default function TrackerLabClient({ initialDate }: { initialDate: string 
                 </button>
               )) : <div className="tracker-lab-empty"><Clock3 /><strong>Свободных часовых окон не найдено</strong><span>Попробуйте другой день.</span></div>}
             </div>
-          </section>
-        </div>
+        </TrackerLabDialog>
       )}
 
       {memoryPlan && (
-        <div className="tracker-lab-overlay" onMouseDown={(event) => { if (event.currentTarget === event.target) setMemoryPlan(null); }}>
-          <section className="tracker-lab-composer-sheet">
+        <TrackerLabDialog className="tracker-lab-composer-sheet" label="Сохранить воспоминание" onClose={() => setMemoryPlan(null)}>
             <button type="button" className="tracker-lab-sheet-close" onClick={() => setMemoryPlan(null)} aria-label="Закрыть"><X /></button>
             <p>Из плана в историю</p><h2>Сохранить воспоминание</h2>
-            <span className="tracker-lab-privacy-note"><Sparkles />Фото, файлы и голосовые из обсуждения будут скопированы в воспоминание.</span>
+            <span className="tracker-lab-privacy-note"><Sparkles />Фото, файлы и голосовые из обсуждения будут скопированы. Воспоминание будет доступно обоим партнёрам.</span>
             <div className="tracker-lab-form-grid">
+              <label><span>Дата воспоминания</span><input type="date" value={memoryDate} onChange={(event) => setMemoryDate(event.target.value)} /></label>
               <label className="is-wide"><span>Название</span><input value={memoryTitle} onChange={(event) => setMemoryTitle(event.target.value)} /></label>
               <label className="is-wide"><span>Описание</span><textarea rows={4} value={memoryCaption} onChange={(event) => setMemoryCaption(event.target.value)} /></label>
             </div>
             <button type="button" className="tracker-lab-primary-button" onClick={() => void createMemoryFromPlan()} disabled={isSaving}>{isSaving ? "Переносим материалы…" : "Создать воспоминание"}</button>
-          </section>
-        </div>
+        </TrackerLabDialog>
       )}
     </main>
   );

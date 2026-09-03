@@ -6,7 +6,7 @@ import { adjustTrackerEventCount, subscribeTrackerData } from "@/lib/trackerRepo
 import { trackerDefaultCategories } from "@/lib/trackerCategories";
 import { FluentEmoji } from "@/components/FluentEmoji";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TrackerNavigation } from "./TrackerNavigation";
 import { TrackerSummaryCards } from "./TrackerSummaryCards";
 import {
@@ -91,6 +91,8 @@ export default function TrackerPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSpark, setShowSpark] = useState(false);
+  const eventLoadVersion = useRef(0);
+  const viewYear = viewDate.getFullYear();
 
   const activityEvents = useMemo(() => events.filter((event) => event.count > 0), [events]);
 
@@ -261,8 +263,9 @@ export default function TrackerPage() {
 
   const reloadEvents = useCallback(async () => {
     if (!couple) return;
-    const yearRange = getDateRange(viewDate, "year");
-    const { data } = await supabase
+    const requestVersion = ++eventLoadVersion.current;
+    const yearRange = getDateRange(new Date(viewYear, 0, 1), "year");
+    const { data, error } = await supabase
       .from("tracker_events")
       .select("*")
       .eq("couple_id", couple.id)
@@ -271,8 +274,15 @@ export default function TrackerPage() {
       .order("date", { ascending: false })
       .order("created_at", { ascending: false });
 
-    setEvents((data || []) as TrackerEvent[]);
-  }, [couple, viewDate]);
+    if (!error && requestVersion === eventLoadVersion.current) {
+      setEvents((data || []) as TrackerEvent[]);
+    }
+  }, [couple, viewYear]);
+
+  useEffect(() => {
+    void reloadEvents();
+    return () => { eventLoadVersion.current += 1; };
+  }, [reloadEvents]);
 
   const reloadGoals = useCallback(async () => {
     if (!couple) return;
@@ -483,7 +493,9 @@ export default function TrackerPage() {
 
   function shiftView(direction: -1 | 1) {
     const date = new Date(viewDate);
-    if (period === "year") {
+    if (period === "day") {
+      date.setDate(date.getDate() + direction);
+    } else if (period === "year") {
       date.setFullYear(date.getFullYear() + direction);
     } else if (period === "week") {
       date.setDate(date.getDate() + direction * 7);
@@ -1170,6 +1182,7 @@ function DayDetailsPanel({
   const myEvents = events.filter((event) => event.created_by === currentUserId);
   const partnerEvents = events.filter((event) => event.created_by !== currentUserId);
   const activeMood = getDayMood(myEvents);
+  const partnerMood = getDayMood(partnerEvents);
   const visibleMyEvents = myEvents.filter((event) => event.count > 0);
   const visiblePartnerEvents = partnerEvents.filter((event) => event.count > 0);
 
@@ -1187,7 +1200,7 @@ function DayDetailsPanel({
 
       <div className="mt-4 space-y-2">
         {categories.map((category) => {
-          const event = myEvents.find((item) => item.category_id === category.id);
+          const categoryCount = countOnly(myEvents, category.id);
           const partnerCategoryEvents = partnerEvents.filter((item) => item.category_id === category.id);
 
           return (
@@ -1217,7 +1230,7 @@ function DayDetailsPanel({
                 )}
               </div>
               <ActivityCounter
-                value={event?.count || 0}
+                value={categoryCount}
                 onMinus={() => onAdjust(category, -1)}
                 onPlus={() => onAdjust(category, 1)}
                 color={getCategoryColor(category)}
@@ -1233,6 +1246,13 @@ function DayDetailsPanel({
           <span className="text-xs font-bold opacity-55">{activeMood?.label || "Не выбрано"}</span>
         </div>
         <MoodSelector value={activeMood?.key || null} onChange={(mood) => void onMoodChange(mood)} />
+        <div className="mt-3 flex items-center justify-between gap-3 text-xs font-bold" aria-label="Эмодзи дня партнёра">
+          <span className="opacity-55">Партнёр</span>
+          <span className="inline-flex items-center gap-2">
+            {partnerMood && <FluentEmoji emoji={partnerMood.icon} size={22} decorative />}
+            {partnerMood?.label || "Ещё не выбрано"}
+          </span>
+        </div>
       </div>
 
       {visiblePartnerEvents.length > 0 && (

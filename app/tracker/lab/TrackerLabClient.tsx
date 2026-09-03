@@ -93,6 +93,7 @@ import {
 } from "@/lib/trackerPlanDomain";
 import { useTrackerData } from "../useTrackerData";
 import TrackerLabDialog from "./TrackerLabDialog";
+import TrackerLabPlanComposer, { type TrackerPlanDraft } from "./TrackerLabPlanComposer";
 
 type Couple = {
   id: string;
@@ -196,6 +197,8 @@ type TrackerParticipant = {
   created_at: string;
 };
 
+type TrackerReminder = { id: string; plan_id: string; user_id: string; offset_minutes: number; delivery: string };
+
 type LocalTab = "today" | "calendar" | "activity";
 type CalendarMode = "day" | "week" | "month" | "year";
 type ScopeFilter = "all" | "me" | "partner" | "both";
@@ -292,6 +295,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   const [occurrenceOverrides, setOccurrenceOverrides] = useState<TrackerOccurrenceOverride[]>([]);
   const [checkins, setCheckins] = useState<TrackerCheckin[]>([]);
   const [comments, setComments] = useState<TrackerComment[]>([]);
+  const [reminders, setReminders] = useState<TrackerReminder[]>([]);
   const [activeTab, setActiveTab] = useState<LocalTab>("today");
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
   const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("all");
@@ -322,6 +326,11 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   const [planVisibility, setPlanVisibility] = useState<"couple" | "private">("couple");
   const [planRepeat, setPlanRepeat] = useState<TrackerPlanRepeat>("none");
   const [planRepeatUntil, setPlanRepeatUntil] = useState("");
+  const [planRepeatInterval, setPlanRepeatInterval] = useState(1);
+  const [planRepeatWeekdays, setPlanRepeatWeekdays] = useState<number[]>([]);
+  const [planStatus, setPlanStatus] = useState<TrackerPlan["status"]>("planned");
+  const [planEditScope, setPlanEditScope] = useState<TrackerPlan["edit_scope"]>("participants");
+  const [planAssigneeId, setPlanAssigneeId] = useState("");
   const [planReminder, setPlanReminder] = useState(60);
 
   const [checkinMood, setCheckinMood] = useState<MoodKey>("good");
@@ -393,6 +402,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     setCheckins(snapshot.checkins as TrackerCheckin[]);
     setProfile(snapshot.profile as Profile | null);
     setComments(snapshot.comments as TrackerComment[]);
+    setReminders(snapshot.reminders as TrackerReminder[]);
     setGoalCategoryId((current) => current || mergedCategories[0]?.id || "");
   }, []);
 
@@ -464,16 +474,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       if (document.querySelector('[role="dialog"]') || target?.matches("input,textarea,select,[contenteditable='true']")) return;
       if (event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.key.toLowerCase() === "t") setSelectedDate(getTrackerToday(timeZone));
-      if (event.key.toLowerCase() === "n") {
-        setPlanDate(selectedDate);
-        setEditingPlanId(null);
-        setPlanTitle("");
-        setPlanDescription("");
-        setPlanTime("");
-        setPlanEndTime("");
-        setPlanRepeat("none");
-        setComposerMode("plan");
-      }
+      if (event.key.toLowerCase() === "n") setComposerMode("menu");
       if (event.key === "/") {
         event.preventDefault();
         document.querySelector<HTMLInputElement>("[data-tracker-search]")?.focus();
@@ -530,6 +531,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     item.plan.id === selectedPlanId && item.originalDateKey === selectedOccurrenceDate,
   ) || null;
   const selectedStatus = selectedOccurrence?.status || selectedPlan?.status;
+  const selectedReminder = reminders.find((item) => item.plan_id === selectedPlanId && item.user_id === currentUserId);
   const selectedParticipant = participants.find((item) =>
     item.plan_id === selectedPlanId && item.user_id === currentUserId,
   ) || null;
@@ -582,6 +584,15 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     setPlanEndTime("");
     setPlanRepeat("none");
     setPlanRepeatUntil("");
+    setPlanRepeatInterval(1);
+    setPlanRepeatWeekdays([parseTrackerDateKey(selectedDate).getDay() || 7]);
+    setPlanStatus("planned");
+    setPlanEditScope("participants");
+    setPlanAssigneeId("");
+    setPlanKind("event");
+    setPlanScope("both");
+    setPlanVisibility("couple");
+    setPlanReminder(60);
     setEditingPlanId(null);
   }
 
@@ -598,6 +609,12 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     setPlanVisibility(plan.visibility);
     setPlanRepeat(plan.repeat_mode);
     setPlanRepeatUntil(plan.repeat_until || "");
+    setPlanRepeatInterval(plan.repeat_interval);
+    setPlanRepeatWeekdays(plan.repeat_weekdays.length ? plan.repeat_weekdays : [parseTrackerDateKey(dateKey).getDay() || 7]);
+    setPlanStatus(plan.status);
+    setPlanEditScope(plan.edit_scope);
+    setPlanAssigneeId(plan.assignee_id || "");
+    setPlanReminder(reminders.find((item) => item.plan_id === plan.id && item.user_id === currentUserId)?.offset_minutes ?? 60);
     setSelectedPlanId(null);
     setComposerMode("plan");
   }
@@ -665,8 +682,27 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     setIsSaving(false);
   }
 
+  function changePlanDraft(patch: Partial<TrackerPlanDraft>) {
+    if (patch.title !== undefined) setPlanTitle(patch.title);
+    if (patch.description !== undefined) setPlanDescription(patch.description);
+    if (patch.kind !== undefined) setPlanKind(patch.kind);
+    if (patch.date !== undefined) setPlanDate(patch.date);
+    if (patch.time !== undefined) setPlanTime(patch.time);
+    if (patch.endTime !== undefined) setPlanEndTime(patch.endTime);
+    if (patch.scope !== undefined) setPlanScope(patch.scope);
+    if (patch.visibility !== undefined) setPlanVisibility(patch.visibility);
+    if (patch.repeat !== undefined) setPlanRepeat(patch.repeat);
+    if (patch.repeatInterval !== undefined) setPlanRepeatInterval(patch.repeatInterval);
+    if (patch.repeatWeekdays !== undefined) setPlanRepeatWeekdays(patch.repeatWeekdays);
+    if (patch.repeatUntil !== undefined) setPlanRepeatUntil(patch.repeatUntil);
+    if (patch.reminder !== undefined) setPlanReminder(patch.reminder);
+    if (patch.status !== undefined) setPlanStatus(patch.status);
+    if (patch.editScope !== undefined) setPlanEditScope(patch.editScope);
+    if (patch.assigneeId !== undefined) setPlanAssigneeId(patch.assigneeId);
+  }
+
   async function savePlan() {
-    if (!couple || !currentUserId || !planTitle.trim()) return;
+    if (!couple || !currentUserId || !planTitle.trim() || !planDate || isSaving) return;
     setIsSaving(true);
     const allDay = !planTime;
     let startsAt: string | null = null;
@@ -702,12 +738,16 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         starts_at: startsAt,
         ends_at: endsAt,
         all_day: allDay,
-        participant_scope: planVisibility === "private" ? "me" : planScope,
-        assignee_id: planScope === "partner" ? partnerId : planScope === "me" ? currentUserId : null,
-        visibility: planVisibility,
+        ...(existing.created_by === currentUserId ? {
+          participant_scope: planVisibility === "private" ? "me" as const : planScope,
+          assignee_id: planVisibility === "private" ? currentUserId : planAssigneeId || null,
+          visibility: planVisibility,
+          edit_scope: planEditScope,
+        } : {}),
+        status: planStatus,
         repeat_mode: planRepeat,
-        repeat_interval: 1,
-        repeat_weekdays: planRepeat === "weekly" ? [parseTrackerDateKey(planDate).getDay() || 7] : [],
+        repeat_interval: planRepeatInterval,
+        repeat_weekdays: planRepeat === "weekly" ? planRepeatWeekdays : [],
         repeat_until: planRepeat === "none" ? null : planRepeatUntil || null,
         updated_by: currentUserId,
         updated_at: new Date().toISOString(),
@@ -725,7 +765,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
           actor_id: currentUserId,
           activity_type: "updated",
         });
-        if (existing.visibility === "couple") {
+        if (existing.visibility === "couple" && planVisibility === "couple") {
           await createPartnerNotification(couple, currentUserId, {
             type: "tracker_plan_updated",
             title: "Совместный план изменён",
@@ -733,6 +773,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
             href: "/tracker/lab",
           });
         }
+        await savePersonalReminder(existing, planReminder);
         resetPlanComposer();
         setComposerMode(null);
         setSelectedPlanId(existing.id);
@@ -753,22 +794,23 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       ends_at: endsAt,
       all_day: allDay,
       participant_scope: planVisibility === "private" ? "me" : planScope,
-      assignee_id: planScope === "partner" ? partnerId : planScope === "me" ? currentUserId : null,
+      assignee_id: planVisibility === "private" ? currentUserId : planAssigneeId || null,
       visibility: planVisibility,
-      status: "planned",
+      status: planStatus,
       repeat_mode: planRepeat,
-      repeat_interval: 1,
-      repeat_weekdays: planRepeat === "weekly" ? [parseTrackerDateKey(planDate).getDay() || 7] : [],
+      repeat_interval: planRepeatInterval,
+      repeat_weekdays: planRepeat === "weekly" ? planRepeatWeekdays : [],
       repeat_until: planRepeat === "none" ? null : planRepeatUntil || null,
       category_id: null,
       color: null,
-      edit_scope: "participants",
+      edit_scope: planEditScope,
       created_by: currentUserId,
       updated_by: currentUserId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     setPlans((items) => [optimistic, ...items]);
+    let createdPlanId: string | null = null;
 
     try {
       const { data, error } = await supabase.from("tracker_plans").insert({
@@ -793,6 +835,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         updated_by: currentUserId,
       }).select("*").single<TrackerPlan>();
       if (error || !data) throw error || new Error("Событие не создано");
+      createdPlanId = data.id;
 
       const participantIds = data.visibility === "private"
         ? [currentUserId]
@@ -801,20 +844,23 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
           : data.participant_scope === "partner" && partnerId
             ? [partnerId]
             : [currentUserId];
-      await supabase.from("tracker_plan_participants").insert(participantIds.map((userId) => ({
+      if (data.assignee_id && !participantIds.includes(data.assignee_id)) participantIds.push(data.assignee_id);
+      const { error: participantError } = await supabase.from("tracker_plan_participants").insert(participantIds.map((userId) => ({
         plan_id: data.id,
         couple_id: couple.id,
         user_id: userId,
         role: userId === data.assignee_id ? "responsible" : "participant",
         response: userId === currentUserId ? "accepted" : "pending",
       })));
-      await supabase.from("tracker_plan_reminders").insert({
+      if (participantError) throw participantError;
+      const { error: reminderError } = await supabase.from("tracker_plan_reminders").insert({
         plan_id: data.id,
         couple_id: couple.id,
         user_id: currentUserId,
         offset_minutes: planReminder,
-        delivery: "push",
+        delivery: "ics",
       });
+      if (reminderError) throw reminderError;
       await supabase.from("tracker_plan_activity").insert({
         plan_id: data.id,
         couple_id: couple.id,
@@ -835,6 +881,14 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         });
       }
     } catch (error) {
+      if (createdPlanId) {
+        const { error: rollbackError } = await supabase.from("tracker_plans").delete().eq("id", createdPlanId).eq("created_by", currentUserId);
+        if (rollbackError) {
+          setMessage("План создан, но не все настройки сохранились. Обновите трекер и откройте план для проверки.");
+          reloadTrackerData();
+          return;
+        }
+      }
       setPlans((items) => items.filter((item) => item.id !== optimistic.id));
       setMessage(`Не удалось создать событие: ${getErrorMessage(error, "попробуйте снова")}`);
     } finally {
@@ -1218,8 +1272,31 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     setFreeSlots((data || []) as Array<{ starts_at: string; ends_at: string }>);
   }
 
+  async function savePersonalReminder(plan: TrackerPlan, offsetMinutes: number) {
+    if (!currentUserId) return;
+    const key = `reminder:${plan.id}`;
+    if (pendingMutations.current.has(key)) return;
+    pendingMutations.current.add(key);
+    try {
+      const existing = reminders.find((item) => item.plan_id === plan.id && item.user_id === currentUserId);
+      const values = { plan_id: plan.id, couple_id: plan.couple_id, user_id: currentUserId, offset_minutes: offsetMinutes, delivery: "ics" };
+      const query = existing
+        ? supabase.from("tracker_plan_reminders").update(values).eq("id", existing.id).eq("user_id", currentUserId)
+        : supabase.from("tracker_plan_reminders").insert(values);
+      const { data, error } = await query.select("id,plan_id,user_id,offset_minutes,delivery").single<TrackerReminder>();
+      if (error || !data) {
+        setMessage("Не удалось сохранить личное напоминание. Попробуйте ещё раз.");
+        return;
+      }
+      setReminders((items) => [data, ...items.filter((item) => item.id !== data.id)]);
+      setMessage("Напоминание сохранено. Экспортируйте событие в системный календарь, чтобы оно сработало точно.");
+    } finally {
+      pendingMutations.current.delete(key);
+    }
+  }
+
   function downloadCalendar(plan: TrackerPlan) {
-    const blob = new Blob([buildTrackerPlanIcs(plan, planReminder, timeZone, occurrenceOverrides)], { type: "text/calendar;charset=utf-8" });
+    const blob = new Blob([buildTrackerPlanIcs(plan, reminders.find((item) => item.plan_id === plan.id && item.user_id === currentUserId)?.offset_minutes ?? 60, timeZone, occurrenceOverrides)], { type: "text/calendar;charset=utf-8" });
     const href = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = href;
@@ -1723,6 +1800,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
             {selectedParticipant?.response === "declined" && (
               <div className="tracker-lab-privacy-note"><EyeOff />Вы отклонили участие. План остаётся видимым в общем календаре.</div>
             )}
+            <label className="tracker-lab-personal-reminder"><span><Bell size={16} />Моё напоминание</span><select aria-label="Моё напоминание" value={selectedReminder?.offset_minutes ?? 60} onChange={(event) => void savePersonalReminder(selectedPlan, Number(event.target.value))}><option value={0}>В момент события</option><option value={30}>За 30 минут</option><option value={60}>За час</option><option value={1440}>За день</option><option value={10080}>За неделю</option></select><small>Точное время — после экспорта в календарь. Настройка видна только вам.</small></label>
             <div className="tracker-lab-detail-actions">
               {canEditSelectedPlan && (
                 <button type="button" onClick={() => openPlanEditor(selectedPlan)}><Pencil />Изменить всю серию</button>
@@ -1786,23 +1864,22 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
               </>
             )}
             {composerMode === "plan" && (
-              <>
-                <p>{editingPlanId ? "Редактирование серии" : "Новый план"}</p><h2>{editingPlanId ? "Изменить весь план" : "Добавить в календарь"}</h2>
-                <div className="tracker-lab-form-grid">
-                  <label className="is-wide"><span>Название</span><input value={planTitle} onChange={(event) => setPlanTitle(event.target.value)} placeholder="Например, вечерняя прогулка" autoFocus /></label>
-                  <label><span>Тип</span><select value={planKind} onChange={(event) => setPlanKind(event.target.value as TrackerPlanKind)}>{Object.entries(kindLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                  <label><span>Дата</span><input type="date" value={planDate} onChange={(event) => setPlanDate(event.target.value)} /></label>
-                  <label><span>Начало</span><input type="time" value={planTime} onChange={(event) => setPlanTime(event.target.value)} /></label>
-                  <label><span>Конец</span><input type="time" value={planEndTime} onChange={(event) => setPlanEndTime(event.target.value)} disabled={!planTime} /></label>
-                  <label><span>Для кого</span><select value={planScope} onChange={(event) => setPlanScope(event.target.value as TrackerParticipantScope)} disabled={planVisibility === "private"}><option value="both">Для нас двоих</option><option value="me">Для меня</option><option value="partner">Для партнёра</option></select></label>
-                  <label><span>Видимость</span><select value={planVisibility} onChange={(event) => setPlanVisibility(event.target.value as "couple" | "private")}><option value="couple">Общее</option><option value="private">Только мне</option></select></label>
-                  <label><span>Повторение</span><select value={planRepeat} onChange={(event) => setPlanRepeat(event.target.value as TrackerPlanRepeat)}>{Object.entries(repeatLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                  {planRepeat !== "none" && <label><span>Повторять до</span><input type="date" value={planRepeatUntil} min={planDate} onChange={(event) => setPlanRepeatUntil(event.target.value)} /></label>}
-                  <label><span>Напомнить</span><select value={planReminder} onChange={(event) => setPlanReminder(Number(event.target.value))}><option value={0}>В момент события</option><option value={30}>За 30 минут</option><option value={60}>За час</option><option value={1440}>За день</option><option value={10080}>За неделю</option></select></label>
-                  <label className="is-wide"><span>Описание</span><textarea value={planDescription} onChange={(event) => setPlanDescription(event.target.value)} placeholder="Детали, адрес или небольшая заметка" rows={3} /></label>
-                </div>
-                <button type="button" className="tracker-lab-primary-button" disabled={isSaving || !planTitle.trim()} onClick={() => void savePlan()}>{isSaving ? "Сохраняем…" : editingPlanId ? "Сохранить всю серию" : "Добавить в календарь"}</button>
-              </>
+              <TrackerLabPlanComposer
+                value={{
+                  title: planTitle, description: planDescription, kind: planKind, date: planDate,
+                  time: planTime, endTime: planEndTime, scope: planScope, visibility: planVisibility,
+                  repeat: planRepeat, repeatInterval: planRepeatInterval, repeatWeekdays: planRepeatWeekdays,
+                  repeatUntil: planRepeatUntil, reminder: planReminder, status: planStatus,
+                  editScope: planEditScope, assigneeId: planAssigneeId,
+                }}
+                onChange={changePlanDraft}
+                onSubmit={() => void savePlan()}
+                saving={isSaving}
+                editing={Boolean(editingPlanId)}
+                ownsPlan={!editingPlanId || plans.find((item) => item.id === editingPlanId)?.created_by === currentUserId}
+                timeZone={timeZone}
+                people={[currentUserId, partnerId].filter((id): id is string => Boolean(id)).map((id) => ({ id, label: getPersonMeta(id).name }))}
+              />
             )}
             {composerMode === "occurrence" && selectedPlan && (
               <>

@@ -275,11 +275,7 @@ function categoryColor(category: TrackerCategory) {
   return category.color || "#d97706";
 }
 
-function isMoodMarker(event: TrackerEvent) {
-  return Boolean(event.note?.startsWith("[[day-mood]]"));
-}
-
-export default function TrackerLabClient() {
+export default function TrackerLabClient({ initialDate }: { initialDate: string | null }) {
   const router = useRouter();
   const agendaRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -299,7 +295,7 @@ export default function TrackerLabClient() {
   const [activeTab, setActiveTab] = useState<LocalTab>("today");
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
   const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("all");
-  const [selectedDate, setSelectedDate] = useState(toTrackerDateKey(new Date()));
+  const [selectedDate, setSelectedDate] = useState(initialDate || toTrackerDateKey(new Date()));
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [selectedOccurrenceDate, setSelectedOccurrenceDate] = useState<string | null>(null);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
@@ -401,9 +397,9 @@ export default function TrackerLabClient() {
     onData: applyTrackerSnapshot,
   });
 
-  useEffect(() => {
-    if (trackerLoadError) setMessage(`Не всё удалось загрузить: ${trackerLoadError}`);
-  }, [trackerLoadError]);
+  const visibleMessage = trackerLoadError
+    ? `Не всё удалось загрузить: ${trackerLoadError}`
+    : message;
 
   useEffect(() => {
     let ignore = false;
@@ -433,16 +429,7 @@ export default function TrackerLabClient() {
 
 
 
-  useEffect(() => {
-    const own = checkins.find((item) => item.date === selectedDate && item.is_own);
-    if (!own) return;
-    if (own.mood) setCheckinMood(own.mood);
-    setCheckinEnergy(own.energy || 3);
-    setCheckinRelationship(own.relationship || 3);
-    setCheckinVisibility(own.visibility);
-    setCheckinNote(own.note || "");
-    setCheckinReveal(own.reveal_after_both);
-  }, [checkins, selectedDate]);
+
 
   useEffect(() => {
     if (!agendaRef.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -488,12 +475,7 @@ export default function TrackerLabClient() {
     return () => window.removeEventListener("keydown", handleKeyboard);
   }, [selectedDate]);
 
-  useEffect(() => {
-    const requestedDate = new URLSearchParams(window.location.search).get("date");
-    if (requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) {
-      setSelectedDate(requestedDate);
-    }
-  }, []);
+
 
   useEffect(() => () => {
     const recorder = mediaRecorderRef.current;
@@ -541,7 +523,7 @@ export default function TrackerLabClient() {
   const selectedComments = comments.filter((item) => item.plan_id === selectedPlanId);
   const week = useMemo(() => getWeekStrip(selectedDate), [selectedDate]);
   const cells = useMemo(() => monthCells(selectedDate), [selectedDate]);
-  const activeEvents = events.filter((event) => event.count > 0 && !isMoodMarker(event));
+  const activeEvents = events.filter((event) => event.count > 0);
   const selectedDayEvents = activeEvents.filter((event) => event.date === selectedDate);
   const nextOccurrence = useMemo(() => {
     const nowKey = toTrackerDateKey(new Date());
@@ -559,7 +541,16 @@ export default function TrackerLabClient() {
 
   function openComposer(mode: ComposerMode) {
     setPlanDate(selectedDate);
-    if (mode === "plan") setEditingPlanId(null);
+    if (mode === "plan") resetPlanComposer();
+    if (mode === "checkin") {
+      const own = checkins.find((item) => item.date === selectedDate && item.is_own);
+      setCheckinMood(own?.mood || "good");
+      setCheckinEnergy(own?.energy ?? 3);
+      setCheckinRelationship(own?.relationship ?? 3);
+      setCheckinVisibility(own?.visibility || "private");
+      setCheckinNote(own?.note || "");
+      setCheckinReveal(own?.reveal_after_both || false);
+    }
     setComposerMode(mode);
   }
 
@@ -607,7 +598,7 @@ export default function TrackerLabClient() {
       event.date === selectedDate &&
       event.category_id === category.id &&
       event.created_by === currentUserId &&
-      !isMoodMarker(event),
+      event.count > 0,
     );
     if (own) {
       const nextCount = own.count + delta;
@@ -1422,9 +1413,9 @@ export default function TrackerLabClient() {
           ))}
         </nav>
 
-        {message && (
+        {visibleMessage && (
           <div className="tracker-lab-toast" role="status">
-            <span>{message}</span>
+            <span>{visibleMessage}</span>
             <button type="button" onClick={() => setMessage("")} aria-label="Закрыть"><X /></button>
           </div>
         )}
@@ -1703,7 +1694,7 @@ export default function TrackerLabClient() {
                 <div className="tracker-lab-create-menu">
                   <button type="button" onClick={() => openComposer("plan")}><CalendarDays /><span><strong>Событие или план</strong><small>Свидание, задача, дата</small></span><ChevronRight /></button>
                   <button type="button" onClick={() => setComposerMode("activity")}><Activity /><span><strong>Быстрая отметка</strong><small>Еда, спорт, игры и другое</small></span><ChevronRight /></button>
-                  <button type="button" onClick={() => setComposerMode("checkin")}><Sparkles /><span><strong>Состояние дня</strong><small>Настроение и энергия</small></span><ChevronRight /></button>
+                  <button type="button" onClick={() => openComposer("checkin")}><Sparkles /><span><strong>Состояние дня</strong><small>Настроение и энергия</small></span><ChevronRight /></button>
                   <button type="button" onClick={() => setComposerMode("goal")}><Target /><span><strong>Новая цель</strong><small>Общий ориентир пары</small></span><ChevronRight /></button>
                 </div>
               </>

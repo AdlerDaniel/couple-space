@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAuthStorageKey } from "../lib/supabaseUrls.ts";
+import { decodeMemoryMedia } from "../lib/memoryMedia.ts";
 
 const fixtureDate = "2026-09-07";
 
@@ -188,7 +189,19 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
       { name: "fixture.wav", mimeType: "audio/wav", buffer: silentWav(), type: "audio" },
     ];
     for (const fixture of fixtures) {
-      await one.locator(".tracker-lab-comment-composer input[type=file]").setInputFiles(fixture);
+      if (fixture.type === "image") {
+        const pasted = await one.getByPlaceholder("Напишите или вставьте файл через Ctrl+V…").evaluate((element, file) => {
+          const clipboard = new DataTransfer();
+          clipboard.items.add(new File([new Uint8Array(file.bytes)], file.name, { type: file.mimeType }));
+          const event = new ClipboardEvent("paste", { clipboardData: clipboard, bubbles: true, cancelable: true });
+          element.dispatchEvent(event);
+          return event.defaultPrevented;
+        }, { name: fixture.name, mimeType: fixture.mimeType, bytes: Array.from(fixture.buffer) });
+        expect(pasted).toBe(true);
+      } else {
+        await one.locator(".tracker-lab-comment-composer input[type=file]").setInputFiles(fixture);
+      }
+      await expect(one.locator(".tracker-lab-pending-file")).toContainText(fixture.name);
       await one.locator(".tracker-lab-comment-composer .is-send").click();
       await expect.poll(async () => {
         const result = await admin.from("tracker_plan_comments").select("id").eq("plan_id", planId).eq("attachment_name", fixture.name);
@@ -199,6 +212,59 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
     await expect(two.locator(".tracker-lab-comment-list img").last()).toBeVisible();
     await expect(two.getByRole("link", { name: "fixture.txt" })).toBeVisible();
     await expect(two.locator(".tracker-lab-comment-list audio")).toHaveCount(1);
+
+    // Exercise the actual file-paste handler without modifying the host clipboard.
+    const textPastePrevented = await one.getByPlaceholder("Напишите или вставьте файл через Ctrl+V…").evaluate((element) => {
+      const clipboard = new DataTransfer();
+      clipboard.setData("text/plain", "Synthetic ordinary text");
+      const event = new ClipboardEvent("paste", { clipboardData: clipboard, bubbles: true, cancelable: true });
+      element.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+    expect(textPastePrevented).toBe(false);
+
+    for (const width of [375, 390, 768, 1280, 1440]) {
+      for (const theme of ["light", "dark"] as const) {
+        await two.setViewportSize({ width, height: 850 });
+        await two.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+        await two.evaluate((dark) => document.documentElement.classList.toggle("dark", dark), theme === "dark");
+        const discussion = two.locator(".tracker-lab-comments");
+        await discussion.scrollIntoViewIfNeeded();
+        await expect.poll(() => discussion.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+        const audio = two.locator(".tracker-lab-comment-list audio");
+        await expect(audio).toHaveAttribute("src", /tracker-media/);
+        await expect(two.getByRole("link", { name: "fixture.txt" })).toBeVisible();
+        await expect.poll(() => two.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+      }
+    }
+
+    // A synthetic silent stream keeps the test local and never opens a real microphone.
+    await one.evaluate(() => {
+      const context = new AudioContext();
+      const destination = context.createMediaStreamDestination();
+      const track = destination.stream.getAudioTracks()[0];
+      const original = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      Object.defineProperty(navigator.mediaDevices, "getUserMedia", { configurable: true, value: async () => destination.stream });
+      (window as Window & { trackerFixtureRecording?: { context: AudioContext; track: MediaStreamTrack; restore: () => void } }).trackerFixtureRecording = {
+        context, track, restore: () => Object.defineProperty(navigator.mediaDevices, "getUserMedia", { configurable: true, value: original }),
+      };
+    });
+    await one.getByPlaceholder("Напишите или вставьте файл через Ctrl+V…").fill("Unsaved synthetic draft");
+    await one.getByRole("button", { name: "Записать голос", exact: true }).click();
+    await expect(one.getByRole("button", { name: "Остановить запись", exact: true })).toBeVisible();
+    await one.getByRole("dialog").getByRole("button", { name: "Закрыть", exact: true }).click();
+    await expect.poll(() => one.evaluate(() =>
+      (window as Window & { trackerFixtureRecording?: { track: MediaStreamTrack } }).trackerFixtureRecording?.track.readyState
+    )).toBe("ended");
+    await one.locator("[data-plan-card]").filter({ hasText: title }).locator(".tracker-lab-plan-main").click();
+    await expect(one.getByPlaceholder("Напишите или вставьте файл через Ctrl+V…")).toHaveValue("");
+    await expect(one.locator(".tracker-lab-pending-file")).toHaveCount(0);
+    await expect(one.getByRole("button", { name: "Записать голос", exact: true })).toBeVisible();
+    await one.evaluate(async () => {
+      const fixture = (window as Window & { trackerFixtureRecording?: { context: AudioContext; restore: () => void } }).trackerFixtureRecording;
+      fixture?.restore();
+      await fixture?.context.close();
+    });
 
     await one.getByRole("dialog").getByRole("button", { name: /^Завершить/ }).click();
     await expect(one.getByRole("button", { name: "Сделать воспоминанием", exact: true })).toBeVisible();
@@ -211,7 +277,19 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
     const storedMemory = await admin.from("memories").select("event_date,image").eq("couple_id", coupleId).eq("title", "Synthetic memory").single();
     expect(storedMemory.error).toBeNull();
     expect(storedMemory.data?.event_date).toBe(fixtureDate);
-    expect(storedMemory.data?.image).toContain("fixture");
+    const memoryMedia = decodeMemoryMedia(storedMemory.data?.image);
+    expect(memoryMedia.photoUrl).toMatch(/memory-images\/[^?]+\.png$/);
+    expect(memoryMedia.voiceUrl).toMatch(/memory-images\/[^?]+\.wav$/);
+    expect(memoryMedia.attachments).toEqual([expect.objectContaining({ name: "fixture.txt", type: "file" })]);
+    const memoryUrls = [memoryMedia.photoUrl, memoryMedia.voiceUrl, ...(memoryMedia.attachments || []).map((item) => item.url)];
+    for (const url of memoryUrls) {
+      expect(url).not.toBeNull();
+      const path = url!.split("/object/public/memory-images/")[1];
+      expect(path).toMatch(new RegExp("^" + coupleId + "/"));
+      const download = await clients[1].storage.from("memory-images").download(path);
+      expect(download.error).toBeNull();
+      expect(download.data?.size).toBeGreaterThan(0);
+    }
 
     await openTracker(one);
     await one.locator("[data-plan-card]").filter({ hasText: title }).locator(".tracker-lab-plan-main").click();
@@ -253,8 +331,14 @@ test("tracker lab mobile and desktop layouts in both themes and reduced motion",
         await composer.getByLabel("Описание", { exact: true }).focus();
         await composer.getByRole("button", { name: "Добавить в календарь", exact: true }).scrollIntoViewIfNeeded();
         await expect(composer.getByRole("button", { name: "Добавить в календарь", exact: true })).toBeInViewport();
+        await composer.getByRole("button", { name: "Закрыть", exact: true }).focus();
+        await page.keyboard.press("Shift+Tab");
+        await expect(composer.getByRole("button", { name: "Добавить в календарь", exact: true })).toBeFocused();
+        await page.keyboard.press("Tab");
+        await expect(composer.getByRole("button", { name: "Закрыть", exact: true })).toBeFocused();
         await page.keyboard.press("Escape");
         await expect(page.getByRole("dialog")).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Добавить запись", exact: true })).toBeFocused();
       }
     }
     expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);

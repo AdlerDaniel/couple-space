@@ -1,8 +1,10 @@
 -- Run only against an isolated/local Supabase test database after all migrations.
 -- Synthetic fixtures are enclosed in a transaction and always rolled back.
 begin;
-
-do $$
+set local search_path = public, extensions, pg_catalog;
+select plan(1);
+select lives_ok($test$
+do $
 declare
   a constant uuid := '00000000-0000-4000-8000-00000000a101';
   b constant uuid := '00000000-0000-4000-8000-00000000b102';
@@ -130,6 +132,7 @@ begin
     raise exception 'Internal sync or authenticated RPC has overly broad EXECUTE grants';
   end if;
 end;
-$$;
-
+$;
+$test$, 'legacy activity preservation and check-in privacy invariants');
+select * from finish();
 rollback;

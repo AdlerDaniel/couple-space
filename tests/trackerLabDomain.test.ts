@@ -7,6 +7,7 @@ import {
   expandTrackerPlanOccurrences,
   findFreeSlots,
   getTrackerViewRange,
+  shiftTrackerViewDate,
   getTrackerToday,
   trackerDateTimeToIso,
   formatTrackerClock,
@@ -237,4 +238,18 @@ test("ICS identifies moved and cancelled instances by their original DTSTART", (
   assert.match(ics, /DTSTART;TZID=Europe\/Moscow:20260910T200000/);
   assert.match(ics, /RECURRENCE-ID;TZID=Europe\/Moscow:20260909T190000/);
   assert.match(ics, /STATUS:CANCELLED/);
+});
+
+
+test("month navigation clamps January 31 instead of overflowing into March", () => {
+  assert.equal(shiftTrackerViewDate("2026-01-31", "month", 1), "2026-02-28");
+  assert.equal(shiftTrackerViewDate("2024-01-31", "month", 1), "2024-02-29");
+  assert.equal(shiftTrackerViewDate("2026-03-31", "month", -1), "2026-02-28");
+});
+
+test("year navigation clamps leap day and preserves day/week boundaries", () => {
+  assert.equal(shiftTrackerViewDate("2024-02-29", "year", 1), "2025-02-28");
+  assert.equal(shiftTrackerViewDate("2024-02-29", "year", 4), "2028-02-29");
+  assert.equal(shiftTrackerViewDate("2026-12-31", "day", 1), "2027-01-01");
+  assert.equal(shiftTrackerViewDate("2026-12-28", "week", 1), "2027-01-04");
 });

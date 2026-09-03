@@ -1398,6 +1398,10 @@ export type Database = {
         Args: { p_plan_id: string; p_user_id?: string }
         Returns: boolean
       }
+      complete_tracker_assigned_task: {
+        Args: { p_occurrence_date?: string; p_plan_id: string }
+        Returns: undefined
+      }
       consume_api_rate_limit: {
         Args: {
           p_identity_hash: string
@@ -1410,10 +1414,6 @@ export type Database = {
           request_count: number
           retry_after_seconds: number
         }[]
-      }
-      complete_tracker_assigned_task: {
-        Args: { p_occurrence_date?: string; p_plan_id: string }
-        Returns: undefined
       }
       create_couple_notification: {
         Args: {

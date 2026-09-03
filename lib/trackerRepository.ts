@@ -11,6 +11,7 @@ export type TrackerLabSnapshot = {
   checkins: unknown[];
   profile: unknown | null;
   comments: unknown[];
+  reminders: unknown[];
 };
 
 export async function fetchTrackerLabData(coupleId: string, year: number): Promise<TrackerLabSnapshot> {
@@ -27,6 +28,7 @@ export async function fetchTrackerLabData(coupleId: string, year: number): Promi
     checkinResult,
     profileResult,
     commentResult,
+    reminderResult,
   ] = await Promise.all([
     supabase.from("tracker_categories").select("*").order("sort_order"),
     supabase.from("tracker_category_preferences").select("*").eq("couple_id", coupleId),
@@ -38,6 +40,7 @@ export async function fetchTrackerLabData(coupleId: string, year: number): Promi
     supabase.rpc("get_tracker_checkins", { p_couple_id: coupleId, p_from: from, p_to: to }),
     supabase.from("couple_profiles").select("partner_one,partner_two,avatar,avatar_one,avatar_two,time_zone").eq("couple_id", coupleId).limit(1).maybeSingle(),
     supabase.from("tracker_plan_comments").select("*").eq("couple_id", coupleId).order("created_at"),
+    supabase.from("tracker_plan_reminders").select("id,plan_id,user_id,offset_minutes,delivery").eq("couple_id", coupleId).order("created_at", { ascending: false }),
   ]);
 
   const firstError = [
@@ -51,6 +54,7 @@ export async function fetchTrackerLabData(coupleId: string, year: number): Promi
     checkinResult.error,
     profileResult.error,
     commentResult.error,
+    reminderResult.error,
   ].find((error): error is NonNullable<typeof categoryResult.error> => Boolean(error));
   if (firstError) throw firstError;
 
@@ -73,6 +77,7 @@ export async function fetchTrackerLabData(coupleId: string, year: number): Promi
     checkins: checkinResult.data || [],
     profile: profileResult.data || null,
     comments,
+    reminders: reminderResult.data || [],
   };
 }
 
@@ -87,6 +92,8 @@ export function subscribeTrackerData(coupleId: string, onChange: () => void) {
     .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_occurrence_overrides", filter }, onChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "tracker_checkins", filter }, onChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_comments", filter }, onChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_category_preferences", filter }, onChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tracker_plan_reminders", filter }, onChange)
     .subscribe();
 
   return () => {

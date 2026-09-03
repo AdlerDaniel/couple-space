@@ -361,3 +361,15 @@ export function getTrackerViewRange(selectedDate: string, mode: "day" | "week" |
     to: `${source.getFullYear()}-12-31`,
   };
 }
+
+
+export function shiftTrackerViewDate(selectedDate: string, mode: "day" | "week" | "month" | "year", amount: number) {
+  if (mode === "day" || mode === "week") return shiftDate(selectedDate, amount * (mode === "week" ? 7 : 1));
+  const source = new Date(selectedDate + "T12:00:00Z");
+  const month = source.getUTCMonth() + (mode === "month" ? amount : 0);
+  const year = source.getUTCFullYear() + (mode === "year" ? amount : 0);
+  const target = new Date(Date.UTC(year, month, 1, 12));
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0, 12)).getUTCDate();
+  target.setUTCDate(Math.min(source.getUTCDate(), lastDay));
+  return target.toISOString().slice(0, 10);
+}

@@ -2493,3 +2493,98 @@
 .tracker-lab-invitation button svg {
   width: 0.95rem;
 }
+
+/* Shared sheet controls stay readable in both themes and above the app navigation. */
+.tracker-lab-modal-root,
+.dark .tracker-lab-modal-root {
+  position: static;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  isolation: auto;
+  background: transparent;
+}
+.tracker-lab-modal-root .tracker-lab-overlay { z-index: 3000; }
+.tracker-lab-composer-sheet,
+.tracker-lab-detail-sheet { max-height: min(90dvh, 54rem); }
+.tracker-lab-page :is(button, a, input, textarea, select, summary):focus-visible {
+  outline: 3px solid var(--lab-accent-bright);
+  outline-offset: 3px;
+}
+.tracker-lab-advanced {
+  margin: 1rem 0;
+  padding: 0.85rem;
+  border: 1px solid var(--lab-line);
+  border-radius: 1rem;
+  background: var(--lab-surface-subtle);
+}
+.tracker-lab-advanced summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 2.5rem;
+  cursor: pointer;
+  font-weight: 800;
+  list-style: none;
+}
+.tracker-lab-advanced summary::-webkit-details-marker { display: none; }
+.tracker-lab-advanced[open] summary { margin-bottom: 0.75rem; }
+.tracker-lab-form-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.75rem 0;
+  color: var(--lab-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+.tracker-lab-weekday-picker {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.3rem;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  grid-column: 1 / -1;
+}
+.tracker-lab-weekday-picker legend { margin-bottom: 0.4rem; font-size: 0.8rem; }
+.tracker-lab-weekday-picker button {
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.25rem;
+  border: 1px solid var(--lab-line);
+  border-radius: 0.7rem;
+  background: var(--lab-surface-solid);
+  font-size: 0.8rem;
+}
+.tracker-lab-weekday-picker button[aria-pressed="true"] {
+  color: #231400;
+  background: var(--lab-accent-bright);
+}
+.tracker-lab-personal-reminder {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  margin: 1rem 0;
+  border: 1px solid var(--lab-line);
+  border-radius: 1rem;
+}
+.tracker-lab-personal-reminder > span { display: flex; gap: 0.5rem; align-items: center; font-weight: 800; }
+.tracker-lab-personal-reminder select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.55rem;
+  color: var(--lab-ink);
+  background: var(--lab-surface-solid);
+  border: 1px solid var(--lab-line);
+  border-radius: 0.65rem;
+}
+.tracker-lab-personal-reminder small { color: var(--lab-muted); line-height: 1.5; }
+@media (max-width: 767px) {
+  .tracker-lab-page :is(input, textarea, select) { font-size: 16px; }
+  .tracker-lab-modal-root .tracker-lab-overlay { padding: 0.5rem; }
+  .tracker-lab-composer-sheet,
+  .tracker-lab-detail-sheet { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+}

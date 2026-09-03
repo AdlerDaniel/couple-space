@@ -4,7 +4,7 @@ begin;
 set local search_path = public, extensions, pg_catalog;
 select plan(1);
 select lives_ok($test$
-do $
+do $block$
 declare
   a constant uuid := '00000000-0000-4000-8000-00000000a101';
   b constant uuid := '00000000-0000-4000-8000-00000000b102';
@@ -132,7 +132,7 @@ begin
     raise exception 'Internal sync or authenticated RPC has overly broad EXECUTE grants';
   end if;
 end;
-$;
+$block$;
 $test$, 'legacy activity preservation and check-in privacy invariants');
 select * from finish();
 rollback;

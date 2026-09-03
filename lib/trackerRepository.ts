@@ -136,3 +136,24 @@ export async function saveTrackerCheckin(input: {
     p_reveal_after_both: input.revealAfterBoth,
   });
 }
+
+export async function fetchTrackerFreeSlots(coupleId: string, query: {
+  from: string; to: string; duration: number; dayStart: string; dayEnd: string;
+}) {
+  const from = Date.parse(query.from + "T00:00:00Z");
+  const to = Date.parse(query.to + "T00:00:00Z");
+  const days = Math.round((to - from) / 86_400_000) + 1;
+  if (!Number.isFinite(days) || days < 1 || days > 14) throw new Error("Выберите диапазон от 1 до 14 дней.");
+  if (!query.dayStart || !query.dayEnd || query.dayEnd <= query.dayStart) throw new Error("Конец свободного времени должен быть позже начала.");
+  if (!Number.isInteger(query.duration) || query.duration < 15 || query.duration > 720) throw new Error("Проверьте длительность встречи.");
+  const results = await Promise.all(Array.from({ length: days }, (_, index) => {
+    const date = new Date(from + index * 86_400_000).toISOString().slice(0, 10);
+    return supabase.rpc("find_tracker_common_free_slots", {
+      p_couple_id: coupleId, p_date: date, p_duration_minutes: query.duration,
+      p_day_start: query.dayStart, p_day_end: query.dayEnd,
+    });
+  }));
+  const error = results.find((result) => result.error)?.error;
+  if (error) throw new Error(error.message);
+  return results.flatMap((result) => (result.data || []) as Array<{ starts_at: string; ends_at: string }>);
+}

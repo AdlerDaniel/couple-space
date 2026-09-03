@@ -93,6 +93,7 @@ import {
 } from "@/lib/trackerPlanDomain";
 import { useTrackerData } from "../useTrackerData";
 import TrackerLabDialog from "./TrackerLabDialog";
+import TrackerLabFreeTimeDialog from "./TrackerLabFreeTimeDialog";
 import TrackerLabPlanComposer, { type TrackerPlanDraft } from "./TrackerLabPlanComposer";
 
 type Couple = {
@@ -348,7 +349,6 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
   const [commentText, setCommentText] = useState("");
   const [commentFile, setCommentFile] = useState<File | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [freeSlots, setFreeSlots] = useState<Array<{ starts_at: string; ends_at: string }>>([]);
   const [isFreeTimeOpen, setIsFreeTimeOpen] = useState(false);
 
   const [memoryPlan, setMemoryPlan] = useState<TrackerPlan | null>(null);
@@ -553,6 +553,16 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       (!item.startsAt || Date.parse(item.endsAt || item.startsAt) >= now)) || null;
   }, [filteredOccurrences, timeZone]);
   const selectedDateCheckins = checkins.filter((item) => item.date === selectedDate);
+  for (const userId of [currentUserId, partnerId]) {
+    if (!userId || selectedDateCheckins.some((item) => item.user_id === userId)) continue;
+    const legacy = events.filter((event) => event.date === selectedDate && event.created_by === userId &&
+      event.note?.startsWith("[[day-mood]]")).sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0];
+    if (legacy) selectedDateCheckins.push({
+      id: legacy.id, couple_id: legacy.couple_id, user_id: userId, date: legacy.date,
+      mood: legacy.mood, energy: null, relationship: null, visibility: "summary", note: null,
+      reveal_after_both: false, is_own: userId === currentUserId, created_at: legacy.created_at, updated_at: legacy.updated_at,
+    });
+  }
 
   const periodEvents = activeEvents.filter((event) => event.date >= viewRange.from && event.date <= viewRange.to);
   const stats = {
@@ -1258,20 +1268,6 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
     }
   }
 
-  async function loadFreeTime() {
-    if (!couple) return;
-    setIsFreeTimeOpen(true);
-    const { data, error } = await supabase.rpc("find_tracker_common_free_slots", {
-      p_couple_id: couple.id,
-      p_date: selectedDate,
-      p_duration_minutes: 60,
-      p_day_start: "09:00",
-      p_day_end: "22:00",
-    });
-    if (error) setMessage(`Не удалось найти свободное время: ${error.message}`);
-    setFreeSlots((data || []) as Array<{ starts_at: string; ends_at: string }>);
-  }
-
   async function savePersonalReminder(plan: TrackerPlan, offsetMinutes: number) {
     if (!currentUserId) return;
     const key = `reminder:${plan.id}`;
@@ -1607,7 +1603,7 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
           <section className="tracker-lab-desktop-grid">
             <aside className="tracker-lab-left-column">
               {renderMonthCalendar()}
-              <button type="button" className="tracker-lab-free-button" onClick={() => void loadFreeTime()}>
+              <button type="button" className="tracker-lab-free-button" onClick={() => setIsFreeTimeOpen(true)}>
                 <Clock3 /><span><strong>Наше свободное время</strong><small>Найти час без пересечений</small></span><ChevronRight />
               </button>
             </aside>
@@ -1926,27 +1922,21 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         </TrackerLabDialog>
       )}
 
-      {isFreeTimeOpen && (
-        <TrackerLabDialog className="tracker-lab-composer-sheet" label="Наше свободное время" onClose={() => setIsFreeTimeOpen(false)}>
-            <button type="button" className="tracker-lab-sheet-close" onClick={() => setIsFreeTimeOpen(false)} aria-label="Закрыть"><X /></button>
-            <p>Наше свободное время</p><h2>{formatTrackerDate(selectedDate)}</h2>
-            <span className="tracker-lab-privacy-note"><Lock />Приватные планы учитываются как занятость, но их содержание не раскрывается.</span>
-            <div className="tracker-lab-free-slots">
-              {freeSlots.length ? freeSlots.slice(0, 12).map((slot) => (
-                <button type="button" key={slot.starts_at} onClick={() => {
-                  resetPlanComposer();
-                  setPlanDate(getTrackerToday(timeZone, new Date(slot.starts_at)));
-                  setPlanTime(formatTrackerClock(slot.starts_at, timeZone));
-                  setPlanEndTime(formatTrackerClock(slot.ends_at, timeZone));
-                  setIsFreeTimeOpen(false);
-                  setEditingPlanId(null);
-                  setComposerMode("plan");
-                }}>
-                  <Clock3 /><strong>{formatClock(slot.starts_at)}–{formatClock(slot.ends_at)}</strong><span>Запланировать</span>
-                </button>
-              )) : <div className="tracker-lab-empty"><Clock3 /><strong>Свободных часовых окон не найдено</strong><span>Попробуйте другой день.</span></div>}
-            </div>
-        </TrackerLabDialog>
+      {isFreeTimeOpen && couple && (
+        <TrackerLabFreeTimeDialog
+          coupleId={couple.id}
+          date={selectedDate}
+          timeZone={timeZone}
+          onClose={() => setIsFreeTimeOpen(false)}
+          onChoose={(slot) => {
+            resetPlanComposer();
+            setPlanDate(getTrackerToday(timeZone, new Date(slot.starts_at)));
+            setPlanTime(formatTrackerClock(slot.starts_at, timeZone));
+            setPlanEndTime(formatTrackerClock(slot.ends_at, timeZone));
+            setIsFreeTimeOpen(false);
+            setComposerMode("plan");
+          }}
+        />
       )}
 
       {memoryPlan && (

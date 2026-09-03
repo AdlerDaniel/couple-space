@@ -9,7 +9,7 @@ const localBaseUrl = "http://127.0.0.1:3101";
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: "archive-realtime.spec.ts",
+  testMatch: ["archive-realtime.spec.ts", "tracker-lab-realtime.spec.ts"],
   outputDir: ".playwright-results",
   timeout: 120_000,
   expect: {

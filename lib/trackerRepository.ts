@@ -105,7 +105,12 @@ export function subscribeTrackerData(coupleId: string, onChange: () => void) {
   // deletions can safely invalidate every open tab.
   void supabase.realtime.setAuth()
     .then(() => {
-      if (!disposed) channel.subscribe();
+      if (disposed) return;
+      channel.subscribe((status) => {
+        // A refresh after the private channel has actually joined closes the
+        // small window between the initial snapshot and Realtime readiness.
+        if (status === "SUBSCRIBED" && !disposed) scheduleRefresh();
+      });
     })
     .catch(() => undefined);
 

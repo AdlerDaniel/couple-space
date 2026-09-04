@@ -13,10 +13,6 @@ grant select, insert, update, delete on public.tracker_category_preferences to s
 grant select, insert, update, delete on public.tracker_plan_memory_links to service_role;
 grant select, insert, update, delete on public.tracker_plan_activity to service_role;
 
--- Memory URLs remain stable database pointers, while object delivery becomes
--- authenticated through short-lived signed URLs in the client.
-update storage.buckets set public = false where id = 'memory-images';
-
 do $$
 begin
   if not exists (

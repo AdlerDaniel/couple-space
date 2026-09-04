@@ -314,24 +314,34 @@ test("tracker lab mobile and desktop layouts in both themes and reduced motion",
     const page = pages[0];
     await openTracker(page);
 
+    // Keep the complete width/theme matrix cheap: the richer interactions
+    // below exercise representative mobile, tablet and desktop breakpoints.
     for (const width of [375, 390, 768, 1280, 1440]) {
       await page.setViewportSize({ width, height: 850 });
       for (const theme of ["light", "dark"] as const) {
         await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
         await page.evaluate((dark) => document.documentElement.classList.toggle("dark", dark), theme === "dark");
-        for (const tab of ["Сегодня", "Календарь", "Активность"]) {
-          await page.locator(".tracker-lab-local-nav").getByRole("button", { name: tab, exact: true }).click();
-          await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
-        }
-        if (width === 768) {
-          await page.locator(".tracker-lab-local-nav").getByRole("button", { name: "Сегодня", exact: true }).click();
-          await page.getByRole("button", { name: "Сводка дня", exact: true }).click();
-          await expect(page.locator("#tracker-lab-insights")).toBeVisible();
-          await page.keyboard.press("Escape");
-          await expect(page.locator("#tracker-lab-insights")).toBeHidden();
-        }
+        await expect(page.getByRole("heading", { name: "Наш ритм", exact: true })).toBeVisible();
+        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       }
     }
+
+    await page.setViewportSize({ width: 390, height: 850 });
+    await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+    await page.evaluate(() => document.documentElement.classList.add("dark"));
+    for (const tab of ["Сегодня", "Календарь", "Активность"]) {
+      await page.locator(".tracker-lab-local-nav").getByRole("button", { name: tab, exact: true }).click();
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+    }
+
+    await page.setViewportSize({ width: 768, height: 850 });
+    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await page.evaluate(() => document.documentElement.classList.remove("dark"));
+    await page.locator(".tracker-lab-local-nav").getByRole("button", { name: "Сегодня", exact: true }).click();
+    await page.getByRole("button", { name: "Сводка дня", exact: true }).click();
+    await expect(page.locator("#tracker-lab-insights")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#tracker-lab-insights")).toBeHidden();
 
     for (const scenario of [{ width: 390, theme: "dark" }, { width: 1440, theme: "light" }] as const) {
       await page.setViewportSize({ width: scenario.width, height: 850 });

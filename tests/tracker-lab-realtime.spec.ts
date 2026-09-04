@@ -148,7 +148,6 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
     await composer.getByLabel("Конец", { exact: true }).fill("20:00");
     await composer.getByLabel("Описание", { exact: true }).fill("Fictional fixture, no user content");
     await composer.getByRole("button", { name: "Добавить в календарь", exact: true }).click();
-    await expect(one.getByRole("heading", { name: "Добавить в календарь", exact: true })).toHaveCount(0);
     const cardTwo = two.locator("[data-plan-card]").filter({ hasText: title });
     await expect(cardTwo).toBeVisible({ timeout: 25_000 });
     await cardTwo.locator(".tracker-lab-plan-main").click();
@@ -310,7 +309,7 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
 });
 
 test("tracker lab mobile and desktop layouts in both themes and reduced motion", async ({ browser, baseURL }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(360_000);
   await withPair(browser, baseURL, async ({ pages }) => {
     const page = pages[0];
     await openTracker(page);

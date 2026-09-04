@@ -208,6 +208,119 @@ $$;
 revoke all on function public.complete_tracker_assigned_task(uuid, date) from public, anon;
 grant execute on function public.complete_tracker_assigned_task(uuid, date) to authenticated, service_role;
 
+create or replace function public.create_tracker_plan(p_payload jsonb)
+returns public.tracker_plans
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  caller_id uuid := auth.uid();
+  target_couple_id uuid := nullif(p_payload ->> 'couple_id', '')::uuid;
+  partner_id uuid;
+  plan_visibility text := coalesce(nullif(p_payload ->> 'visibility', ''), 'couple');
+  effective_scope text := case
+    when coalesce(nullif(p_payload ->> 'visibility', ''), 'couple') = 'private' then 'me'
+    else coalesce(nullif(p_payload ->> 'participant_scope', ''), 'both')
+  end;
+  effective_assignee uuid := case
+    when coalesce(nullif(p_payload ->> 'visibility', ''), 'couple') = 'private' then auth.uid()
+    else nullif(p_payload ->> 'assignee_id', '')::uuid
+  end;
+  effective_edit_scope text := case
+    when coalesce(nullif(p_payload ->> 'visibility', ''), 'couple') = 'private' then 'creator'
+    else coalesce(nullif(p_payload ->> 'edit_scope', ''), 'participants')
+  end;
+  weekdays smallint[];
+  created_plan public.tracker_plans;
+begin
+  if caller_id is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  select case
+    when pair.partner_one_id = caller_id then pair.partner_two_id
+    else pair.partner_one_id
+  end
+  into partner_id
+  from public.couples pair
+  where pair.id = target_couple_id
+    and caller_id in (pair.partner_one_id, pair.partner_two_id);
+
+  if not found then
+    raise exception 'Current couple membership required' using errcode = '42501';
+  end if;
+  if effective_assignee is not null
+     and not public.is_tracker_couple_member(target_couple_id, effective_assignee) then
+    raise exception 'Assignee must belong to the couple' using errcode = '42501';
+  end if;
+
+  select coalesce(pg_catalog.array_agg(item.value::smallint), '{}'::smallint[])
+  into weekdays
+  from pg_catalog.jsonb_array_elements_text(
+    coalesce(p_payload -> 'repeat_weekdays', '[]'::jsonb)
+  ) as item(value);
+
+  insert into public.tracker_plans (
+    couple_id, title, description, kind, start_date, starts_at, ends_at, all_day,
+    participant_scope, assignee_id, visibility, status, repeat_mode,
+    repeat_interval, repeat_weekdays, repeat_until, edit_scope, created_by, updated_by
+  ) values (
+    target_couple_id,
+    p_payload ->> 'title',
+    nullif(p_payload ->> 'description', ''),
+    coalesce(nullif(p_payload ->> 'kind', ''), 'event'),
+    nullif(p_payload ->> 'start_date', '')::date,
+    nullif(p_payload ->> 'starts_at', '')::timestamptz,
+    nullif(p_payload ->> 'ends_at', '')::timestamptz,
+    coalesce((p_payload ->> 'all_day')::boolean, true),
+    effective_scope,
+    effective_assignee,
+    plan_visibility,
+    coalesce(nullif(p_payload ->> 'status', ''), 'planned'),
+    coalesce(nullif(p_payload ->> 'repeat_mode', ''), 'none'),
+    coalesce((p_payload ->> 'repeat_interval')::integer, 1),
+    weekdays,
+    nullif(p_payload ->> 'repeat_until', '')::date,
+    effective_edit_scope,
+    caller_id,
+    caller_id
+  )
+  returning * into created_plan;
+
+  insert into public.tracker_plan_participants (
+    plan_id, couple_id, user_id, role, response
+  ) values (
+    created_plan.id, target_couple_id, caller_id,
+    case when effective_assignee = caller_id then 'responsible' else 'participant' end,
+    'accepted'
+  );
+
+  if plan_visibility = 'couple'
+     and partner_id is not null
+     and (effective_scope in ('partner', 'both') or effective_assignee = partner_id) then
+    insert into public.tracker_plan_participants (
+      plan_id, couple_id, user_id, role, response
+    ) values (
+      created_plan.id, target_couple_id, partner_id,
+      case when effective_assignee = partner_id then 'responsible' else 'participant' end,
+      'pending'
+    );
+  end if;
+
+  insert into public.tracker_plan_activity (
+    plan_id, couple_id, actor_id, activity_type
+  ) values (
+    created_plan.id, target_couple_id, caller_id, 'created'
+  );
+
+  return created_plan;
+end;
+$$;
+
+revoke all on function public.create_tracker_plan(jsonb) from public, anon;
+grant execute on function public.create_tracker_plan(jsonb) to authenticated;
+
 create or replace function public.broadcast_tracker_couple_change()
 returns trigger
 language plpgsql

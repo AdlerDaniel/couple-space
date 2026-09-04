@@ -872,42 +872,38 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       updated_at: new Date().toISOString(),
     };
     setPlans((items) => [optimistic, ...items]);
-    let createdPlanId: string | null = null;
 
     try {
-      const { data, error } = await supabase.from("tracker_plans").insert({
-        couple_id: optimistic.couple_id,
-        title: optimistic.title,
-        description: optimistic.description,
-        kind: optimistic.kind,
-        start_date: optimistic.start_date,
-        starts_at: optimistic.starts_at,
-        ends_at: optimistic.ends_at,
-        all_day: optimistic.all_day,
-        participant_scope: optimistic.participant_scope,
-        assignee_id: optimistic.assignee_id,
-        visibility: optimistic.visibility,
-        status: optimistic.status,
-        repeat_mode: optimistic.repeat_mode,
-        repeat_interval: optimistic.repeat_interval,
-        repeat_weekdays: optimistic.repeat_weekdays,
-        repeat_until: optimistic.repeat_until,
-        edit_scope: optimistic.edit_scope,
-        created_by: currentUserId,
-        updated_by: currentUserId,
-      }).select("*").single<TrackerPlan>();
+      const { data: created, error } = await supabase.rpc("create_tracker_plan", {
+        p_payload: {
+          couple_id: optimistic.couple_id,
+          title: optimistic.title,
+          description: optimistic.description,
+          kind: optimistic.kind,
+          start_date: optimistic.start_date,
+          starts_at: optimistic.starts_at,
+          ends_at: optimistic.ends_at,
+          all_day: optimistic.all_day,
+          participant_scope: optimistic.participant_scope,
+          assignee_id: optimistic.assignee_id,
+          visibility: optimistic.visibility,
+          status: optimistic.status,
+          repeat_mode: optimistic.repeat_mode,
+          repeat_interval: optimistic.repeat_interval,
+          repeat_weekdays: optimistic.repeat_weekdays,
+          repeat_until: optimistic.repeat_until,
+          edit_scope: optimistic.edit_scope,
+        },
+      });
+      const data = created as TrackerPlan | null;
       if (error || !data) throw error || new Error("Событие не создано");
-      createdPlanId = data.id;
 
-      // Participants are part of the core save. Reminders, activity history and
-      // push notifications are optional follow-ups and must not keep the sheet
-      // open or roll back an otherwise valid shared plan.
-      await synchronizeTrackerParticipants(data, currentUserId, partnerId);
+      // Plan and participants are created atomically. Reminders and push
+      // notifications are optional follow-ups and never block the composer.
       setPlans((items) => items.map((item) => item.id === optimistic.id ? data : item));
       resetPlanComposer();
       setComposerMode(null);
       setSelectedPlanId(data.id);
-      createdPlanId = null;
 
       void Promise.resolve(supabase.from("tracker_plan_reminders").insert({
         plan_id: data.id,
@@ -934,14 +930,6 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         }).catch(() => undefined);
       }
     } catch (error) {
-      if (createdPlanId) {
-        const { error: rollbackError } = await supabase.from("tracker_plans").delete().eq("id", createdPlanId).eq("created_by", currentUserId);
-        if (rollbackError) {
-          setMessage("План создан, но не все настройки сохранились. Обновите трекер и откройте план для проверки.");
-          reloadTrackerData();
-          return;
-        }
-      }
       setPlans((items) => items.filter((item) => item.id !== optimistic.id));
       setMessage(`Не удалось создать событие: ${getErrorMessage(error, "попробуйте снова")}`);
     } finally {

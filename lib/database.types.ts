@@ -1426,6 +1426,41 @@ export type Database = {
         }
         Returns: string
       }
+      create_tracker_plan: {
+        Args: { p_payload: Json }
+        Returns: {
+          all_day: boolean
+          assignee_id: string | null
+          category_id: string | null
+          color: string | null
+          couple_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          edit_scope: string
+          ends_at: string | null
+          id: string
+          kind: string
+          participant_scope: string
+          repeat_interval: number
+          repeat_mode: string
+          repeat_until: string | null
+          repeat_weekdays: number[]
+          start_date: string | null
+          starts_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          visibility: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tracker_plans"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       find_tracker_common_free_slots: {
         Args: {
           p_couple_id: string

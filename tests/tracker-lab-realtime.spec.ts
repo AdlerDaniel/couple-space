@@ -280,7 +280,6 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
     await one.getByRole("button", { name: "Сделать воспоминанием", exact: true }).click();
     const memory = one.getByRole("dialog").last();
     await memory.getByLabel("Название", { exact: true }).fill("Synthetic memory");
-    await memory.getByLabel("Описание", { exact: true }).fill("Copied fixture media");
     await memory.getByRole("button", { name: "Создать воспоминание", exact: true }).click();
     await expect(one).toHaveURL(/\/memories\/[0-9a-f-]+$/);
     const storedMemory = await admin.from("memories").select("event_date,image").eq("couple_id", coupleId).eq("title", "Synthetic memory").single();

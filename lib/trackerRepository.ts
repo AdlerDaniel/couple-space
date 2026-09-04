@@ -92,6 +92,7 @@ export async function fetchTrackerLabData(coupleId: string, year: number): Promi
 export function subscribeTrackerData(coupleId: string, onChange: () => void) {
   let refreshTimer: ReturnType<typeof setTimeout> | null = null;
   let disposed = false;
+
   const scheduleRefresh = () => {
     if (disposed) return;
     if (refreshTimer) clearTimeout(refreshTimer);
@@ -100,28 +101,62 @@ export function subscribeTrackerData(coupleId: string, onChange: () => void) {
       if (!disposed) onChange();
     }, 120);
   };
-  const channel = supabase
+
+  const filter = `couple_id=eq.${coupleId}`;
+  const postgresTables = [
+    "tracker_events",
+    "tracker_goals",
+    "tracker_plans",
+    "tracker_plan_participants",
+    "tracker_plan_occurrence_overrides",
+    "tracker_plan_comments",
+    "tracker_checkins",
+    "tracker_category_preferences",
+    "tracker_plan_activity",
+  ] as const;
+
+  const postgresChannel = supabase.channel(`tracker-db:${coupleId}`);
+  for (const table of postgresTables) {
+    postgresChannel
+      .on("postgres_changes", { event: "INSERT", schema: "public", table, filter }, scheduleRefresh)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table, filter }, scheduleRefresh);
+  }
+
+  const broadcastChannel = supabase
     .channel(`tracker:${coupleId}`, { config: { private: true } })
     .on("broadcast", { event: "changed" }, scheduleRefresh);
 
-  // Private Broadcast is pair-scoped by realtime.messages RLS. Unlike filtered
-  // Postgres DELETE events it carries no row payload, so privacy revocations and
-  // deletions can safely invalidate every open tab.
-  void supabase.realtime.setAuth()
-    .then(() => {
-      if (disposed) return;
-      channel.subscribe((status) => {
-        // A refresh after the private channel has actually joined closes the
-        // small window between the initial snapshot and Realtime readiness.
+  const subscribeChannels = async () => {
+    let privateAuthReady = false;
+    try {
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      if (accessToken) {
+        await supabase.realtime.setAuth(accessToken);
+        privateAuthReady = true;
+      }
+    } catch {
+      // Postgres Changes remains an independent RLS-protected fallback.
+    }
+    if (disposed) return;
+
+    postgresChannel.subscribe((status) => {
+      if (status === "SUBSCRIBED" && !disposed) scheduleRefresh();
+    });
+    if (privateAuthReady) {
+      broadcastChannel.subscribe((status) => {
         if (status === "SUBSCRIBED" && !disposed) scheduleRefresh();
       });
-    })
-    .catch(() => undefined);
+    }
+  };
+
+  void subscribeChannels();
 
   return () => {
     disposed = true;
     if (refreshTimer) clearTimeout(refreshTimer);
-    void supabase.removeChannel(channel);
+    void supabase.removeChannel(postgresChannel);
+    void supabase.removeChannel(broadcastChannel);
   };
 }
 

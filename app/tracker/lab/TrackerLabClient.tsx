@@ -221,7 +221,9 @@ function getPlanIcon(kind: TrackerPlanKind, size = 18) {
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
+  if (error instanceof Error) return error.message;
+  const message = error && typeof error === "object" && "message" in error ? error.message : null;
+  return typeof message === "string" ? message : fallback;
 }
 
 function monthCells(value: string) {

@@ -148,6 +148,15 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
     await composer.getByLabel("Конец", { exact: true }).fill("20:00");
     await composer.getByLabel("Описание", { exact: true }).fill("Fictional fixture, no user content");
     await composer.getByRole("button", { name: "Добавить в календарь", exact: true }).click();
+    await expect(composer).toBeHidden({ timeout: 20_000 });
+    await expect.poll(async () => {
+      const result = await admin.from("tracker_plans")
+        .select("id")
+        .eq("couple_id", coupleId)
+        .eq("title", title);
+      if (result.error) return `database: ${result.error.message}`;
+      return result.data?.length === 1 ? "created" : "waiting";
+    }, { timeout: 20_000, message: "Creator must persist the plan before Realtime delivery" }).toBe("created");
     const cardTwo = two.locator("[data-plan-card]").filter({ hasText: title });
     await expect(cardTwo).toBeVisible({ timeout: 25_000 });
     await cardTwo.locator(".tracker-lab-plan-main").click();
@@ -309,7 +318,7 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
 });
 
 test("tracker lab mobile and desktop layouts in both themes and reduced motion", async ({ browser, baseURL }) => {
-  test.setTimeout(360_000);
+  test.setTimeout(240_000);
   await withPair(browser, baseURL, async ({ pages }) => {
     const page = pages[0];
     await openTracker(page);
@@ -322,7 +331,7 @@ test("tracker lab mobile and desktop layouts in both themes and reduced motion",
         await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
         await page.evaluate((dark) => document.documentElement.classList.toggle("dark", dark), theme === "dark");
         await expect(page.getByRole("heading", { name: "Наш ритм", exact: true })).toBeVisible();
-        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       }
     }
 
@@ -331,7 +340,7 @@ test("tracker lab mobile and desktop layouts in both themes and reduced motion",
     await page.evaluate(() => document.documentElement.classList.add("dark"));
     for (const tab of ["Сегодня", "Календарь", "Активность"]) {
       await page.locator(".tracker-lab-local-nav").getByRole("button", { name: tab, exact: true }).click();
-      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     }
 
     await page.setViewportSize({ width: 768, height: 850 });
@@ -344,7 +353,7 @@ test("tracker lab mobile and desktop layouts in both themes and reduced motion",
     await expect(page.locator("#tracker-lab-insights")).toBeHidden();
 
     for (const scenario of [{ width: 390, theme: "dark" }, { width: 1440, theme: "light" }] as const) {
-      await page.setViewportSize({ width: scenario.width, height: 850 });
+      await page.setViewportSize({ width: scenario.width, height: scenario.width === 390 ? 500 : 850 });
       await page.emulateMedia({ colorScheme: scenario.theme, reducedMotion: "reduce" });
       await page.evaluate((dark) => document.documentElement.classList.toggle("dark", dark), scenario.theme === "dark");
       const composer = await openPlanComposer(page);
@@ -355,10 +364,9 @@ test("tracker lab mobile and desktop layouts in both themes and reduced motion",
       expect(bounds).not.toBeNull();
       expect(bounds!.x).toBeGreaterThanOrEqual(-1);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(scenario.width + 1);
-      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 
       if (scenario.width === 390) {
-        await page.setViewportSize({ width: scenario.width, height: 500 });
         await composer.getByLabel("Описание", { exact: true }).focus();
         await composer.getByRole("button", { name: "Добавить в календарь", exact: true }).scrollIntoViewIfNeeded();
         await expect(composer.getByRole("button", { name: "Добавить в календарь", exact: true })).toBeInViewport();

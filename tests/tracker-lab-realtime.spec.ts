@@ -148,6 +148,7 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
     await composer.getByLabel("Конец", { exact: true }).fill("20:00");
     await composer.getByLabel("Описание", { exact: true }).fill("Fictional fixture, no user content");
     await composer.getByRole("button", { name: "Добавить в календарь", exact: true }).click();
+    await expect(composer).toHaveCount(0);
     const cardTwo = two.locator("[data-plan-card]").filter({ hasText: title });
     await expect(cardTwo).toBeVisible({ timeout: 25_000 });
     await cardTwo.locator(".tracker-lab-plan-main").click();

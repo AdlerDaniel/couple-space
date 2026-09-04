@@ -93,8 +93,12 @@ export function subscribeTrackerData(coupleId: string, onChange: () => void) {
   let refreshTimer: ReturnType<typeof setTimeout> | null = null;
   let disposed = false;
   const scheduleRefresh = () => {
+    if (disposed) return;
     if (refreshTimer) clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(onChange, 120);
+    refreshTimer = setTimeout(() => {
+      refreshTimer = null;
+      if (!disposed) onChange();
+    }, 120);
   };
   const channel = supabase
     .channel(`tracker:${coupleId}`, { config: { private: true } })

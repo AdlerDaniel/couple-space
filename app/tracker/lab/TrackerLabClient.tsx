@@ -899,15 +899,25 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
       if (error || !data) throw error || new Error("Событие не создано");
       createdPlanId = data.id;
 
+      // Participants are part of the core save. Reminders, activity history and
+      // push notifications are optional follow-ups and must not keep the sheet
+      // open or roll back an otherwise valid shared plan.
       await synchronizeTrackerParticipants(data, currentUserId, partnerId);
-      const { error: reminderError } = await supabase.from("tracker_plan_reminders").insert({
+      setPlans((items) => items.map((item) => item.id === optimistic.id ? data : item));
+      resetPlanComposer();
+      setComposerMode(null);
+      setSelectedPlanId(data.id);
+      createdPlanId = null;
+
+      void Promise.resolve(supabase.from("tracker_plan_reminders").insert({
         plan_id: data.id,
         couple_id: couple.id,
         user_id: currentUserId,
         offset_minutes: planReminder,
         delivery: "ics",
-      });
-      if (reminderError) throw reminderError;
+      })).then(({ error: reminderError }) => {
+        if (reminderError) setMessage("Событие сохранено, но напоминание не добавилось. Его можно настроить в карточке события.");
+      }).catch(() => undefined);
       void Promise.resolve(supabase.from("tracker_plan_activity").insert({
         plan_id: data.id,
         couple_id: couple.id,
@@ -915,12 +925,8 @@ export default function TrackerLabClient({ initialDate, initialNow }: { initialD
         activity_type: "created",
       })).catch(() => undefined);
 
-      setPlans((items) => items.map((item) => item.id === optimistic.id ? data : item));
-      resetPlanComposer();
-      setComposerMode(null);
-      setSelectedPlanId(data.id);
       if (data.visibility === "couple") {
-        await createPartnerNotification(couple, currentUserId, {
+        void createPartnerNotification(couple, currentUserId, {
           type: "tracker_plan_created",
           title: "Новый совместный план",
           body: data.title,

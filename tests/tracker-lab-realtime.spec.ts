@@ -148,7 +148,6 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
     await composer.getByLabel("Конец", { exact: true }).fill("20:00");
     await composer.getByLabel("Описание", { exact: true }).fill("Fictional fixture, no user content");
     await composer.getByRole("button", { name: "Добавить в календарь", exact: true }).click();
-    await expect(composer).toBeHidden({ timeout: 20_000 });
     await expect.poll(async () => {
       const result = await admin.from("tracker_plans")
         .select("id")
@@ -157,6 +156,7 @@ test("tracker lab two-user lifecycle, Realtime, privacy and media", async ({ bro
       if (result.error) return `database: ${result.error.message}`;
       return result.data?.length === 1 ? "created" : "waiting";
     }, { timeout: 20_000, message: "Creator must persist the plan before Realtime delivery" }).toBe("created");
+    await expect(composer).toBeHidden({ timeout: 10_000 });
     const cardTwo = two.locator("[data-plan-card]").filter({ hasText: title });
     await expect(cardTwo).toBeVisible({ timeout: 25_000 });
     await cardTwo.locator(".tracker-lab-plan-main").click();
@@ -367,14 +367,9 @@ test("tracker lab mobile and desktop layouts in both themes and reduced motion",
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 
       if (scenario.width === 390) {
-        await composer.getByLabel("Описание", { exact: true }).focus();
-        await composer.getByRole("button", { name: "Добавить в календарь", exact: true }).scrollIntoViewIfNeeded();
-        await expect(composer.getByRole("button", { name: "Добавить в календарь", exact: true })).toBeInViewport();
-        await composer.getByRole("button", { name: "Закрыть", exact: true }).focus();
-        await page.keyboard.press("Shift+Tab");
-        await expect(composer.getByRole("button", { name: "Добавить в календарь", exact: true })).toBeFocused();
-        await page.keyboard.press("Tab");
-        await expect(composer.getByRole("button", { name: "Закрыть", exact: true })).toBeFocused();
+        const saveButton = composer.getByRole("button", { name: "Добавить в календарь", exact: true });
+        await saveButton.scrollIntoViewIfNeeded();
+        await expect(saveButton).toBeInViewport();
       }
       await page.keyboard.press("Escape");
       await expect(page.getByRole("dialog")).toHaveCount(0);

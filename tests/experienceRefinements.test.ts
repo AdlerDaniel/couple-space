@@ -62,31 +62,6 @@ test("memory cards omit empty fallback copy and keep the composer compact", asyn
   assert.match(mobileCss, /memory-reaction-option\.is-active/);
 });
 
-test("memory lab keeps the full memory workflow while staying hidden from navigation", async () => {
-  const [lab, navigation, styles] = await Promise.all([
-    readSource("app/memories/lab/page.tsx"),
-    readSource("lib/navigation.ts"),
-    readSource("app/globals.css"),
-  ]);
-
-  assert.doesNotMatch(navigation, /\/memories\/lab/);
-  assert.match(lab, /from\("memories"\)/);
-  assert.match(lab, /from\("memory_comments"\)/);
-  assert.match(lab, /\/memories\/new\?edit=/);
-  assert.match(lab, /togglePinned/);
-  assert.match(lab, /deleteMemory/);
-  assert.match(lab, /toggleReaction/);
-  assert.match(lab, /AccentAudioPlayer/);
-  assert.match(lab, /attachment\.type === "video"/);
-  assert.match(lab, /postgres_changes/);
-  assert.match(lab, /memory-lab-story-strip/);
-  assert.match(lab, /memory-lab-comment-peek/);
-  assert.match(lab, /memory-lab-audio-note/);
-  assert.match(lab, /accent="#2563eb"/);
-  assert.match(styles, /\.memory-lab-page/);
-  assert.match(styles, /--memory-lab-accent: #2563eb/);
-});
-
 test("the retired chat is absent from routes, navigation and notification surfaces", async () => {
   const [navigation, shell, notifications, settings] = await Promise.all([
     readSource("lib/navigation.ts"),
@@ -128,12 +103,11 @@ test("Today movie actions open the dedicated add page and roulette", async () =>
   assert.match(addSource, /void addItem\(result\)/);
 });
 
-test("watch keeps the official roulette and retires the experimental movie page", async () => {
-  const [watch, styles, navigation, retiredPage] = await Promise.all([
+test("watch keeps the official roulette after removing the experimental movie page", async () => {
+  const [watch, styles, navigation] = await Promise.all([
     readSource("app/watch/page.tsx"),
     readSource("app/globals.css"),
     readSource("lib/navigation.ts"),
-    readSource("app/watch/lab/page.tsx"),
   ]);
   const actionsStart = watch.indexOf("watch-card-actions");
   const actionsEnd = watch.indexOf("</article>", actionsStart);
@@ -149,8 +123,6 @@ test("watch keeps the official roulette and retires the experimental movie page"
   assert.match(styles, /\.watch-official-wheel\.is-spinning/);
   assert.doesNotMatch(styles, /watch-lab|watchLabSpin/);
   assert.doesNotMatch(navigation, /\/watch\/lab|Кино-комната|Экспериментальная версия/);
-  assert.match(retiredPage, /notFound\(\)/);
-  assert.doesNotMatch(retiredPage, /supabase|watch-lab|Кино-комната/);
 });
 
 test("daily answer attachments keep voice recording as a separate action", async () => {

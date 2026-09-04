@@ -118,7 +118,7 @@ async function openTracker(page: Page) {
 async function openPlanComposer(page: Page) {
   await page.getByRole("button", { name: "Добавить запись", exact: true }).click();
   await page.getByRole("button", { name: /Событие или план/ }).click();
-  const dialog = page.getByRole("dialog").last();
+  const dialog = page.locator(".tracker-lab-composer-sheet");
   await expect(dialog.getByRole("heading", { name: "Добавить в календарь", exact: true })).toBeVisible();
   return dialog;
 }

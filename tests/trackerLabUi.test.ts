@@ -81,8 +81,9 @@ test("responsive styling covers required mobile and desktop widths and reduced m
 test("shared repository powers both tracker versions and the daily free-tier digest", () => {
   assert.match(repository, /channel\(`tracker:\$\{coupleId\}`, \{ config: \{ private: true \} \}\)/);
   assert.match(repository, /\.on\("broadcast", \{ event: "changed" \}/);
-  assert.match(repository, /realtime\.setAuth\(\)/);
-  assert.doesNotMatch(repository, /postgres_changes/);
+  assert.match(repository, /realtime\.setAuth\(accessToken\)/);
+  assert.match(repository, /channel\(`tracker-db:\$\{coupleId\}`\)/);
+  assert.match(repository, /postgres_changes/);
   assert.match(client, /useTrackerData/);
   assert.match(client, /adjustTrackerEventCount/);
   assert.match(originalTracker, /adjustTrackerEventCount/);
